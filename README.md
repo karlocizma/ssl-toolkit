@@ -1,2 +1,2 @@
 # ssl-toolkit
-Collection of differente SSL tools
+Collection of SSL tools
