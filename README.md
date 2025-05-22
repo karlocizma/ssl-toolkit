@@ -28,11 +28,13 @@ A full-featured web application for working with SSL/TLS certificates. Built wit
 ```bash
 git clone https://github.com/yourusername/ssl-toolkit.git
 cd ssl-toolkit
+```
 
 ### 2. Build and Run with Docker
 
 ```bash
 docker-compose up --build -d
+```
 
 # This will:
 - Build the backend and frontend containers
@@ -64,6 +66,7 @@ docker-compose up --build -d
 ├── docker-compose.yml
 ├── Dockerfile
 └── nginx.conf
+```
 
 ## 📥 Uploads & File Conversion Notes
 - Certificate files should be .pem, .crt, or .pfx
