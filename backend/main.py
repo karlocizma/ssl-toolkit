@@ -1,12 +1,14 @@
 # backend/main.py
 
 from fastapi import FastAPI, UploadFile, File, Form
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
+from OpenSSL import crypto
 import base64
 import ssl
 import socket
@@ -25,13 +27,6 @@ class SSLDecodeRequest(BaseModel):
 
 class SSLCheckRequest(BaseModel):
     domain: str
-
-#class CSRGenRequest(BaseModel):
-#    country: str = "US"
-#    state: str = "California"
-#    locality: str = "San Francisco"
-#    organization: str = "My Company"
-#    common_name: str
 
 class CSRRequest(BaseModel):
     country: str
@@ -71,18 +66,6 @@ def decode_ssl_cert(data: SSLDecodeRequest):
     except Exception as e:
         return {"error": str(e)}
 
-#@app.post("/api/ssl-check")
-#def ssl_check(data: SSLCheckRequest):
-#    try:
-#        ctx = ssl.create_default_context()
-#        conn = ctx.wrap_socket(socket.socket(), server_hostname=data.domain)
-#        conn.settimeout(5)
-#        conn.connect((data.domain, 443))
-#        cert = conn.getpeercert()
-#        return cert
-#    except Exception as e:
-#        return {"error": str(e)}
-
 @app.post("/api/ssl-check")
 async def ssl_check(payload: dict):
     import ssl
@@ -121,27 +104,6 @@ async def ssl_check(payload: dict):
     except Exception as e:
         return {"error": str(e)}
 
-#@app.post("/api/csr-generator")
-#def generate_csr(data: CSRGenRequest):
-#    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-#    subject = x509.Name([
-#        x509.NameAttribute(NameOID.COUNTRY_NAME, data.country),
-#        x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, data.state),
-#        x509.NameAttribute(NameOID.LOCALITY_NAME, data.locality),
-#        x509.NameAttribute(NameOID.ORGANIZATION_NAME, data.organization),
-#        x509.NameAttribute(NameOID.COMMON_NAME, data.common_name),
-#    ])
-#    csr = x509.CertificateSigningRequestBuilder().subject_name(subject).sign(key, hashes.SHA256())
-#
-#    return {
-#        "private_key": key.private_bytes(
-#            encoding=serialization.Encoding.PEM,
-#            format=serialization.PrivateFormat.TraditionalOpenSSL,
-#            encryption_algorithm=serialization.NoEncryption()
-#        ).decode(),
-#        "csr": csr.public_bytes(serialization.Encoding.PEM).decode()
-#    }
-
 @app.post("/api/csr-generate")
 async def generate_csr(data: CSRRequest):
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
@@ -175,53 +137,55 @@ async def generate_csr(data: CSRRequest):
         "csr": csr_pem
     }
 
-@app.post("/api/ssl-convert")
-async def ssl_convert(
+from fastapi import UploadFile, File, Form
+from fastapi.responses import StreamingResponse
+import os
+import tempfile
+from OpenSSL import crypto
+
+@app.post("/api/convert-ssl")
+async def convert_ssl(
     file: UploadFile = File(...),
-    from_format: str = Form(...),
-    to_format: str = Form(...),
+    target_format: str = Form(...),
     password: str = Form(default="")
 ):
+    input_file = tempfile.NamedTemporaryFile(delete=False)
+    input_file.write(await file.read())
+    input_file.close()
+
     try:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            input_path = os.path.join(tmpdir, "input")
-            output_path = os.path.join(tmpdir, "output")
+        with open(input_file.name, 'rb') as f:
+            content = f.read()
 
-            contents = await file.read()
-            with open(input_path, "wb") as f:
-                f.write(contents)
+        try:
+            cert = crypto.load_certificate(crypto.FILETYPE_PEM, content)
+            key = None
+        except:
+            try:
+                p12 = crypto.load_pkcs12(content)
+                cert = p12.get_certificate()
+                key = p12.get_privatekey()
+            except:
+                raise Exception("Unsupported certificate format or corrupted file.")
 
-            cmd = []
+        output_file = tempfile.NamedTemporaryFile(delete=False)
 
-            # PFX to PEM
-            if from_format == "pfx" and to_format == "pem":
-                cmd = [
-                    "openssl", "pkcs12",
-                    "-in", input_path,
-                    "-out", output_path,
-                    "-nodes", "-password", f"pass:{password}"
-                ]
-            # PEM to PFX
-            elif from_format == "pem" and to_format == "pfx":
-                cmd = [
-                    "openssl", "pkcs12",
-                    "-export",
-                    "-in", input_path,
-                    "-out", output_path,
-                    "-password", f"pass:{password}"
-                ]
-            else:
-                return {"error": "Unsupported conversion."}
+        if target_format == "pem":
+            pem_data = crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
+            output_file.write(pem_data)
+        elif target_format == "pfx":
+            if not key:
+                raise Exception("PFX conversion requires a private key.")
+            p12 = crypto.PKCS12()
+            p12.set_certificate(cert)
+            p12.set_privatekey(key)
+            export = p12.export(passphrase=password.encode() if password else None)
+            output_file.write(export)
+        else:
+            raise Exception("Unsupported output format.")
 
-            result = subprocess.run(cmd, stderr=subprocess.PIPE)
-            if result.returncode != 0:
-                return {"error": result.stderr.decode()}
+        output_file.close()
+        return StreamingResponse(open(output_file.name, 'rb'), media_type="application/octet-stream")
 
-            with open(output_path, "rb") as f:
-                output_data = f.read()
-
-            encoded = base64.b64encode(output_data).decode()
-            return { "converted_cert": encoded }
-
-    except Exception as e:
-        return { "error": str(e) }
+    finally:
+        os.unlink(input_file.name)
