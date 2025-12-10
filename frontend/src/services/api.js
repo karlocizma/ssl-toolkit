@@ -54,10 +54,20 @@ export const sslCheckAPI = {
   checkCRL: (data) => api.post('/check/crl', data)
 };
 
+// Sysadmin helpers
+export const sysAdminAPI = {
+  generateDMARC: (data) => api.post('/dmarc/generate', data),
+  validateDMARC: (data) => api.post('/dmarc/validate', data),
+  generateSPF: (data) => api.post('/spf/generate', data),
+  validateSPF: (data) => api.post('/spf/validate', data),
+  analyzeEmailHeaders: (data) => api.post('/email/header/analyze', data),
+  generatePassword: (data) => api.post('/security/password/generate', data),
+  lookupDNS: (data) => api.post('/dns/lookup', data)
+};
+
 // Health check
 export const healthAPI = {
   check: () => api.get('/health')
 };
 
 export default api;
-

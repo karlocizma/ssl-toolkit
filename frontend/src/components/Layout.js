@@ -24,6 +24,11 @@ import {
   VerifiedUser as VerifiedUserIcon,
   Link as LinkIcon,
   AccountTree as AccountTreeIcon,
+  Policy as PolicyIcon,
+  WbSunny as WbSunnyIcon,
+  MarkEmailRead as MarkEmailReadIcon,
+  Password as PasswordIcon,
+  Dns as DnsIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -40,6 +45,11 @@ const menuItems = [
   { text: 'Key Validator', icon: <VerifiedUserIcon />, path: '/key-validator' },
   { text: 'Key-Certificate Match', icon: <LinkIcon />, path: '/key-certificate-match' },
   { text: 'Certificate Chain Checker', icon: <AccountTreeIcon />, path: '/certificate-chain-checker' },
+  { text: 'DMARC Manager', icon: <PolicyIcon />, path: '/dmarc-tool' },
+  { text: 'SPF Manager', icon: <WbSunnyIcon />, path: '/spf-tool' },
+  { text: 'Email Header Analyzer', icon: <MarkEmailReadIcon />, path: '/email-header-analyzer' },
+  { text: 'Password Toolkit', icon: <PasswordIcon />, path: '/password-toolkit' },
+  { text: 'DNS Diagnostics', icon: <DnsIcon />, path: '/dns-diagnostics' },
 ];
 
 function Layout({ children }) {
@@ -105,7 +115,7 @@ function Layout({ children }) {
       <Box
         component="nav"
         sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-        aria-label="mailbox folders"
+        aria-label="tool navigation"
       >
         <Drawer
           variant="temporary"
@@ -148,4 +158,3 @@ function Layout({ children }) {
 }
 
 export default Layout;
-

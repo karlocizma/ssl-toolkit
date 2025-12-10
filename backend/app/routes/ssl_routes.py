@@ -417,7 +417,98 @@ def upload_csr():
             'filename': secure_filename(file.filename),
             'csr_info': csr_info
         })
-    
+
     except Exception as e:
         return jsonify({'error': str(e)}), 400
+
+
+# DMARC and SPF Routes
+@ssl_bp.route('/dmarc/generate', methods=['POST'])
+def dmarc_generate():
+    """Generate a DMARC record recommendation"""
+    try:
+        data = request.get_json() or {}
+        result = generate_dmarc_record(data)
+        return jsonify({'success': True, 'result': result})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+
+
+@ssl_bp.route('/dmarc/validate', methods=['POST'])
+def dmarc_validate():
+    """Validate an existing DMARC record"""
+    try:
+        data = request.get_json() or {}
+        result = validate_dmarc_record(data)
+        return jsonify({'success': True, 'result': result})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+
+@ssl_bp.route('/spf/generate', methods=['POST'])
+def spf_generate():
+    """Generate an SPF record"""
+    try:
+        data = request.get_json() or {}
+        result = generate_spf_record(data)
+        return jsonify({'success': True, 'result': result})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+
+
+@ssl_bp.route('/spf/validate', methods=['POST'])
+def spf_validate():
+    """Validate an SPF record"""
+    try:
+        data = request.get_json() or {}
+        result = validate_spf_record(data)
+        return jsonify({'success': True, 'result': result})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+
+# Email Header Analysis
+@ssl_bp.route('/email/header/analyze', methods=['POST'])
+def analyze_headers():
+    """Analyze raw email headers"""
+    try:
+        data = request.get_json() or {}
+        result = analyze_email_headers(data)
+        return jsonify({'success': True, 'result': result})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+
+
+# Password utility
+@ssl_bp.route('/security/password/generate', methods=['POST'])
+def password_generate():
+    """Generate a password with hashing/encryption details"""
+    try:
+        data = request.get_json() or {}
+        result = generate_password_bundle(data)
+        return jsonify({'success': True, 'result': result})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+
+
+# DNS diagnostics
+@ssl_bp.route('/dns/lookup', methods=['POST'])
+def dns_lookup():
+    """Lookup DNS records for a domain"""
+    try:
+        data = request.get_json() or {}
+        result = lookup_dns_records(data)
+        return jsonify({'success': True, 'result': result})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
 

@@ -212,6 +212,11 @@ function CertificateChainChecker() {
                     </Typography>
                   </Grid>
                 </Grid>
+                {result.verification_error && (
+                  <Alert severity="warning" sx={{ mt: 2 }}>
+                    {result.verification_error}
+                  </Alert>
+                )}
               </Paper>
 
               {result.certificates && result.certificates.length > 0 ? (
