@@ -18,6 +18,11 @@ import {
   VerifiedUser as VerifiedUserIcon,
   Link as LinkIcon,
   AccountTree as AccountTreeIcon,
+  Policy as PolicyIcon,
+  WbSunny as WbSunnyIcon,
+  MarkEmailRead as MarkEmailReadIcon,
+  Password as PasswordIcon,
+  Dns as DnsIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
@@ -93,6 +98,46 @@ const tools = [
     path: '/certificate-chain-checker',
     color: 'info',
     features: ['Chain validation', 'Root/intermediate certs', 'Trust path', 'Chain completeness']
+  },
+  {
+    title: 'DMARC Manager',
+    description: 'Generate and validate DMARC policies',
+    icon: <PolicyIcon sx={{ fontSize: 40 }} />,
+    path: '/dmarc-tool',
+    color: 'success',
+    features: ['Record builder', 'DNS validation', 'Reporting guidance', 'Policy insights']
+  },
+  {
+    title: 'SPF Manager',
+    description: 'Craft resilient SPF TXT records',
+    icon: <WbSunnyIcon sx={{ fontSize: 40 }} />,
+    path: '/spf-tool',
+    color: 'warning',
+    features: ['Generator', 'Mechanism review', 'DNS lookup checks', 'Policy linting']
+  },
+  {
+    title: 'Email Header Analyzer',
+    description: 'Trace mail flow and auth results',
+    icon: <MarkEmailReadIcon sx={{ fontSize: 40 }} />,
+    path: '/email-header-analyzer',
+    color: 'secondary',
+    features: ['Received timeline', 'SPF/DKIM/DMARC status', 'Hop summary', 'Anomaly detection']
+  },
+  {
+    title: 'Password Toolkit',
+    description: 'Generate secrets with hashes & encryption',
+    icon: <PasswordIcon sx={{ fontSize: 40 }} />,
+    path: '/password-toolkit',
+    color: 'error',
+    features: ['Entropy slider', 'Multiple hashes', 'Fernet encryption', 'Policy presets']
+  },
+  {
+    title: 'DNS Diagnostics',
+    description: 'Inspect core DNS records',
+    icon: <DnsIcon sx={{ fontSize: 40 }} />,
+    path: '/dns-diagnostics',
+    color: 'primary',
+    features: ['Multi-record lookup', 'TTL visibility', 'MX/TXT focus', 'Email readiness']
   }
 ];
 
@@ -105,8 +150,7 @@ function Dashboard() {
         SSL Certificate Toolkit
       </Typography>
       <Typography variant="body1" color="text.secondary" paragraph>
-        A comprehensive suite of tools for SSL certificate management, generation, validation, and conversion.
-        Choose a tool below to get started.
+        A comprehensive suite of tools for SSL/TLS certificate management, email authentication, and DNS hygiene. Choose a tool below to get started.
       </Typography>
       
       <Grid container spacing={3} sx={{ mt: 2 }}>
@@ -169,9 +213,7 @@ function Dashboard() {
           About SSL Toolkit
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          This toolkit provides a comprehensive set of tools for SSL/TLS certificate management.
-          All operations are performed securely in your browser or on our secure servers.
-          Private keys and sensitive data are handled with the highest security standards.
+          This toolkit provides a comprehensive set of tools for SSL/TLS certificate management, email authentication workflows, and DNS troubleshooting. All operations are performed securely in your browser or on our secure servers.
         </Typography>
       </Box>
     </Box>
@@ -179,4 +221,3 @@ function Dashboard() {
 }
 
 export default Dashboard;
-

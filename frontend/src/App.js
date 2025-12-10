@@ -13,6 +13,11 @@ import KeyGenerator from './components/KeyGenerator';
 import KeyValidator from './components/KeyValidator';
 import KeyCertificateMatch from './components/KeyCertificateMatch';
 import CertificateChainChecker from './components/CertificateChainChecker';
+import DMARCManager from './components/DMARCManager';
+import SPFManager from './components/SPFManager';
+import EmailHeaderAnalyzer from './components/EmailHeaderAnalyzer';
+import PasswordToolkit from './components/PasswordToolkit';
+import DNSDiagnostics from './components/DNSDiagnostics';
 import './App.css';
 
 const theme = createTheme({
@@ -44,6 +49,11 @@ function App() {
             <Route path="/key-validator" element={<KeyValidator />} />
             <Route path="/key-certificate-match" element={<KeyCertificateMatch />} />
             <Route path="/certificate-chain-checker" element={<CertificateChainChecker />} />
+            <Route path="/dmarc-tool" element={<DMARCManager />} />
+            <Route path="/spf-tool" element={<SPFManager />} />
+            <Route path="/email-header-analyzer" element={<EmailHeaderAnalyzer />} />
+            <Route path="/password-toolkit" element={<PasswordToolkit />} />
+            <Route path="/dns-diagnostics" element={<DNSDiagnostics />} />
           </Routes>
         </Layout>
       </Router>
@@ -52,4 +62,3 @@ function App() {
 }
 
 export default App;
-
