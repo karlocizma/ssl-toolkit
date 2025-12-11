@@ -1,9 +1,45 @@
 # Troubleshooting Guide
 
-## Frontend Shows Default/Apache Page
+## Seeing Apache2 or Default Web Page (CRITICAL)
 
 ### Problem
-When accessing `http://localhost`, you see a default web server page (Apache, nginx, or "Welcome to nginx!") instead of the SSL Toolkit application.
+When accessing `http://localhost`, you see an Apache2 default page, nginx welcome page, or other default web server page instead of the SSL Toolkit application.
+
+### Root Cause
+**The nginx container was not exposing port 80 to the host machine.** This was a critical bug in `docker-compose.yml` that prevented the application from being accessible.
+
+### Solution - FIXED in latest version
+
+**This issue was fixed in commit `d46d7bd`.** Pull the latest changes and restart:
+
+```bash
+# Pull the latest changes
+git pull origin main
+
+# Stop all containers
+docker compose down
+
+# Start with new configuration
+docker compose up -d
+
+# Or use the run script
+./run.sh
+```
+
+The `docker-compose.yml` now includes the required port mappings:
+```yaml
+nginx:
+  ports:
+    - "80:80"
+    - "443:443"
+```
+
+If you still see issues after updating, follow the frontend rebuild steps below.
+
+## Frontend Shows Default/Nginx Page
+
+### Problem
+After fixing the port mapping issue, you might still see a default nginx page if the frontend wasn't built correctly.
 
 ### Why This Happens
 The frontend container serves a static build of the React application. If you see a default page, it means:
