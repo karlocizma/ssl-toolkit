@@ -83,7 +83,8 @@ def check_ssl_certificate(hostname, port=443, timeout=10):
 def check_hostname_validity(hostname, cert_info):
     """Check if certificate is valid for the given hostname"""
     common_name = cert_info.get('subject', {}).get('common_name')
-    if common_name and (common_name == hostname or common_name == f'*.{hostname.split('.', 1)[-1]}'):
+    wildcard_domain = '*.' + hostname.split('.', 1)[-1] if '.' in hostname else ''
+    if common_name and (common_name == hostname or common_name == wildcard_domain):
         return True
 
     san_list = cert_info.get('subject_alternative_names', [])
