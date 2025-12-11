@@ -1,6 +1,6 @@
 {
-  "short_name": "SSL Toolkit",
-  "name": "SSL Certificate Toolkit",
+  "short_name": "SecNet Toolkit",
+  "name": "Security & Network Toolkit",
   "icons": [
     {
       "src": "favicon.ico",

@@ -25,141 +25,144 @@ import {
   Dns as DnsIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
-const tools = [
+const getTools = (t) => [
   {
-    title: 'Certificate Decoder',
-    description: 'Decode and analyze SSL/TLS certificates',
+    titleKey: 'tools.certificateDecoder.title',
+    descriptionKey: 'tools.certificateDecoder.description',
     icon: <SecurityIcon sx={{ fontSize: 40 }} />,
     path: '/certificate-decoder',
     color: 'primary',
-    features: ['Parse certificate details', 'View subject/issuer info', 'Check validity dates', 'Show fingerprints']
+    featuresKeys: ['tools.certificateDecoder.features.0', 'tools.certificateDecoder.features.1', 'tools.certificateDecoder.features.2', 'tools.certificateDecoder.features.3']
   },
   {
-    title: 'CSR Generator',
-    description: 'Generate Certificate Signing Requests',
+    titleKey: 'tools.csrGenerator.title',
+    descriptionKey: 'tools.csrGenerator.description',
     icon: <DescriptionIcon sx={{ fontSize: 40 }} />,
     path: '/csr-generator',
     color: 'secondary',
-    features: ['Create CSR', 'Generate private key', 'Add Subject Alternative Names', 'RSA/EC key support']
+    featuresKeys: ['tools.csrGenerator.features.0', 'tools.csrGenerator.features.1', 'tools.csrGenerator.features.2', 'tools.csrGenerator.features.3']
   },
   {
-    title: 'CSR Decoder',
-    description: 'Decode and analyze Certificate Signing Requests',
+    titleKey: 'tools.csrDecoder.title',
+    descriptionKey: 'tools.csrDecoder.description',
     icon: <DescriptionIcon sx={{ fontSize: 40 }} />,
     path: '/csr-decoder',
     color: 'info',
-    features: ['Parse CSR details', 'View subject info', 'Check signature', 'Extract SANs']
+    featuresKeys: ['tools.csrDecoder.features.0', 'tools.csrDecoder.features.1', 'tools.csrDecoder.features.2', 'tools.csrDecoder.features.3']
   },
   {
-    title: 'SSL Checker',
-    description: 'Check SSL certificates for domains',
+    titleKey: 'tools.sslChecker.title',
+    descriptionKey: 'tools.sslChecker.description',
     icon: <SearchIcon sx={{ fontSize: 40 }} />,
     path: '/ssl-checker',
     color: 'success',
-    features: ['Domain SSL check', 'Certificate validation', 'Expiration monitoring', 'Chain verification']
+    featuresKeys: ['tools.sslChecker.features.0', 'tools.sslChecker.features.1', 'tools.sslChecker.features.2', 'tools.sslChecker.features.3']
   },
   {
-    title: 'Certificate Converter',
-    description: 'Convert certificates between formats',
+    titleKey: 'tools.certificateConverter.title',
+    descriptionKey: 'tools.certificateConverter.description',
     icon: <TransformIcon sx={{ fontSize: 40 }} />,
     path: '/certificate-converter',
     color: 'warning',
-    features: ['PFX to PEM', 'PEM to DER', 'Format conversion', 'Batch processing']
+    featuresKeys: ['tools.certificateConverter.features.0', 'tools.certificateConverter.features.1', 'tools.certificateConverter.features.2', 'tools.certificateConverter.features.3']
   },
   {
-    title: 'Key Generator',
-    description: 'Generate RSA and EC private keys',
+    titleKey: 'tools.keyGenerator.title',
+    descriptionKey: 'tools.keyGenerator.description',
     icon: <VpnKeyIcon sx={{ fontSize: 40 }} />,
     path: '/key-generator',
     color: 'error',
-    features: ['RSA key generation', 'EC key generation', 'Multiple key sizes', 'Secure generation']
+    featuresKeys: ['tools.keyGenerator.features.0', 'tools.keyGenerator.features.1', 'tools.keyGenerator.features.2', 'tools.keyGenerator.features.3']
   },
   {
-    title: 'Key Validator',
-    description: 'Validate and analyze private keys',
+    titleKey: 'tools.keyValidator.title',
+    descriptionKey: 'tools.keyValidator.description',
     icon: <VerifiedUserIcon sx={{ fontSize: 40 }} />,
     path: '/key-validator',
     color: 'primary',
-    features: ['Key validation', 'Algorithm detection', 'Key size check', 'Encryption status']
+    featuresKeys: ['tools.keyValidator.features.0', 'tools.keyValidator.features.1', 'tools.keyValidator.features.2', 'tools.keyValidator.features.3']
   },
   {
-    title: 'Key-Certificate Match',
-    description: 'Check if private key matches certificate',
+    titleKey: 'tools.keyCertificateMatch.title',
+    descriptionKey: 'tools.keyCertificateMatch.description',
     icon: <LinkIcon sx={{ fontSize: 40 }} />,
     path: '/key-certificate-match',
     color: 'secondary',
-    features: ['Key-cert matching', 'Public key comparison', 'Validation check', 'Security verification']
+    featuresKeys: ['tools.keyCertificateMatch.features.0', 'tools.keyCertificateMatch.features.1', 'tools.keyCertificateMatch.features.2', 'tools.keyCertificateMatch.features.3']
   },
   {
-    title: 'Certificate Chain Checker',
-    description: 'Analyze certificate chains',
+    titleKey: 'tools.certificateChainChecker.title',
+    descriptionKey: 'tools.certificateChainChecker.description',
     icon: <AccountTreeIcon sx={{ fontSize: 40 }} />,
     path: '/certificate-chain-checker',
     color: 'info',
-    features: ['Chain validation', 'Root/intermediate certs', 'Trust path', 'Chain completeness']
+    featuresKeys: ['tools.certificateChainChecker.features.0', 'tools.certificateChainChecker.features.1', 'tools.certificateChainChecker.features.2', 'tools.certificateChainChecker.features.3']
   },
   {
-    title: 'DMARC Manager',
-    description: 'Generate and validate DMARC policies',
+    titleKey: 'tools.dmarcManager.title',
+    descriptionKey: 'tools.dmarcManager.description',
     icon: <PolicyIcon sx={{ fontSize: 40 }} />,
     path: '/dmarc-tool',
     color: 'success',
-    features: ['Record builder', 'DNS validation', 'Reporting guidance', 'Policy insights']
+    featuresKeys: ['tools.dmarcManager.features.0', 'tools.dmarcManager.features.1', 'tools.dmarcManager.features.2', 'tools.dmarcManager.features.3']
   },
   {
-    title: 'SPF Manager',
-    description: 'Craft resilient SPF TXT records',
+    titleKey: 'tools.spfManager.title',
+    descriptionKey: 'tools.spfManager.description',
     icon: <WbSunnyIcon sx={{ fontSize: 40 }} />,
     path: '/spf-tool',
     color: 'warning',
-    features: ['Generator', 'Mechanism review', 'DNS lookup checks', 'Policy linting']
+    featuresKeys: ['tools.spfManager.features.0', 'tools.spfManager.features.1', 'tools.spfManager.features.2', 'tools.spfManager.features.3']
   },
   {
-    title: 'Email Header Analyzer',
-    description: 'Trace mail flow and auth results',
+    titleKey: 'tools.emailHeaderAnalyzer.title',
+    descriptionKey: 'tools.emailHeaderAnalyzer.description',
     icon: <MarkEmailReadIcon sx={{ fontSize: 40 }} />,
     path: '/email-header-analyzer',
     color: 'secondary',
-    features: ['Received timeline', 'SPF/DKIM/DMARC status', 'Hop summary', 'Anomaly detection']
+    featuresKeys: ['tools.emailHeaderAnalyzer.features.0', 'tools.emailHeaderAnalyzer.features.1', 'tools.emailHeaderAnalyzer.features.2', 'tools.emailHeaderAnalyzer.features.3']
   },
   {
-    title: 'Password Toolkit',
-    description: 'Generate secrets with hashes & encryption',
+    titleKey: 'tools.passwordToolkit.title',
+    descriptionKey: 'tools.passwordToolkit.description',
     icon: <PasswordIcon sx={{ fontSize: 40 }} />,
     path: '/password-toolkit',
     color: 'error',
-    features: ['Entropy slider', 'Multiple hashes', 'Fernet encryption', 'Policy presets']
+    featuresKeys: ['tools.passwordToolkit.features.0', 'tools.passwordToolkit.features.1', 'tools.passwordToolkit.features.2', 'tools.passwordToolkit.features.3']
   },
   {
-    title: 'DNS Diagnostics',
-    description: 'Inspect core DNS records',
+    titleKey: 'tools.dnsDiagnostics.title',
+    descriptionKey: 'tools.dnsDiagnostics.description',
     icon: <DnsIcon sx={{ fontSize: 40 }} />,
     path: '/dns-diagnostics',
     color: 'primary',
-    features: ['Multi-record lookup', 'TTL visibility', 'MX/TXT focus', 'Email readiness']
+    featuresKeys: ['tools.dnsDiagnostics.features.0', 'tools.dnsDiagnostics.features.1', 'tools.dnsDiagnostics.features.2', 'tools.dnsDiagnostics.features.3']
   }
 ];
 
 function Dashboard() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const tools = getTools(t);
 
   return (
     <Box>
       <Typography variant="h4" component="h1" gutterBottom>
-        SSL Certificate Toolkit
+        {t('app.name')}
       </Typography>
       <Typography variant="body1" color="text.secondary" paragraph>
-        A comprehensive suite of tools for SSL/TLS certificate management, email authentication, and DNS hygiene. Choose a tool below to get started.
+        {t('app.tagline')}
       </Typography>
-      
+
       <Grid container spacing={3} sx={{ mt: 2 }}>
         {tools.map((tool, index) => (
           <Grid item xs={12} sm={6} md={4} key={index}>
-            <Card 
-              sx={{ 
-                height: '100%', 
-                display: 'flex', 
+            <Card
+              sx={{
+                height: '100%',
+                display: 'flex',
                 flexDirection: 'column',
                 transition: 'transform 0.2s',
                 '&:hover': {
@@ -174,17 +177,17 @@ function Dashboard() {
                     {tool.icon}
                   </Box>
                   <Typography variant="h6" component="h2">
-                    {tool.title}
+                    {t(tool.titleKey)}
                   </Typography>
                 </Box>
                 <Typography variant="body2" color="text.secondary" paragraph>
-                  {tool.description}
+                  {t(tool.descriptionKey)}
                 </Typography>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {tool.features.map((feature, idx) => (
-                    <Chip 
+                  {tool.featuresKeys.map((featureKey, idx) => (
+                    <Chip
                       key={idx}
-                      label={feature}
+                      label={t(featureKey)}
                       size="small"
                       variant="outlined"
                       color={tool.color}
@@ -193,27 +196,27 @@ function Dashboard() {
                 </Box>
               </CardContent>
               <CardActions>
-                <Button 
-                  size="small" 
+                <Button
+                  size="small"
                   color={tool.color}
                   onClick={() => navigate(tool.path)}
                   variant="contained"
                   fullWidth
                 >
-                  Open Tool
+                  {t('dashboard.openTool')}
                 </Button>
               </CardActions>
             </Card>
           </Grid>
         ))}
       </Grid>
-      
+
       <Box sx={{ mt: 4, p: 3, bgcolor: 'background.paper', borderRadius: 2 }}>
         <Typography variant="h6" gutterBottom>
-          About SSL Toolkit
+          {t('dashboard.aboutTitle')}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          This toolkit provides a comprehensive set of tools for SSL/TLS certificate management, email authentication workflows, and DNS troubleshooting. All operations are performed securely in your browser or on our secure servers.
+          {t('dashboard.aboutDescription')}
         </Typography>
       </Box>
     </Box>

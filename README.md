@@ -1,10 +1,10 @@
-# SSL Certificate Toolkit
+# Security & Network Toolkit
 
-A comprehensive web-based SSL/TLS certificate management toolkit built with Flask (Python) backend and React frontend, running in Docker containers.
+A comprehensive web-based security, SSL/TLS certificate management, email authentication, and network diagnostic toolkit built with Flask (Python) backend and React frontend, running in Docker containers.
 
 ## Features
 
-### Core SSL Tools
+### SSL/TLS Certificate Tools
 - **Certificate Decoder** - Decode and analyze SSL/TLS certificates
 - **CSR Generator** - Generate Certificate Signing Requests with private keys
 - **CSR Decoder** - Decode and analyze Certificate Signing Requests
@@ -14,6 +14,15 @@ A comprehensive web-based SSL/TLS certificate management toolkit built with Flas
 - **Key Validator** - Validate and analyze private keys
 - **Key-Certificate Match** - Verify if private key matches certificate
 - **Certificate Chain Checker** - Analyze and validate certificate chains
+
+### Email Security Tools
+- **DMARC Manager** - Generate and validate DMARC policies
+- **SPF Manager** - Craft resilient SPF TXT records
+- **Email Header Analyzer** - Trace mail flow and authentication results
+
+### Security & Network Tools
+- **Password Toolkit** - Generate secure passwords with hashing and encryption
+- **DNS Diagnostics** - Inspect DNS records (A, AAAA, MX, TXT, etc.)
 
 ### Advanced Features
 - **Certificate Fingerprint Generator** - Generate SHA-1, SHA-256 fingerprints
@@ -86,6 +95,14 @@ A comprehensive web-based SSL/TLS certificate management toolkit built with Flas
 - Quick fix: Run `./rebuild-frontend.sh` (provided in the repository)
 - Or manually: `docker compose build frontend --no-cache && docker compose up -d`
 - See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for detailed solutions
+
+### Language Support
+
+The application supports multiple languages:
+- **English** (default)
+- **German** (Deutsch)
+
+Use the language switcher in the top navigation bar to change languages.
 
 ### Development Mode
 
@@ -359,5 +376,5 @@ Kubernetes manifests are available in the `k8s/` directory (planned).
 
 ---
 
-**Built with ❤️ for the SSL/TLS community**
+**Built with ❤️ for the security, SSL/TLS, and network administration community**
 

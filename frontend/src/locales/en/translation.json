@@ -1,0 +1,115 @@
+{
+  "app": {
+    "name": "Security & Network Toolkit",
+    "shortName": "SecNet Toolkit",
+    "tagline": "Comprehensive Security, SSL/TLS, Email & Network Tools"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "certificateDecoder": "Certificate Decoder",
+    "csrGenerator": "CSR Generator",
+    "csrDecoder": "CSR Decoder",
+    "sslChecker": "SSL Checker",
+    "certificateConverter": "Certificate Converter",
+    "keyGenerator": "Key Generator",
+    "keyValidator": "Key Validator",
+    "keyCertificateMatch": "Key-Certificate Match",
+    "certificateChainChecker": "Certificate Chain Checker",
+    "dmarcManager": "DMARC Manager",
+    "spfManager": "SPF Manager",
+    "emailHeaderAnalyzer": "Email Header Analyzer",
+    "passwordToolkit": "Password Toolkit",
+    "dnsDiagnostics": "DNS Diagnostics"
+  },
+  "dashboard": {
+    "welcome": "Welcome to Security & Network Toolkit",
+    "subtitle": "Professional tools for SSL/TLS certificates, email security, and network diagnostics",
+    "selectTool": "Select a tool to get started"
+  },
+  "tools": {
+    "certificateDecoder": {
+      "title": "Certificate Decoder",
+      "description": "Decode and analyze SSL/TLS certificates",
+      "features": ["Parse certificate details", "View subject/issuer info", "Check validity dates", "Show fingerprints"]
+    },
+    "csrGenerator": {
+      "title": "CSR Generator",
+      "description": "Generate Certificate Signing Requests",
+      "features": ["Create CSR", "Generate private key", "Add Subject Alternative Names", "RSA/EC key support"]
+    },
+    "csrDecoder": {
+      "title": "CSR Decoder",
+      "description": "Decode and analyze Certificate Signing Requests",
+      "features": ["Parse CSR details", "View subject info", "Check signature", "Extract SANs"]
+    },
+    "sslChecker": {
+      "title": "SSL Checker",
+      "description": "Check SSL certificates for domains",
+      "features": ["Domain SSL check", "Certificate validation", "Expiration monitoring", "Chain verification"]
+    },
+    "certificateConverter": {
+      "title": "Certificate Converter",
+      "description": "Convert certificates between formats",
+      "features": ["PFX to PEM", "PEM to DER", "Format conversion", "Batch processing"]
+    },
+    "keyGenerator": {
+      "title": "Key Generator",
+      "description": "Generate RSA and EC private keys",
+      "features": ["RSA key generation", "EC key generation", "Multiple key sizes", "Secure generation"]
+    },
+    "keyValidator": {
+      "title": "Key Validator",
+      "description": "Validate and analyze private keys",
+      "features": ["Key validation", "Format detection", "Password protection check", "Key info extraction"]
+    },
+    "keyCertificateMatch": {
+      "title": "Key-Certificate Match",
+      "description": "Verify if private key matches certificate",
+      "features": ["Key-cert matching", "Modulus comparison", "Compatibility check", "Security validation"]
+    },
+    "certificateChainChecker": {
+      "title": "Certificate Chain Checker",
+      "description": "Analyze and validate certificate chains",
+      "features": ["Chain validation", "Trust path analysis", "Root CA verification", "Intermediate check"]
+    },
+    "dmarcManager": {
+      "title": "DMARC Manager",
+      "description": "Manage DMARC email authentication policies",
+      "features": ["DMARC record generator", "Policy configuration", "DNS record validation", "Best practices"]
+    },
+    "spfManager": {
+      "title": "SPF Manager",
+      "description": "Manage SPF email authentication records",
+      "features": ["SPF record builder", "Include mechanisms", "IP authorization", "Validation tools"]
+    },
+    "emailHeaderAnalyzer": {
+      "title": "Email Header Analyzer",
+      "description": "Analyze email headers for security and routing",
+      "features": ["Header parsing", "Spam score analysis", "Route tracing", "Authentication check"]
+    },
+    "passwordToolkit": {
+      "title": "Password Toolkit",
+      "description": "Generate and analyze secure passwords",
+      "features": ["Password generator", "Strength analyzer", "Hash calculator", "Security tips"]
+    },
+    "dnsDiagnostics": {
+      "title": "DNS Diagnostics",
+      "description": "Diagnose DNS records and configuration",
+      "features": ["DNS lookup", "Record validation", "Propagation check", "Troubleshooting"]
+    }
+  },
+  "common": {
+    "openTool": "Open Tool",
+    "comingSoon": "Coming Soon",
+    "error": "Error",
+    "success": "Success",
+    "loading": "Loading...",
+    "language": "Language"
+  },
+  "categories": {
+    "ssl": "SSL/TLS Tools",
+    "email": "Email Security",
+    "network": "Network Diagnostics",
+    "security": "Security Tools"
+  }
+}
