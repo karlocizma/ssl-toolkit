@@ -72,7 +72,7 @@ networks:
   ssl-toolkit-network:
     driver: bridge
   traefik:
-    external: true
+    driver: bridge
 
 volumes:
   ssl-data:
