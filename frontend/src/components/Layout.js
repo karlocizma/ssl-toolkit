@@ -12,6 +12,9 @@ import {
   Toolbar,
   Typography,
   useTheme,
+  Menu,
+  MenuItem,
+  Button,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -29,49 +32,66 @@ import {
   MarkEmailRead as MarkEmailReadIcon,
   Password as PasswordIcon,
   Dns as DnsIcon,
+  Language as LanguageIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const drawerWidth = 240;
 
-const menuItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-  { text: 'Certificate Decoder', icon: <SecurityIcon />, path: '/certificate-decoder' },
-  { text: 'CSR Generator', icon: <DescriptionIcon />, path: '/csr-generator' },
-  { text: 'CSR Decoder', icon: <DescriptionIcon />, path: '/csr-decoder' },
-  { text: 'SSL Checker', icon: <SearchIcon />, path: '/ssl-checker' },
-  { text: 'Certificate Converter', icon: <TransformIcon />, path: '/certificate-converter' },
-  { text: 'Key Generator', icon: <VpnKeyIcon />, path: '/key-generator' },
-  { text: 'Key Validator', icon: <VerifiedUserIcon />, path: '/key-validator' },
-  { text: 'Key-Certificate Match', icon: <LinkIcon />, path: '/key-certificate-match' },
-  { text: 'Certificate Chain Checker', icon: <AccountTreeIcon />, path: '/certificate-chain-checker' },
-  { text: 'DMARC Manager', icon: <PolicyIcon />, path: '/dmarc-tool' },
-  { text: 'SPF Manager', icon: <WbSunnyIcon />, path: '/spf-tool' },
-  { text: 'Email Header Analyzer', icon: <MarkEmailReadIcon />, path: '/email-header-analyzer' },
-  { text: 'Password Toolkit', icon: <PasswordIcon />, path: '/password-toolkit' },
-  { text: 'DNS Diagnostics', icon: <DnsIcon />, path: '/dns-diagnostics' },
-];
-
 function Layout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [langAnchorEl, setLangAnchorEl] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
+  const { t, i18n } = useTranslation();
+
+  const menuItems = [
+    { textKey: 'nav.dashboard', icon: <DashboardIcon />, path: '/' },
+    { textKey: 'nav.certificateDecoder', icon: <SecurityIcon />, path: '/certificate-decoder' },
+    { textKey: 'nav.csrGenerator', icon: <DescriptionIcon />, path: '/csr-generator' },
+    { textKey: 'nav.csrDecoder', icon: <DescriptionIcon />, path: '/csr-decoder' },
+    { textKey: 'nav.sslChecker', icon: <SearchIcon />, path: '/ssl-checker' },
+    { textKey: 'nav.certificateConverter', icon: <TransformIcon />, path: '/certificate-converter' },
+    { textKey: 'nav.keyGenerator', icon: <VpnKeyIcon />, path: '/key-generator' },
+    { textKey: 'nav.keyValidator', icon: <VerifiedUserIcon />, path: '/key-validator' },
+    { textKey: 'nav.keyCertificateMatch', icon: <LinkIcon />, path: '/key-certificate-match' },
+    { textKey: 'nav.certificateChainChecker', icon: <AccountTreeIcon />, path: '/certificate-chain-checker' },
+    { textKey: 'nav.dmarcManager', icon: <PolicyIcon />, path: '/dmarc-tool' },
+    { textKey: 'nav.spfManager', icon: <WbSunnyIcon />, path: '/spf-tool' },
+    { textKey: 'nav.emailHeaderAnalyzer', icon: <MarkEmailReadIcon />, path: '/email-header-analyzer' },
+    { textKey: 'nav.passwordToolkit', icon: <PasswordIcon />, path: '/password-toolkit' },
+    { textKey: 'nav.dnsDiagnostics', icon: <DnsIcon />, path: '/dns-diagnostics' },
+  ];
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
 
+  const handleLangMenuOpen = (event) => {
+    setLangAnchorEl(event.currentTarget);
+  };
+
+  const handleLangMenuClose = () => {
+    setLangAnchorEl(null);
+  };
+
+  const handleLanguageChange = (lang) => {
+    i18n.changeLanguage(lang);
+    handleLangMenuClose();
+  };
+
   const drawer = (
     <div>
       <Toolbar>
-        <Typography variant="h6" noWrap component="div">
-          SSL Toolkit
+        <Typography variant="h6" noWrap component="div" sx={{ fontSize: '0.95rem' }}>
+          {t('app.shortName')}
         </Typography>
       </Toolbar>
       <List>
         {menuItems.map((item) => (
-          <ListItem key={item.text} disablePadding>
+          <ListItem key={item.textKey} disablePadding>
             <ListItemButton
               selected={location.pathname === item.path}
               onClick={() => {
@@ -80,7 +100,7 @@ function Layout({ children }) {
               }}
             >
               <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.text} />
+              <ListItemText primary={t(item.textKey)} />
             </ListItemButton>
           </ListItem>
         ))}
@@ -107,9 +127,34 @@ function Layout({ children }) {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div">
-            SSL Certificate Toolkit
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+            {t('app.name')}
           </Typography>
+          <Button
+            color="inherit"
+            startIcon={<LanguageIcon />}
+            onClick={handleLangMenuOpen}
+          >
+            {i18n.language.toUpperCase()}
+          </Button>
+          <Menu
+            anchorEl={langAnchorEl}
+            open={Boolean(langAnchorEl)}
+            onClose={handleLangMenuClose}
+          >
+            <MenuItem
+              onClick={() => handleLanguageChange('en')}
+              selected={i18n.language === 'en'}
+            >
+              English
+            </MenuItem>
+            <MenuItem
+              onClick={() => handleLanguageChange('de')}
+              selected={i18n.language === 'de'}
+            >
+              Deutsch
+            </MenuItem>
+          </Menu>
         </Toolbar>
       </AppBar>
       <Box

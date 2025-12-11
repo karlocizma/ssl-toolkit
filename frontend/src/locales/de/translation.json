@@ -1,0 +1,115 @@
+{
+  "app": {
+    "name": "Sicherheits- & Netzwerk-Toolkit",
+    "shortName": "SecNet Toolkit",
+    "tagline": "Umfassende Sicherheits-, SSL/TLS-, E-Mail- & Netzwerk-Tools"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "certificateDecoder": "Zertifikat-Decoder",
+    "csrGenerator": "CSR-Generator",
+    "csrDecoder": "CSR-Decoder",
+    "sslChecker": "SSL-Prüfer",
+    "certificateConverter": "Zertifikat-Konverter",
+    "keyGenerator": "Schlüssel-Generator",
+    "keyValidator": "Schlüssel-Prüfer",
+    "keyCertificateMatch": "Schlüssel-Zertifikat-Abgleich",
+    "certificateChainChecker": "Zertifikatsketten-Prüfer",
+    "dmarcManager": "DMARC-Manager",
+    "spfManager": "SPF-Manager",
+    "emailHeaderAnalyzer": "E-Mail-Header-Analyzer",
+    "passwordToolkit": "Passwort-Toolkit",
+    "dnsDiagnostics": "DNS-Diagnose"
+  },
+  "dashboard": {
+    "welcome": "Willkommen beim Sicherheits- & Netzwerk-Toolkit",
+    "subtitle": "Professionelle Tools für SSL/TLS-Zertifikate, E-Mail-Sicherheit und Netzwerkdiagnose",
+    "selectTool": "Wählen Sie ein Tool aus, um zu beginnen"
+  },
+  "tools": {
+    "certificateDecoder": {
+      "title": "Zertifikat-Decoder",
+      "description": "SSL/TLS-Zertifikate dekodieren und analysieren",
+      "features": ["Zertifikatsdetails analysieren", "Betreff-/Aussteller-Info anzeigen", "Gültigkeitsdaten prüfen", "Fingerabdrücke anzeigen"]
+    },
+    "csrGenerator": {
+      "title": "CSR-Generator",
+      "description": "Zertifikatsignierungsanforderungen generieren",
+      "features": ["CSR erstellen", "Privaten Schlüssel generieren", "Subject Alternative Names hinzufügen", "RSA-/EC-Schlüssel-Unterstützung"]
+    },
+    "csrDecoder": {
+      "title": "CSR-Decoder",
+      "description": "Zertifikatsignierungsanforderungen dekodieren und analysieren",
+      "features": ["CSR-Details analysieren", "Betreff-Info anzeigen", "Signatur prüfen", "SANs extrahieren"]
+    },
+    "sslChecker": {
+      "title": "SSL-Prüfer",
+      "description": "SSL-Zertifikate für Domains prüfen",
+      "features": ["Domain-SSL-Prüfung", "Zertifikatsvalidierung", "Ablaufüberwachung", "Kettenverifizierung"]
+    },
+    "certificateConverter": {
+      "title": "Zertifikat-Konverter",
+      "description": "Zertifikate zwischen Formaten konvertieren",
+      "features": ["PFX zu PEM", "PEM zu DER", "Formatkonvertierung", "Stapelverarbeitung"]
+    },
+    "keyGenerator": {
+      "title": "Schlüssel-Generator",
+      "description": "RSA- und EC-Private-Schlüssel generieren",
+      "features": ["RSA-Schlüsselgenerierung", "EC-Schlüsselgenerierung", "Mehrere Schlüsselgrößen", "Sichere Generierung"]
+    },
+    "keyValidator": {
+      "title": "Schlüssel-Prüfer",
+      "description": "Private Schlüssel validieren und analysieren",
+      "features": ["Schlüsselvalidierung", "Formaterkennung", "Passwortschutz-Prüfung", "Schlüsselinfo-Extraktion"]
+    },
+    "keyCertificateMatch": {
+      "title": "Schlüssel-Zertifikat-Abgleich",
+      "description": "Prüfen, ob privater Schlüssel zum Zertifikat passt",
+      "features": ["Schlüssel-Zertifikat-Abgleich", "Modulus-Vergleich", "Kompatibilitätsprüfung", "Sicherheitsvalidierung"]
+    },
+    "certificateChainChecker": {
+      "title": "Zertifikatsketten-Prüfer",
+      "description": "Zertifikatsketten analysieren und validieren",
+      "features": ["Kettenvalidierung", "Vertrauenspfad-Analyse", "Root-CA-Verifizierung", "Zwischen-Prüfung"]
+    },
+    "dmarcManager": {
+      "title": "DMARC-Manager",
+      "description": "DMARC-E-Mail-Authentifizierungsrichtlinien verwalten",
+      "features": ["DMARC-Datensatz-Generator", "Richtlinienkonfiguration", "DNS-Datensatz-Validierung", "Best Practices"]
+    },
+    "spfManager": {
+      "title": "SPF-Manager",
+      "description": "SPF-E-Mail-Authentifizierungsdatensätze verwalten",
+      "features": ["SPF-Datensatz-Builder", "Include-Mechanismen", "IP-Autorisierung", "Validierungstools"]
+    },
+    "emailHeaderAnalyzer": {
+      "title": "E-Mail-Header-Analyzer",
+      "description": "E-Mail-Header für Sicherheit und Routing analysieren",
+      "features": ["Header-Parsing", "Spam-Score-Analyse", "Route-Verfolgung", "Authentifizierungsprüfung"]
+    },
+    "passwordToolkit": {
+      "title": "Passwort-Toolkit",
+      "description": "Sichere Passwörter generieren und analysieren",
+      "features": ["Passwort-Generator", "Stärke-Analyzer", "Hash-Rechner", "Sicherheitstipps"]
+    },
+    "dnsDiagnostics": {
+      "title": "DNS-Diagnose",
+      "description": "DNS-Einträge und -Konfiguration diagnostizieren",
+      "features": ["DNS-Lookup", "Datensatz-Validierung", "Propagierungsprüfung", "Fehlerbehebung"]
+    }
+  },
+  "common": {
+    "openTool": "Tool öffnen",
+    "comingSoon": "Demnächst verfügbar",
+    "error": "Fehler",
+    "success": "Erfolg",
+    "loading": "Laden...",
+    "language": "Sprache"
+  },
+  "categories": {
+    "ssl": "SSL/TLS-Tools",
+    "email": "E-Mail-Sicherheit",
+    "network": "Netzwerkdiagnose",
+    "security": "Sicherheitstools"
+  }
+}
