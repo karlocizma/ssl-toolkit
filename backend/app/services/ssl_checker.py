@@ -259,24 +259,233 @@ def check_ssl_labs_rating(hostname):
 def check_ocsp_status(certificate_pem):
     """Check OCSP status of a certificate"""
     try:
-        return {
-            'status': 'Not implemented',
-            'note': 'OCSP checking would be implemented here'
-        }
+        from cryptography import x509
+        from cryptography.hazmat.backends import default_backend
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography.x509 import ocsp as ocsp_module
+        import requests
+        
+        cert = x509.load_pem_x509_certificate(certificate_pem.encode() if isinstance(certificate_pem, str) else certificate_pem, default_backend())
+        
+        ocsp_urls = []
+        try:
+            aia_ext = cert.extensions.get_extension_for_oid(x509.ExtensionOID.AUTHORITY_INFORMATION_ACCESS)
+            for desc in aia_ext.value:
+                if desc.access_method == x509.OID_OCSP:
+                    ocsp_urls.append(desc.access_location.value)
+        except x509.ExtensionNotFound:
+            return {
+                'status': 'unavailable',
+                'message': 'No OCSP URL found in certificate',
+                'checked': False
+            }
+        
+        if not ocsp_urls:
+            return {
+                'status': 'unavailable',
+                'message': 'No OCSP responder URL found',
+                'checked': False
+            }
+        
+        ocsp_url = ocsp_urls[0]
+        
+        try:
+            issuer_cert = _get_issuer_certificate(cert)
+            if not issuer_cert:
+                return {
+                    'status': 'unknown',
+                    'message': 'Could not obtain issuer certificate for OCSP request',
+                    'ocsp_url': ocsp_url,
+                    'checked': False
+                }
+            
+            builder = ocsp_module.OCSPRequestBuilder()
+            builder = builder.add_certificate(cert, issuer_cert, hashes.SHA256())
+            ocsp_request = builder.build()
+            
+            ocsp_request_data = ocsp_request.public_bytes(serialization.Encoding.DER)
+            
+            response = requests.post(
+                ocsp_url,
+                data=ocsp_request_data,
+                headers={'Content-Type': 'application/ocsp-request'},
+                timeout=10
+            )
+            
+            if response.status_code != 200:
+                return {
+                    'status': 'error',
+                    'message': f'OCSP responder returned status code {response.status_code}',
+                    'ocsp_url': ocsp_url,
+                    'checked': False
+                }
+            
+            ocsp_response = ocsp_module.load_der_ocsp_response(response.content)
+            
+            if ocsp_response.response_status != ocsp_module.OCSPResponseStatus.SUCCESSFUL:
+                return {
+                    'status': 'error',
+                    'message': f'OCSP response status: {ocsp_response.response_status}',
+                    'ocsp_url': ocsp_url,
+                    'checked': False
+                }
+            
+            cert_status = ocsp_response.certificate_status
+            
+            if cert_status == ocsp_module.OCSPCertStatus.GOOD:
+                status_str = 'good'
+                message = 'Certificate is not revoked'
+            elif cert_status == ocsp_module.OCSPCertStatus.REVOKED:
+                status_str = 'revoked'
+                message = 'Certificate has been revoked'
+                revocation_time = ocsp_response.revocation_time
+                revocation_reason = ocsp_response.revocation_reason
+                return {
+                    'status': status_str,
+                    'message': message,
+                    'ocsp_url': ocsp_url,
+                    'checked': True,
+                    'revocation_time': revocation_time.isoformat() if revocation_time else None,
+                    'revocation_reason': str(revocation_reason) if revocation_reason else None
+                }
+            else:
+                status_str = 'unknown'
+                message = 'Certificate status is unknown'
+            
+            return {
+                'status': status_str,
+                'message': message,
+                'ocsp_url': ocsp_url,
+                'checked': True,
+                'produced_at': ocsp_response.produced_at.isoformat() if hasattr(ocsp_response, 'produced_at') and ocsp_response.produced_at else None,
+                'this_update': ocsp_response.this_update.isoformat() if hasattr(ocsp_response, 'this_update') and ocsp_response.this_update else None,
+                'next_update': ocsp_response.next_update.isoformat() if hasattr(ocsp_response, 'next_update') and ocsp_response.next_update else None
+            }
+            
+        except requests.RequestException as e:
+            return {
+                'status': 'error',
+                'message': f'Failed to connect to OCSP responder: {str(e)}',
+                'ocsp_url': ocsp_url,
+                'checked': False
+            }
+            
     except Exception as e:
         return {
-            'error': str(e)
+            'status': 'error',
+            'message': f'OCSP check failed: {str(e)}',
+            'checked': False
         }
+
+
+def _get_issuer_certificate(cert):
+    """Attempt to retrieve issuer certificate from AIA extension"""
+    try:
+        from cryptography import x509
+        from cryptography.hazmat.backends import default_backend
+        import requests
+        
+        try:
+            aia_ext = cert.extensions.get_extension_for_oid(x509.ExtensionOID.AUTHORITY_INFORMATION_ACCESS)
+            for desc in aia_ext.value:
+                if desc.access_method == x509.OID_CA_ISSUERS:
+                    issuer_url = desc.access_location.value
+                    response = requests.get(issuer_url, timeout=10)
+                    if response.status_code == 200:
+                        try:
+                            issuer_cert = x509.load_der_x509_certificate(response.content, default_backend())
+                            return issuer_cert
+                        except Exception:
+                            issuer_cert = x509.load_pem_x509_certificate(response.content, default_backend())
+                            return issuer_cert
+        except x509.ExtensionNotFound:
+            pass
+        
+        return None
+        
+    except Exception:
+        return None
 
 
 def check_crl_status(certificate_pem):
     """Check CRL status of a certificate"""
     try:
+        from cryptography import x509
+        from cryptography.hazmat.backends import default_backend
+        import requests
+        
+        cert = x509.load_pem_x509_certificate(certificate_pem.encode() if isinstance(certificate_pem, str) else certificate_pem, default_backend())
+        
+        crl_urls = []
+        try:
+            crl_ext = cert.extensions.get_extension_for_oid(x509.ExtensionOID.CRL_DISTRIBUTION_POINTS)
+            for dist_point in crl_ext.value:
+                if dist_point.full_name:
+                    for general_name in dist_point.full_name:
+                        if isinstance(general_name, x509.UniformResourceIdentifier):
+                            crl_urls.append(general_name.value)
+        except x509.ExtensionNotFound:
+            return {
+                'status': 'unavailable',
+                'message': 'No CRL distribution points found in certificate',
+                'checked': False
+            }
+        
+        if not crl_urls:
+            return {
+                'status': 'unavailable',
+                'message': 'No CRL URLs found',
+                'checked': False
+            }
+        
+        cert_serial = cert.serial_number
+        
+        for crl_url in crl_urls[:3]:
+            try:
+                response = requests.get(crl_url, timeout=15)
+                if response.status_code != 200:
+                    continue
+                
+                try:
+                    crl = x509.load_der_x509_crl(response.content, default_backend())
+                except Exception:
+                    crl = x509.load_pem_x509_crl(response.content, default_backend())
+                
+                for revoked_cert in crl:
+                    if revoked_cert.serial_number == cert_serial:
+                        return {
+                            'status': 'revoked',
+                            'message': 'Certificate has been revoked',
+                            'crl_url': crl_url,
+                            'checked': True,
+                            'revocation_date': revoked_cert.revocation_date.isoformat(),
+                            'revocation_reason': str(revoked_cert.extensions.get_extension_for_class(x509.CRLReason).value.reason) if revoked_cert.extensions else None
+                        }
+                
+                return {
+                    'status': 'good',
+                    'message': 'Certificate is not in the revocation list',
+                    'crl_url': crl_url,
+                    'checked': True,
+                    'last_update': crl.last_update.isoformat() if hasattr(crl, 'last_update') and crl.last_update else None,
+                    'next_update': crl.next_update.isoformat() if hasattr(crl, 'next_update') and crl.next_update else None
+                }
+                
+            except requests.RequestException:
+                continue
+            except Exception:
+                continue
+        
         return {
-            'status': 'Not implemented',
-            'note': 'CRL checking would be implemented here'
+            'status': 'error',
+            'message': 'Failed to retrieve or parse CRL from all distribution points',
+            'crl_urls': crl_urls,
+            'checked': False
         }
+        
     except Exception as e:
         return {
-            'error': str(e)
+            'status': 'error',
+            'message': f'CRL check failed: {str(e)}',
+            'checked': False
         }
