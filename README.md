@@ -75,9 +75,16 @@ A comprehensive web-based SSL/TLS certificate management toolkit built with Flas
    docker-compose up --build
    ```
 
+   This command builds all containers and starts the application. The initial build may take several minutes.
+
 3. **Access the application**
    - Open your browser and navigate to `http://localhost`
    - The application will be available on port 80
+   - The backend API will be available at `http://localhost/api`
+
+**Note**: If you see a default web server page instead of the application:
+- Run `docker-compose build frontend` to rebuild the frontend container
+- Then restart: `docker-compose up -d`
 
 ### Development Mode
 
@@ -111,7 +118,9 @@ REACT_APP_API_URL=/api
 
 ### SSL/HTTPS Configuration
 
-For HTTPS support:
+**Note:** HTTPS is disabled by default for development. The application runs on HTTP (port 80) out of the box.
+
+For HTTPS support in production:
 
 1. **Generate SSL certificates**
    ```bash
@@ -124,7 +133,94 @@ For HTTPS support:
    openssl dhparam -out certs/dhparam.pem 2048
    ```
 
-3. **Update nginx configuration** to enable HTTPS
+3. **Update nginx configuration**
+   - Edit `nginx/nginx.conf`
+   - Uncomment the HTTPS server block (lines 50-92)
+   - Restart containers: `docker-compose restart nginx`
+
+## Troubleshooting
+
+### Backend won't start - "Could not import module 'main'"
+
+**Issue**: The backend fails to start with an ASGI import error or module import error.
+
+**Solution**: This was fixed in commit `6bcdd31`. The backend now uses Gunicorn WSGI server instead of Flask development server. Pull the latest changes and rebuild:
+
+```bash
+git pull origin main
+docker-compose down
+docker-compose build backend
+docker-compose up -d
+```
+
+### Seeing Apache/Nginx default page
+
+**Issue**: When accessing `http://localhost`, you see a default web server page instead of the SSL Toolkit application.
+
+**Solution**: The frontend container needs to be rebuilt to include the React application:
+
+```bash
+docker-compose down
+docker-compose build frontend
+docker-compose up -d
+```
+
+### Nginx fails with SSL certificate error
+
+**Issue**: Nginx container fails to start with error about missing `/etc/nginx/ssl/cert.pem`.
+
+**Solution**: This was fixed in commit `f7cf54d`. HTTPS is now disabled by default for development. Pull the latest changes:
+
+```bash
+git pull origin main
+docker-compose restart nginx
+```
+
+To enable HTTPS, see the [SSL/HTTPS Configuration](#sslhttps-configuration) section above.
+
+### Python syntax error in ssl_checker.py
+
+**Issue**: Backend crashes with `SyntaxError: f-string: unmatched '('` in `ssl_checker.py:86`.
+
+**Solution**: This was fixed in commit `20ecb42`. Pull the latest changes and rebuild:
+
+```bash
+git pull origin main
+docker-compose build backend
+docker-compose up -d
+```
+
+### Port already in use
+
+**Issue**: Docker Compose fails with "port is already allocated".
+
+**Solution**: Another service is using port 80 or 5000. Either:
+
+1. Stop the conflicting service
+2. Or modify `docker-compose.yml` to use different ports:
+   ```yaml
+   nginx:
+     ports:
+       - "8080:80"  # Use port 8080 instead of 80
+   ```
+
+### Containers keep restarting
+
+**Issue**: Containers continuously restart in a crash loop.
+
+**Solution**: Check container logs for specific errors:
+
+```bash
+# Check all container logs
+docker-compose logs
+
+# Check specific container
+docker-compose logs backend
+docker-compose logs frontend
+docker-compose logs nginx
+```
+
+Then follow the specific troubleshooting steps for the error you see.
 
 ## API Documentation
 
