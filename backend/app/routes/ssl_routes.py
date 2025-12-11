@@ -1,9 +1,10 @@
-from flask import Blueprint, request, jsonify, send_file
+from flask import Blueprint, request, jsonify, send_file, current_app
 from werkzeug.utils import secure_filename
 import os
 import tempfile
 import base64
 from cryptography.hazmat.primitives import serialization
+from functools import wraps
 
 from app.utils.ssl_utils import (
     get_certificate_info, get_csr_info, generate_private_key, 
@@ -14,8 +15,27 @@ from app.services.ssl_checker import (
     check_ssl_certificate, check_certificate_chain, 
     check_ssl_labs_rating, check_ocsp_status, check_crl_status
 )
+from app.services.sysadmin_tools import (
+    generate_dmarc_record, validate_dmarc_record,
+    generate_spf_record, validate_spf_record,
+    analyze_email_headers, generate_password_bundle,
+    lookup_dns_records
+)
 
 ssl_bp = Blueprint('ssl', __name__)
+
+def rate_limit(limit_string):
+    """Decorator to apply custom rate limiting to specific routes"""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            return f(*args, **kwargs)
+        
+        if hasattr(current_app, 'limiter'):
+            decorated_function = current_app.limiter.limit(limit_string)(decorated_function)
+        
+        return decorated_function
+    return decorator
 
 @ssl_bp.route('/health', methods=['GET'])
 def health_check():
@@ -511,4 +531,357 @@ def dns_lookup():
         return jsonify({'error': str(e)}), 400
     except Exception as e:
         return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+
+
+# Certificate Monitoring Routes
+@ssl_bp.route('/monitor/certificate/add', methods=['POST'])
+def add_certificate_to_monitor():
+    """Add a certificate to monitoring"""
+    try:
+        from app.services.cert_monitor import add_monitored_certificate
+        
+        data = request.get_json()
+        
+        if 'certificate' not in data:
+            return jsonify({'error': 'Certificate data is required'}), 400
+        
+        certificate = data['certificate']
+        label = data.get('label')
+        tags = data.get('tags', [])
+        
+        result = add_monitored_certificate(certificate, label, tags)
+        
+        if result['success']:
+            return jsonify(result)
+        else:
+            return jsonify(result), 400
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+
+@ssl_bp.route('/monitor/certificate/remove/<certificate_id>', methods=['DELETE'])
+def remove_certificate_from_monitor(certificate_id):
+    """Remove a certificate from monitoring"""
+    try:
+        from app.services.cert_monitor import remove_monitored_certificate
+        
+        result = remove_monitored_certificate(certificate_id)
+        
+        if result['success']:
+            return jsonify(result)
+        else:
+            return jsonify(result), 404
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+
+@ssl_bp.route('/monitor/certificate/list', methods=['GET'])
+def list_monitored_certificates():
+    """List all monitored certificates"""
+    try:
+        from app.services.cert_monitor import list_monitored_certificates
+        
+        include_pem = request.args.get('include_pem', 'false').lower() == 'true'
+        
+        result = list_monitored_certificates(include_certificate_pem=include_pem)
+        
+        if result['success']:
+            return jsonify(result)
+        else:
+            return jsonify(result), 400
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+
+@ssl_bp.route('/monitor/certificate/<certificate_id>', methods=['GET'])
+def get_monitored_certificate_details(certificate_id):
+    """Get details of a monitored certificate"""
+    try:
+        from app.services.cert_monitor import get_monitored_certificate
+        
+        result = get_monitored_certificate(certificate_id)
+        
+        if result['success']:
+            return jsonify(result)
+        else:
+            return jsonify(result), 404
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+
+@ssl_bp.route('/monitor/certificate/<certificate_id>', methods=['PATCH'])
+def update_monitored_certificate_info(certificate_id):
+    """Update monitored certificate metadata"""
+    try:
+        from app.services.cert_monitor import update_monitored_certificate
+        
+        data = request.get_json()
+        label = data.get('label')
+        tags = data.get('tags')
+        
+        result = update_monitored_certificate(certificate_id, label, tags)
+        
+        if result['success']:
+            return jsonify(result)
+        else:
+            return jsonify(result), 404
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+
+@ssl_bp.route('/monitor/expiring', methods=['GET'])
+def get_expiring_certificates():
+    """Get certificates expiring soon"""
+    try:
+        from app.services.cert_monitor import get_expiring_certificates
+        
+        days_threshold = int(request.args.get('days', 30))
+        
+        result = get_expiring_certificates(days_threshold)
+        
+        if result['success']:
+            return jsonify(result)
+        else:
+            return jsonify(result), 400
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+
+# Batch Processing Routes
+@ssl_bp.route('/batch/certificates/decode', methods=['POST'])
+def batch_decode_certificates():
+    """Decode multiple certificates at once"""
+    try:
+        from app.services.batch_processor import process_certificates_batch
+        
+        data = request.get_json()
+        
+        if 'certificates' not in data:
+            return jsonify({'error': 'Certificates array is required'}), 400
+        
+        certificates = data['certificates']
+        
+        if not isinstance(certificates, list):
+            return jsonify({'error': 'Certificates must be an array'}), 400
+        
+        if len(certificates) > 50:
+            return jsonify({'error': 'Maximum 50 certificates allowed per batch'}), 400
+        
+        operations = data.get('operations', ['decode'])
+        
+        result = process_certificates_batch(certificates, operations)
+        
+        return jsonify(result)
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+
+@ssl_bp.route('/batch/domains/check', methods=['POST'])
+def batch_check_domains():
+    """Check SSL for multiple domains at once"""
+    try:
+        from app.services.batch_processor import check_domains_batch
+        
+        data = request.get_json()
+        
+        if 'domains' not in data:
+            return jsonify({'error': 'Domains array is required'}), 400
+        
+        domains = data['domains']
+        
+        if not isinstance(domains, list):
+            return jsonify({'error': 'Domains must be an array'}), 400
+        
+        if len(domains) > 20:
+            return jsonify({'error': 'Maximum 20 domains allowed per batch'}), 400
+        
+        max_workers = min(int(data.get('max_workers', 5)), 10)
+        timeout = min(int(data.get('timeout', 10)), 30)
+        
+        result = check_domains_batch(domains, max_workers, timeout)
+        
+        return jsonify(result)
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+
+@ssl_bp.route('/batch/ocsp/check', methods=['POST'])
+def batch_check_ocsp():
+    """Check OCSP status for multiple certificates"""
+    try:
+        from app.services.batch_processor import batch_ocsp_check
+        
+        data = request.get_json()
+        
+        if 'certificates' not in data:
+            return jsonify({'error': 'Certificates array is required'}), 400
+        
+        certificates = data['certificates']
+        
+        if not isinstance(certificates, list):
+            return jsonify({'error': 'Certificates must be an array'}), 400
+        
+        if len(certificates) > 30:
+            return jsonify({'error': 'Maximum 30 certificates allowed per batch'}), 400
+        
+        max_workers = min(int(data.get('max_workers', 5)), 10)
+        
+        result = batch_ocsp_check(certificates, max_workers)
+        
+        return jsonify(result)
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+
+@ssl_bp.route('/batch/crl/check', methods=['POST'])
+def batch_check_crl():
+    """Check CRL status for multiple certificates"""
+    try:
+        from app.services.batch_processor import batch_crl_check
+        
+        data = request.get_json()
+        
+        if 'certificates' not in data:
+            return jsonify({'error': 'Certificates array is required'}), 400
+        
+        certificates = data['certificates']
+        
+        if not isinstance(certificates, list):
+            return jsonify({'error': 'Certificates must be an array'}), 400
+        
+        if len(certificates) > 20:
+            return jsonify({'error': 'Maximum 20 certificates allowed per batch'}), 400
+        
+        max_workers = min(int(data.get('max_workers', 3)), 5)
+        
+        result = batch_crl_check(certificates, max_workers)
+        
+        return jsonify(result)
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+
+# API Key Management Routes
+@ssl_bp.route('/admin/apikey/generate', methods=['POST'])
+def generate_new_api_key():
+    """Generate a new API key"""
+    try:
+        from app.services.api_key_manager import generate_api_key
+        
+        data = request.get_json()
+        
+        if 'name' not in data:
+            return jsonify({'error': 'API key name is required'}), 400
+        
+        name = data['name']
+        rate_limit = data.get('rate_limit', '200 per hour')
+        description = data.get('description')
+        
+        result = generate_api_key(name, rate_limit, description)
+        
+        if result['success']:
+            return jsonify(result)
+        else:
+            return jsonify(result), 400
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+
+@ssl_bp.route('/admin/apikey/list', methods=['GET'])
+def list_all_api_keys():
+    """List all API keys"""
+    try:
+        from app.services.api_key_manager import list_api_keys
+        
+        include_keys = request.args.get('include_keys', 'false').lower() == 'true'
+        
+        result = list_api_keys(include_keys=include_keys)
+        
+        if result['success']:
+            return jsonify(result)
+        else:
+            return jsonify(result), 400
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+
+@ssl_bp.route('/admin/apikey/revoke', methods=['POST'])
+def revoke_existing_api_key():
+    """Revoke an API key"""
+    try:
+        from app.services.api_key_manager import revoke_api_key
+        
+        data = request.get_json()
+        
+        if 'api_key' not in data:
+            return jsonify({'error': 'API key is required'}), 400
+        
+        api_key = data['api_key']
+        
+        result = revoke_api_key(api_key)
+        
+        if result['success']:
+            return jsonify(result)
+        else:
+            return jsonify(result), 404
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+
+@ssl_bp.route('/admin/apikey/delete', methods=['DELETE'])
+def delete_existing_api_key():
+    """Delete an API key"""
+    try:
+        from app.services.api_key_manager import delete_api_key
+        
+        data = request.get_json()
+        
+        if 'api_key' not in data:
+            return jsonify({'error': 'API key is required'}), 400
+        
+        api_key = data['api_key']
+        
+        result = delete_api_key(api_key)
+        
+        if result['success']:
+            return jsonify(result)
+        else:
+            return jsonify(result), 404
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+
+@ssl_bp.route('/admin/apikey/validate', methods=['POST'])
+def validate_existing_api_key():
+    """Validate an API key"""
+    try:
+        from app.services.api_key_manager import validate_api_key
+        
+        data = request.get_json()
+        
+        if 'api_key' not in data:
+            return jsonify({'error': 'API key is required'}), 400
+        
+        api_key = data['api_key']
+        
+        result = validate_api_key(api_key)
+        
+        return jsonify(result)
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
