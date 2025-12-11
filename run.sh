@@ -12,70 +12,106 @@ if ! docker info &> /dev/null; then
     exit 1
 fi
 
-# Check if Docker Compose is available
-if ! command -v docker-compose &> /dev/null; then
-    echo "❌ Docker Compose is not installed. Please install Docker Compose and try again."
-    exit 1
+# Check if Docker Compose is available (try both docker-compose and docker compose)
+DOCKER_COMPOSE="docker compose"
+if ! docker compose version &> /dev/null; then
+    if command -v docker-compose &> /dev/null; then
+        DOCKER_COMPOSE="docker-compose"
+    else
+        echo "❌ Docker Compose is not available. Please install Docker Compose and try again."
+        exit 1
+    fi
 fi
+
+echo "Using: $DOCKER_COMPOSE"
 
 # Create necessary directories
 echo "📁 Creating directories..."
-mkdir -p certs logs
-
-# Generate self-signed certificate if it doesn't exist
-if [ ! -f "certs/cert.pem" ] || [ ! -f "certs/key.pem" ]; then
-    echo "🔐 Generating self-signed SSL certificate..."
-    openssl req -x509 -newkey rsa:4096 -keyout certs/key.pem -out certs/cert.pem \
-        -days 365 -nodes -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost" 2>/dev/null
-    echo "✅ SSL certificate generated"
-fi
-
-# Generate DH parameters if they don't exist
-if [ ! -f "certs/dhparam.pem" ]; then
-    echo "🔒 Generating DH parameters (this may take a while)..."
-    openssl dhparam -out certs/dhparam.pem 2048 2>/dev/null
-    echo "✅ DH parameters generated"
-fi
+mkdir -p logs
 
 # Build and start the containers
 echo "🐳 Building and starting Docker containers..."
-docker-compose up --build -d
+echo "   This may take several minutes on first run..."
+$DOCKER_COMPOSE up --build -d
 
 # Wait for services to be ready
 echo "⏳ Waiting for services to be ready..."
-sleep 10
+sleep 15
 
 # Check if services are running
 echo "🔍 Checking service health..."
+echo ""
+
+# Check backend
 if curl -f http://localhost/api/health &> /dev/null; then
     echo "✅ Backend service is healthy"
 else
     echo "⚠️  Backend service may not be ready yet"
+    echo "   Run: $DOCKER_COMPOSE logs backend"
 fi
 
+# Check frontend
 if curl -f http://localhost &> /dev/null; then
-    echo "✅ Frontend service is healthy"
+    RESPONSE=$(curl -s http://localhost)
+    if echo "$RESPONSE" | grep -q "SSL Certificate Toolkit\|root"; then
+        echo "✅ Frontend service is healthy"
+    else
+        echo "⚠️  Frontend is running but may not be built correctly"
+        echo "   If you see a default page, run: ./rebuild-frontend.sh"
+    fi
 else
     echo "⚠️  Frontend service may not be ready yet"
+    echo "   Run: $DOCKER_COMPOSE logs frontend"
+fi
+
+# Check nginx
+if $DOCKER_COMPOSE ps nginx | grep -q "Up"; then
+    echo "✅ Nginx proxy is running"
+else
+    echo "⚠️  Nginx proxy may not be running"
+    echo "   Run: $DOCKER_COMPOSE logs nginx"
 fi
 
 echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "🎉 SSL Certificate Toolkit is starting up!"
-echo "📍 Application URL: http://localhost"
-echo "📍 API Health Check: http://localhost/api/health"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "📋 To view logs: docker-compose logs -f"
-echo "⏹️  To stop: docker-compose down"
-echo "🔄 To restart: docker-compose restart"
+echo "📍 Application: http://localhost"
+echo "📍 API Health:  http://localhost/api/health"
+echo "📍 Backend:     http://localhost:5000 (internal)"
 echo ""
-echo "🔧 Available tools:"
-echo "   • Certificate Decoder"
-echo "   • CSR Generator & Decoder"
-echo "   • SSL Checker"
-echo "   • Certificate Converter"
-echo "   • Key Generator & Validator"
-echo "   • Key-Certificate Matcher"
-echo "   • Certificate Chain Checker"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "📋 Useful Commands:"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  View logs:        $DOCKER_COMPOSE logs -f"
+echo "  View backend:     $DOCKER_COMPOSE logs -f backend"
+echo "  View frontend:    $DOCKER_COMPOSE logs -f frontend"
+echo "  Stop:             $DOCKER_COMPOSE down"
+echo "  Restart:          $DOCKER_COMPOSE restart"
+echo "  Rebuild frontend: ./rebuild-frontend.sh"
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🔧 Available Tools:"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  • Certificate Decoder & Fingerprint Generator"
+echo "  • CSR Generator & Decoder"
+echo "  • SSL/TLS Checker for Domains"
+echo "  • Certificate Format Converter (PFX, PEM, DER)"
+echo "  • Private Key Generator & Validator"
+echo "  • Key-Certificate Matcher"
+echo "  • Certificate Chain Checker"
+echo "  • DMARC & SPF Manager"
+echo "  • Email Header Analyzer"
+echo "  • Password Toolkit"
+echo "  • DNS Diagnostics"
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "💡 Tips:"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  • If you see a default page: ./rebuild-frontend.sh"
+echo "  • HTTPS is disabled by default (dev mode)"
+echo "  • For troubleshooting: See TROUBLESHOOTING.md"
 echo ""
 echo "Happy SSL certificate management! 🔐"
 
