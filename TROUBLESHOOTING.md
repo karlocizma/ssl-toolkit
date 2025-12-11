@@ -3,7 +3,6 @@
 ## Seeing Apache2 or Default Web Page (CRITICAL)
 
 ### Problem
-When accessing `http://localhost`, you see an Apache2 default page, nginx welcome page, or other default web server page instead of the Security & Network Toolkit application.
 
 ### Root Cause
 **The nginx container was not exposing port 80 to the host machine.** This was a critical bug in `docker-compose.yml` that prevented the application from being accessible.
