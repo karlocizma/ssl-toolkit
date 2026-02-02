@@ -1,0 +1,21 @@
+proxmox_api_url          = "https://proxmox.example.com:8006/api2/json"
+proxmox_api_token_id     = "root@pam!terraform"
+proxmox_api_token_secret = "your-token-secret"
+proxmox_node             = "pve"
+
+template_name            = "debian-12-cloudinit-template"
+ssh_public_key           = "ssh-rsa YOUR_PUBLIC_KEY..."
+
+control_plane_ip         = "10.0.0.100"
+worker_nodes = {
+  worker1 = { ip = "10.0.0.101" }
+  worker2 = { ip = "10.0.0.102" }
+}
+
+gateway                  = "10.0.0.1"
+dns_servers              = ["1.1.1.1", "8.8.8.8"]
+
+cloudflare_api_token     = "your-cloudflare-api-token"
+cloudflare_email         = "your-email@example.com"
+
+gitlab_agent_token       = "your-gitlab-agent-token"

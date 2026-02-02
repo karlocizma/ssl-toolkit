@@ -79,3 +79,12 @@ Thumbs.db
 /backend/uploads/
 /backend/temp/
 
+# OpenTofu / Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+*.tfvars
+!terraform.tfvars.example
+.ssh_key
+kubeconfig.yaml
