@@ -11,6 +11,7 @@ const api = axios.create({
 export const certificateAPI = {
   decode: (certificateData) => api.post('/certificate/decode', { certificate: certificateData }),
   getFingerprint: (certificateData) => api.post('/certificate/fingerprint', { certificate: certificateData }),
+  generateSelfSigned: (data) => api.post('/certificate/self-signed', data),
   upload: (file) => {
     const formData = new FormData();
     formData.append('file', file);
@@ -62,7 +63,10 @@ export const sysAdminAPI = {
   validateSPF: (data) => api.post('/spf/validate', data),
   analyzeEmailHeaders: (data) => api.post('/email/header/analyze', data),
   generatePassword: (data) => api.post('/security/password/generate', data),
-  lookupDNS: (data) => api.post('/dns/lookup', data)
+  lookupDNS: (data) => api.post('/dns/lookup', data),
+  generateDKIM: (data) => api.post('/dkim/generate', data),
+  validateDKIM: (data) => api.post('/dkim/validate', data),
+  generateSSLConfig: (data) => api.post('/ssl-config/generate', data),
 };
 
 // Health check

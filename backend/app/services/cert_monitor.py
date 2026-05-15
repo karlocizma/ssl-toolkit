@@ -1,3 +1,4 @@
+import fcntl
 import json
 import os
 from datetime import datetime, timedelta
@@ -5,7 +6,12 @@ from typing import List, Dict, Optional
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 
-MONITOR_DATA_FILE = '/tmp/ssl-toolkit/monitored_certificates.json'
+# Configurable via env so tests and different deployments can override it.
+MONITOR_DATA_FILE = os.environ.get(
+    'MONITOR_DATA_FILE',
+    '/app/data/monitored_certificates.json'
+)
+MONITOR_LOCK_FILE = MONITOR_DATA_FILE + '.lock'
 
 
 def _ensure_data_file():
@@ -17,17 +23,30 @@ def _ensure_data_file():
 
 def _load_monitored_certificates() -> Dict:
     _ensure_data_file()
-    try:
-        with open(MONITOR_DATA_FILE, 'r') as f:
-            return json.load(f)
-    except Exception:
-        return {'certificates': []}
+    os.makedirs(os.path.dirname(MONITOR_LOCK_FILE), exist_ok=True)
+    with open(MONITOR_LOCK_FILE, 'w') as lock_fh:
+        fcntl.flock(lock_fh, fcntl.LOCK_SH)
+        try:
+            with open(MONITOR_DATA_FILE, 'r') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError):
+            return {'certificates': []}
+        finally:
+            fcntl.flock(lock_fh, fcntl.LOCK_UN)
 
 
 def _save_monitored_certificates(data: Dict):
     _ensure_data_file()
-    with open(MONITOR_DATA_FILE, 'w') as f:
-        json.dump(data, f, indent=2)
+    os.makedirs(os.path.dirname(MONITOR_LOCK_FILE), exist_ok=True)
+    with open(MONITOR_LOCK_FILE, 'w') as lock_fh:
+        fcntl.flock(lock_fh, fcntl.LOCK_EX)
+        try:
+            tmp_path = MONITOR_DATA_FILE + '.tmp'
+            with open(tmp_path, 'w') as f:
+                json.dump(data, f, indent=2)
+            os.replace(tmp_path, MONITOR_DATA_FILE)
+        finally:
+            fcntl.flock(lock_fh, fcntl.LOCK_UN)
 
 
 def add_monitored_certificate(certificate_pem: str, label: str = None, tags: List[str] = None) -> Dict:

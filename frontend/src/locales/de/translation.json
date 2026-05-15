@@ -19,7 +19,16 @@
     "spfManager": "SPF-Manager",
     "emailHeaderAnalyzer": "E-Mail-Header-Analyzer",
     "passwordToolkit": "Passwort-Toolkit",
-    "dnsDiagnostics": "DNS-Diagnose"
+    "dnsDiagnostics": "DNS-Diagnose",
+    "dkimManager": "DKIM-Manager",
+    "selfSignedGenerator": "Selbstsigniertes Zertifikat",
+    "sslConfigGenerator": "SSL-Konfigurations-Generator",
+    "jwtDecoder": "JWT-Decoder",
+    "group": {
+      "sslTls": "SSL / TLS",
+      "emailSecurity": "E-Mail-Sicherheit",
+      "networkSecurity": "Netzwerk & Sicherheit"
+    }
   },
   "dashboard": {
     "welcome": "Willkommen beim Sicherheits- & Netzwerk-Toolkit",

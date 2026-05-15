@@ -19,7 +19,16 @@
     "spfManager": "SPF Manager",
     "emailHeaderAnalyzer": "Email Header Analyzer",
     "passwordToolkit": "Password Toolkit",
-    "dnsDiagnostics": "DNS Diagnostics"
+    "dnsDiagnostics": "DNS Diagnostics",
+    "dkimManager": "DKIM Manager",
+    "selfSignedGenerator": "Self-Signed Cert",
+    "sslConfigGenerator": "SSL Config Generator",
+    "jwtDecoder": "JWT Decoder",
+    "group": {
+      "sslTls": "SSL / TLS",
+      "emailSecurity": "Email Security",
+      "networkSecurity": "Network & Security"
+    }
   },
   "dashboard": {
     "welcome": "Welcome to Security & Network Toolkit",

@@ -2,7 +2,58 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased] - 2024-01-XX
+---
+
+## [Phase 5] — 2026-05-15
+
+### Added
+
+#### DKIM Manager
+- `generate_dkim_record()` — generates an RSA key pair (1024/2048/4096-bit) and produces the DNS TXT record value ready to paste into a DNS zone
+- `validate_dkim_record()` — validates a DKIM record via live DNS lookup (`selector._domainkey.domain`) or inline TXT record parsing; reports parsed tags, errors, and warnings (e.g. `t=y` test mode flag)
+- Frontend: two-panel DKIM Manager component (generator + validator)
+- API: `POST /api/dkim/generate`, `POST /api/dkim/validate`
+
+#### Self-Signed Certificate Generator
+- `generate_self_signed_certificate()` — generates a self-signed X.509 certificate with configurable subject fields, RSA or EC key, validity period (1–3650 days), and Subject Alternative Names (DNS names and IP addresses)
+- Returns `certificate_pem`, `private_key_pem`, and full `certificate_info`
+- Frontend: subject form, key/curve selector, SAN input, download buttons for cert and key
+- API: `POST /api/certificate/self-signed`
+
+#### SSL/TLS Config Snippet Generator
+- `generate_ssl_config()` — pure string templating for Nginx, Apache, and HAProxy TLS server blocks
+- Options: minimum TLS version (1.2 or 1.3 only), HSTS, OCSP stapling, optional chain file
+- Returns the config snippet and a `notes[]` array with deployment-specific guidance
+- Frontend: server selector, path fields, toggle switches, copy-button output
+- API: `POST /api/ssl-config/generate`
+
+#### JWT Decoder
+- Client-side only — no backend call or network request
+- Decodes header and payload via base64url (`atob()` + `JSON.parse()`)
+- Highlights `exp`, `iat`, `nbf` claims as human-readable dates
+- Shows an expiry status chip: Valid / Expired / Not Yet Valid
+- Frontend: `JWTDecoder.js` component
+
+### Changed
+
+- `backend/app/routes/ssl_routes.py` — updated import blocks; added 4 new route handlers
+- `backend/app/utils/ssl_utils.py` — added `timedelta` import; added `generate_self_signed_certificate`
+- `backend/app/services/sysadmin_tools.py` — added `serialization` and `rsa` imports; added `generate_dkim_record`, `validate_dkim_record`, `generate_ssl_config`
+- `frontend/src/services/api.js` — added `generateSelfSigned` to `certificateAPI`; added `generateDKIM`, `validateDKIM`, `generateSSLConfig` to `sysAdminAPI`
+- `frontend/src/components/Layout.js` — added 4 MUI icons (`Badge`, `VpnLock`, `Code`, `Token`); added 4 nav items across SSL/TLS, Email Security, and Network & Security groups
+- `frontend/src/App.js` — added 4 component imports and 4 routes
+- `frontend/src/locales/en/translation.json` — added `dkimManager`, `selfSignedGenerator`, `sslConfigGenerator`, `jwtDecoder` nav keys
+- `frontend/src/locales/de/translation.json` — added German equivalents
+
+### Documentation
+
+- `README.md` — full rewrite: all 19 tools listed, all 44 endpoints documented, accurate architecture table, updated production checklist
+- `ROADMAP.md` — new file: phases 6–10 with rationale, deferred items list, contribution guide
+- `docs/WIKI.md` — new file: developer wiki covering project structure, backend/frontend architecture, end-to-end guide for adding new tools, rate limiting, i18n, testing, security design decisions, storage, and known limitations
+
+---
+
+## [Phase 1–4] - 2024-01-XX
 
 ### Added ✅
 

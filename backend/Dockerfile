@@ -22,8 +22,8 @@ USER appuser
 # Copy application code
 COPY --chown=appuser:appuser . .
 
-# Create upload directory
-RUN mkdir -p /tmp/ssl-toolkit
+# Create upload and persistent data directories
+RUN mkdir -p /tmp/ssl-toolkit /app/data
 
 # Expose port
 EXPOSE 5000

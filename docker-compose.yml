@@ -1,4 +1,16 @@
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: ssl-toolkit-redis
+    restart: unless-stopped
+    networks:
+      - ssl-toolkit-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
   backend:
     build:
       context: ./backend
@@ -8,10 +20,14 @@ services:
     environment:
       - SECRET_KEY=${SECRET_KEY:-development-secret-key}
       - FLASK_ENV=${FLASK_ENV:-production}
+      - RATE_LIMIT_STORAGE_URI=${RATE_LIMIT_STORAGE_URI:-redis://redis:6379}
+      - ADMIN_TOKEN=${ADMIN_TOKEN:-}
     volumes:
-      - /tmp/ssl-toolkit:/tmp/ssl-toolkit
+      - cert-monitor-data:/app/data
     networks:
       - ssl-toolkit-network
+    depends_on:
+      - redis
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
       interval: 30s
@@ -79,5 +95,7 @@ networks:
 
 volumes:
   ssl-data:
+    driver: local
+  cert-monitor-data:
     driver: local
 

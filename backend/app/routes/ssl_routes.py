@@ -7,22 +7,49 @@ from cryptography.hazmat.primitives import serialization
 from functools import wraps
 
 from app.utils.ssl_utils import (
-    get_certificate_info, get_csr_info, generate_private_key, 
+    get_certificate_info, get_csr_info, generate_private_key,
     generate_csr, convert_certificate_format, validate_private_key,
-    check_key_certificate_match, clean_pem_data
+    check_key_certificate_match, clean_pem_data,
+    generate_self_signed_certificate
 )
 from app.services.ssl_checker import (
-    check_ssl_certificate, check_certificate_chain, 
+    check_ssl_certificate, check_certificate_chain,
     check_ssl_labs_rating, check_ocsp_status, check_crl_status
 )
 from app.services.sysadmin_tools import (
     generate_dmarc_record, validate_dmarc_record,
     generate_spf_record, validate_spf_record,
     analyze_email_headers, generate_password_bundle,
-    lookup_dns_records
+    lookup_dns_records, generate_dkim_record, validate_dkim_record,
+    generate_ssl_config
 )
 
 ssl_bp = Blueprint('ssl', __name__)
+
+_MAX_TEXT_BYTES = 65_536  # 64 KB ceiling for any PEM / key / header string field
+
+
+def _check_input_size(data: dict, *keys: str) -> None:
+    """Raise ValueError if any string field exceeds the allowed size."""
+    for key in keys:
+        value = data.get(key)
+        if isinstance(value, str) and len(value.encode('utf-8')) > _MAX_TEXT_BYTES:
+            raise ValueError(f"Field '{key}' exceeds the maximum allowed size of 64 KB")
+
+
+def require_admin_token(f):
+    """Protect admin endpoints with a static bearer token from ADMIN_TOKEN env var."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        admin_token = os.environ.get('ADMIN_TOKEN')
+        if not admin_token:
+            return jsonify({'error': 'Admin API is disabled: ADMIN_TOKEN env var not set'}), 403
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer ') or auth_header[7:] != admin_token:
+            return jsonify({'error': 'Unauthorized'}), 401
+        return f(*args, **kwargs)
+    return decorated
+
 
 def rate_limit(limit_string):
     """Decorator to apply custom rate limiting to specific routes"""
@@ -30,10 +57,10 @@ def rate_limit(limit_string):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             return f(*args, **kwargs)
-        
+
         if hasattr(current_app, 'limiter'):
             decorated_function = current_app.limiter.limit(limit_string)(decorated_function)
-        
+
         return decorated_function
     return decorator
 
@@ -51,9 +78,10 @@ def decode_certificate():
         
         if 'certificate' not in data:
             return jsonify({'error': 'Certificate data is required'}), 400
-        
+
+        _check_input_size(data, 'certificate')
         cert_data = data['certificate']
-        
+
         # Basic validation
         if not cert_data or not cert_data.strip():
             return jsonify({'error': 'Certificate data cannot be empty'}), 400
@@ -144,10 +172,11 @@ def decode_csr():
     """Decode and analyze a Certificate Signing Request"""
     try:
         data = request.get_json()
-        
+
         if 'csr' not in data:
             return jsonify({'error': 'CSR data is required'}), 400
-        
+
+        _check_input_size(data, 'csr')
         csr_data = data['csr']
         csr_info = get_csr_info(csr_data)
         
@@ -196,10 +225,11 @@ def validate_key():
     """Validate a private key"""
     try:
         data = request.get_json()
-        
+
         if 'private_key' not in data:
             return jsonify({'error': 'Private key data is required'}), 400
-        
+
+        _check_input_size(data, 'private_key')
         key_data = data['private_key']
         password = data.get('password')
         
@@ -218,10 +248,11 @@ def match_key_certificate():
     """Check if a private key matches a certificate"""
     try:
         data = request.get_json()
-        
+
         if 'private_key' not in data or 'certificate' not in data:
             return jsonify({'error': 'Both private key and certificate are required'}), 400
-        
+
+        _check_input_size(data, 'private_key', 'certificate')
         private_key_data = data['private_key']
         certificate_data = data['certificate']
         key_password = data.get('key_password')
@@ -245,7 +276,8 @@ def convert_certificate():
         
         if 'certificate_data' not in data:
             return jsonify({'error': 'Certificate data is required'}), 400
-        
+
+        _check_input_size(data, 'certificate_data', 'private_key_data')
         cert_data = data['certificate_data']
         input_format = data.get('input_format', 'PEM')
         output_format = data.get('output_format', 'DER')
@@ -497,6 +529,7 @@ def analyze_headers():
     """Analyze raw email headers"""
     try:
         data = request.get_json() or {}
+        _check_input_size(data, 'headers')
         result = analyze_email_headers(data)
         return jsonify({'success': True, 'result': result})
     except ValueError as e:
@@ -773,6 +806,7 @@ def batch_check_crl():
 
 # API Key Management Routes
 @ssl_bp.route('/admin/apikey/generate', methods=['POST'])
+@require_admin_token
 def generate_new_api_key():
     """Generate a new API key"""
     try:
@@ -799,6 +833,7 @@ def generate_new_api_key():
 
 
 @ssl_bp.route('/admin/apikey/list', methods=['GET'])
+@require_admin_token
 def list_all_api_keys():
     """List all API keys"""
     try:
@@ -818,6 +853,7 @@ def list_all_api_keys():
 
 
 @ssl_bp.route('/admin/apikey/revoke', methods=['POST'])
+@require_admin_token
 def revoke_existing_api_key():
     """Revoke an API key"""
     try:
@@ -842,6 +878,7 @@ def revoke_existing_api_key():
 
 
 @ssl_bp.route('/admin/apikey/delete', methods=['DELETE'])
+@require_admin_token
 def delete_existing_api_key():
     """Delete an API key"""
     try:
@@ -866,22 +903,75 @@ def delete_existing_api_key():
 
 
 @ssl_bp.route('/admin/apikey/validate', methods=['POST'])
+@require_admin_token
 def validate_existing_api_key():
     """Validate an API key"""
     try:
         from app.services.api_key_manager import validate_api_key
-        
+
         data = request.get_json()
-        
+
         if 'api_key' not in data:
             return jsonify({'error': 'API key is required'}), 400
-        
+
         api_key = data['api_key']
-        
+
         result = validate_api_key(api_key)
-        
+
         return jsonify(result)
-    
+
     except Exception as e:
         return jsonify({'error': str(e)}), 400
+
+
+# ---------------------------------------------------------------------------
+# Phase 5 routes
+# ---------------------------------------------------------------------------
+
+@ssl_bp.route('/dkim/generate', methods=['POST'])
+def dkim_generate():
+    try:
+        data = request.get_json() or {}
+        result = generate_dkim_record(data)
+        return jsonify({'success': True, 'result': result})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+
+
+@ssl_bp.route('/dkim/validate', methods=['POST'])
+def dkim_validate():
+    try:
+        data = request.get_json() or {}
+        result = validate_dkim_record(data)
+        return jsonify({'success': True, 'result': result})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+
+
+@ssl_bp.route('/certificate/self-signed', methods=['POST'])
+def generate_self_signed():
+    try:
+        data = request.get_json() or {}
+        result = generate_self_signed_certificate(data)
+        return jsonify({'success': True, 'result': result})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+
+
+@ssl_bp.route('/ssl-config/generate', methods=['POST'])
+def ssl_config_generate():
+    try:
+        data = request.get_json() or {}
+        result = generate_ssl_config(data)
+        return jsonify({'success': True, 'result': result})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
 

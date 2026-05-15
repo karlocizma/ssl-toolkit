@@ -13,6 +13,8 @@ from typing import Dict, List, Optional, Tuple
 import dns.exception
 import dns.resolver
 from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 
 DEFAULT_DNS_TIMEOUT = 5
 DMARC_POLICIES = {'none', 'quarantine', 'reject'}
@@ -720,4 +722,276 @@ def lookup_dns_records(config: Dict):
         'record_types': record_types,
         'results': results,
         'queried_at': datetime.utcnow().isoformat() + 'Z'
+    }
+
+
+# ---------------------------------------------------------------------------
+# DKIM Record Generator / Validator
+# ---------------------------------------------------------------------------
+
+def generate_dkim_record(params: dict) -> dict:
+    params = params or {}
+    domain = params.get('domain', '').strip()
+    selector = params.get('selector', '').strip()
+    if not domain:
+        raise ValueError('domain is required')
+    if not selector:
+        raise ValueError('selector is required')
+
+    key_size = int(params.get('key_size', 2048))
+    if key_size not in (1024, 2048, 4096):
+        raise ValueError('key_size must be 1024, 2048, or 4096')
+
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=key_size)
+
+    private_key_pem = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    ).decode('utf-8')
+
+    public_key_pem = private_key.public_key().public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo,
+    ).decode('utf-8')
+
+    # DER-encode the public key, base64 (no newlines) for the DNS TXT value
+    pub_der = private_key.public_key().public_bytes(
+        encoding=serialization.Encoding.DER,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo,
+    )
+    pub_b64 = base64.b64encode(pub_der).decode('ascii')
+
+    dns_host = f"{selector}._domainkey.{domain}"
+    dns_record = f"v=DKIM1; k=rsa; p={pub_b64}"
+
+    return {
+        'success': True,
+        'private_key_pem': private_key_pem,
+        'public_key_pem': public_key_pem,
+        'dns_host': dns_host,
+        'dns_record': dns_record,
+        'selector': selector,
+        'domain': domain,
+        'key_size': key_size,
+    }
+
+
+def validate_dkim_record(params: dict) -> dict:
+    params = params or {}
+    domain = params.get('domain', '').strip()
+    selector = params.get('selector', '').strip()
+    inline_record = params.get('record', '').strip()
+
+    errors: List[str] = []
+    warnings: List[str] = []
+    record_source = None
+    raw_record = None
+
+    if inline_record:
+        raw_record = inline_record
+        record_source = 'inline'
+    elif domain and selector:
+        lookup_name = f"{selector}._domainkey.{domain}"
+        records, err = _resolve_txt_records(lookup_name)
+        if err or not records:
+            return {
+                'valid': False,
+                'record': None,
+                'record_source': 'dns',
+                'parsed_tags': {},
+                'errors': [err or f'No TXT record found at {lookup_name}'],
+                'warnings': [],
+            }
+        raw_record = records[0]
+        record_source = 'dns'
+    else:
+        raise ValueError("Provide 'record' for inline validation, or both 'domain' and 'selector' for DNS lookup")
+
+    tags = _parse_tag_record(raw_record)
+
+    if tags.get('v') != 'DKIM1':
+        errors.append("Record does not start with v=DKIM1")
+
+    k = tags.get('k', 'rsa')
+    if k not in ('rsa', 'ed25519'):
+        warnings.append(f"Unrecognised key type k={k}")
+
+    if not tags.get('p'):
+        errors.append("Public key (p=) is missing or empty")
+
+    t = tags.get('t', '')
+    if t:
+        flags = [f.strip() for f in t.split(':')]
+        if 'y' in flags:
+            warnings.append("t=y flag means this key is in test mode — mail may not be rejected on failure")
+
+    return {
+        'valid': len(errors) == 0,
+        'record': raw_record,
+        'record_source': record_source,
+        'parsed_tags': tags,
+        'errors': errors,
+        'warnings': warnings,
+    }
+
+
+# ---------------------------------------------------------------------------
+# SSL/TLS Config Snippet Generator
+# ---------------------------------------------------------------------------
+
+_NGINX_TEMPLATE = """\
+server {{
+    listen 443 ssl{http2_flag};
+    server_name {domain};
+
+    ssl_certificate     {cert_path};
+    ssl_certificate_key {key_path};
+{chain_line}
+    ssl_protocols {protocols};
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+{hsts_line}
+{ocsp_lines}
+    # Your site configuration here
+}}
+"""
+
+_APACHE_TEMPLATE = """\
+<VirtualHost *:443>
+    ServerName {domain}
+
+    SSLEngine on
+    SSLCertificateFile    {cert_path}
+    SSLCertificateKeyFile {key_path}
+{chain_line}
+    SSLProtocol {protocols}
+    SSLCipherSuite ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384
+    SSLHonorCipherOrder off
+    SSLSessionTickets off
+{hsts_line}
+{ocsp_lines}
+    # Your site configuration here
+</VirtualHost>
+"""
+
+_HAPROXY_TEMPLATE = """\
+frontend https_in
+    bind *:443 ssl crt {cert_path}{chain_flag} alpn h2,http/1.1
+    {protocols_acl}
+
+    # Your ACLs / backend routing here
+    default_backend my_servers
+
+backend my_servers
+    balance roundrobin
+    option forwardfor
+    server app1 127.0.0.1:8080 check
+"""
+
+
+def generate_ssl_config(params: dict) -> dict:
+    params = params or {}
+    server = params.get('server', '').lower().strip()
+    domain = params.get('domain', '').strip()
+    cert_path = params.get('cert_path', '').strip()
+    key_path = params.get('key_path', '').strip()
+
+    if server not in ('nginx', 'apache', 'haproxy'):
+        raise ValueError("server must be one of: nginx, apache, haproxy")
+    if not domain:
+        raise ValueError("domain is required")
+    if not cert_path:
+        raise ValueError("cert_path is required")
+    if not key_path:
+        raise ValueError("key_path is required")
+
+    chain_path = params.get('chain_path', '').strip()
+    min_tls = params.get('min_tls', 'TLSv1.2').strip()
+    hsts = bool(params.get('hsts', True))
+    ocsp_stapling = bool(params.get('ocsp_stapling', True))
+
+    notes: List[str] = []
+
+    if server == 'nginx':
+        http2_flag = ' http2'
+        if min_tls == 'TLSv1.3':
+            protocols = 'TLSv1.3'
+            notes.append("TLSv1.3-only mode: very secure but may exclude older clients.")
+        else:
+            protocols = 'TLSv1.2 TLSv1.3'
+
+        chain_line = f"    ssl_trusted_certificate {chain_path};\n" if chain_path else ""
+        hsts_line = '    add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;' if hsts else ""
+        if ocsp_stapling:
+            ocsp_lines = "    ssl_stapling on;\n    ssl_stapling_verify on;\n    resolver 1.1.1.1 8.8.8.8 valid=300s;\n    resolver_timeout 5s;"
+        else:
+            ocsp_lines = ""
+
+        snippet = _NGINX_TEMPLATE.format(
+            domain=domain,
+            cert_path=cert_path,
+            key_path=key_path,
+            chain_line=chain_line,
+            protocols=protocols,
+            http2_flag=http2_flag,
+            hsts_line=hsts_line,
+            ocsp_lines=ocsp_lines,
+        )
+
+    elif server == 'apache':
+        if min_tls == 'TLSv1.3':
+            protocols = 'all -SSLv3 -TLSv1 -TLSv1.1 -TLSv1.2'
+            notes.append("TLSv1.3-only: requires Apache 2.4.36+ with OpenSSL 1.1.1+.")
+        else:
+            protocols = 'all -SSLv3 -TLSv1 -TLSv1.1'
+
+        chain_line = f"    SSLCertificateChainFile {chain_path}" if chain_path else ""
+        hsts_line = '    Header always set Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"' if hsts else ""
+        if ocsp_stapling:
+            ocsp_lines = "    SSLUseStapling on\n    SSLStaplingCache shmcb:/run/ocsp(128000)"
+        else:
+            ocsp_lines = ""
+
+        snippet = _APACHE_TEMPLATE.format(
+            domain=domain,
+            cert_path=cert_path,
+            key_path=key_path,
+            chain_line=chain_line,
+            protocols=protocols,
+            hsts_line=hsts_line,
+            ocsp_lines=ocsp_lines,
+        )
+        if hsts:
+            notes.append("Ensure mod_headers is enabled: a2enmod headers")
+
+    else:  # haproxy
+        if chain_path:
+            chain_flag = f" ca-file {chain_path}"
+        else:
+            chain_flag = ""
+        if min_tls == 'TLSv1.3':
+            protocols_acl = "ssl-min-ver TLSv1.3"
+        else:
+            protocols_acl = "ssl-min-ver TLSv1.2"
+
+        snippet = _HAPROXY_TEMPLATE.format(
+            cert_path=cert_path,
+            chain_flag=chain_flag,
+            protocols_acl=protocols_acl,
+        )
+        notes.append("HAProxy expects a single PEM file containing cert + key (+ chain). Concatenate them.")
+
+    if hsts:
+        notes.append("HSTS preload requires registration at hstspreload.org after deployment.")
+
+    return {
+        'success': True,
+        'server': server,
+        'domain': domain,
+        'config_snippet': snippet,
+        'notes': notes,
     }

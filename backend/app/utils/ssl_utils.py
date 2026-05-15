@@ -2,7 +2,7 @@ import os
 import tempfile
 import base64
 import hashlib
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from cryptography import x509
 from cryptography.x509.oid import NameOID, SignatureAlgorithmOID
 from cryptography.hazmat.primitives import hashes, serialization
@@ -127,10 +127,10 @@ def get_certificate_info(cert_data):
                 'organizational_unit': get_name_attribute(issuer, NameOID.ORGANIZATIONAL_UNIT_NAME)
             },
             'validity': {
-                'not_before': cert.not_valid_before.isoformat(),
-                'not_after': cert.not_valid_after.isoformat(),
-                'is_expired': cert.not_valid_after < datetime.now(),
-                'days_until_expiry': (cert.not_valid_after - datetime.now()).days
+                'not_before': cert.not_valid_before_utc.isoformat(),
+                'not_after': cert.not_valid_after_utc.isoformat(),
+                'is_expired': cert.not_valid_after_utc < datetime.now(timezone.utc),
+                'days_until_expiry': (cert.not_valid_after_utc - datetime.now(timezone.utc)).days
             },
             'public_key': {
                 'algorithm': cert.public_key().__class__.__name__,
@@ -187,7 +187,7 @@ def get_csr_info(csr_data):
                 if ext.oid == x509.oid.ExtensionOID.SUBJECT_ALTERNATIVE_NAME:
                     san_list = [name.value for name in ext.value]
                     break
-        except:
+        except x509.ExtensionNotFound:
             pass
         
         return {
@@ -319,7 +319,7 @@ def convert_certificate_format(cert_data, input_format, output_format, password=
                         cert_pem = '-----BEGIN CERTIFICATE-----' + cert_block
                         additional_cert = x509.load_pem_x509_certificate(cert_pem.encode('utf-8'))
                         additional_certs.append(additional_cert)
-                    except:
+                    except ValueError:
                         continue
             
             # Set password for PFX
@@ -383,12 +383,7 @@ def validate_private_key(key_data, password=None):
         if password:
             password = password.encode('utf-8')
         
-        try:
-            # Try to load as encrypted key
-            private_key = serialization.load_pem_private_key(key_data, password=password)
-        except:
-            # Try to load as unencrypted key
-            private_key = serialization.load_pem_private_key(key_data, password=None)
+        private_key = serialization.load_pem_private_key(key_data, password=password)
         
         key_info = {
             'algorithm': private_key.__class__.__name__,
@@ -407,35 +402,112 @@ def check_key_certificate_match(private_key_data, certificate_data, key_password
         # Load private key
         if isinstance(private_key_data, str):
             private_key_data = private_key_data.encode('utf-8')
-        
+
         if key_password:
             key_password = key_password.encode('utf-8')
-        
+
         private_key = serialization.load_pem_private_key(private_key_data, password=key_password)
-        
+
         # Load certificate
         if isinstance(certificate_data, str):
             certificate_data = certificate_data.encode('utf-8')
-        
+
         certificate = x509.load_pem_x509_certificate(certificate_data)
-        
+
         # Compare public keys
         private_public_key = private_key.public_key()
         cert_public_key = certificate.public_key()
-        
+
         # Serialize both public keys to compare
         private_public_pem = private_public_key.public_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo
         )
-        
+
         cert_public_pem = cert_public_key.public_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo
         )
-        
+
         return private_public_pem == cert_public_pem
-    
+
     except Exception as e:
         raise ValueError(f"Error checking key-certificate match: {str(e)}")
+
+
+def generate_self_signed_certificate(params: dict) -> dict:
+    """Generate a self-signed X.509 certificate."""
+    params = params or {}
+    common_name = params.get('common_name', '').strip()
+    if not common_name:
+        raise ValueError('common_name is required')
+
+    key_type = params.get('key_type', 'RSA').upper()
+    key_size = int(params.get('key_size', 2048))
+    curve_name = params.get('curve_name', 'secp256r1')
+    validity_days = int(params.get('validity_days', 365))
+    if validity_days < 1 or validity_days > 3650:
+        raise ValueError('validity_days must be between 1 and 3650')
+
+    private_key = generate_private_key(key_type, key_size, curve_name)
+
+    name_attrs = [x509.NameAttribute(NameOID.COMMON_NAME, common_name)]
+    if params.get('country'):
+        name_attrs.append(x509.NameAttribute(NameOID.COUNTRY_NAME, params['country']))
+    if params.get('state'):
+        name_attrs.append(x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, params['state']))
+    if params.get('locality'):
+        name_attrs.append(x509.NameAttribute(NameOID.LOCALITY_NAME, params['locality']))
+    if params.get('organization'):
+        name_attrs.append(x509.NameAttribute(NameOID.ORGANIZATION_NAME, params['organization']))
+    if params.get('organizational_unit'):
+        name_attrs.append(x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, params['organizational_unit']))
+
+    subject = issuer = x509.Name(name_attrs)
+    now = datetime.now(timezone.utc)
+
+    builder = (
+        x509.CertificateBuilder()
+        .subject_name(subject)
+        .issuer_name(issuer)
+        .public_key(private_key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(now)
+        .not_valid_after(now + timedelta(days=validity_days))
+    )
+
+    sans = params.get('sans', [])
+    san_objects = []
+    for entry in (sans or []):
+        entry = entry.strip()
+        if not entry:
+            continue
+        try:
+            import ipaddress as _ip
+            san_objects.append(x509.IPAddress(_ip.ip_address(entry)))
+        except ValueError:
+            san_objects.append(x509.DNSName(entry))
+
+    if san_objects:
+        builder = builder.add_extension(x509.SubjectAlternativeName(san_objects), critical=False)
+
+    builder = builder.add_extension(
+        x509.BasicConstraints(ca=False, path_length=None), critical=True
+    )
+
+    cert = builder.sign(private_key, hashes.SHA256())
+
+    certificate_pem = cert.public_bytes(serialization.Encoding.PEM).decode('utf-8')
+    private_key_pem = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    ).decode('utf-8')
+
+    return {
+        'success': True,
+        'certificate_pem': certificate_pem,
+        'private_key_pem': private_key_pem,
+        'certificate_info': get_certificate_info(certificate_pem),
+    }
 

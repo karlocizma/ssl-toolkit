@@ -175,7 +175,8 @@ def _serialize_certificate_chain(cert_chain: List[crypto.X509]):
             cert_info['is_root'] = _is_self_signed(openssl_cert) or index == total - 1
             cert_info['is_intermediate'] = not cert_info['is_leaf'] and not cert_info['is_root']
             chain_info.append(cert_info)
-        except Exception:
+        except (ValueError, UnicodeDecodeError) as e:
+            chain_info.append({'position': index, 'error': str(e)})
             continue
 
     return chain_info
@@ -243,18 +244,12 @@ def _fetch_single_certificate(hostname: str, port: int, timeout: int):
 
 
 def check_ssl_labs_rating(hostname):
-    """Get SSL Labs rating for a domain (requires SSL Labs API)"""
-    try:
-        return {
-            'hostname': hostname,
-            'rating': 'API not implemented',
-            'note': 'SSL Labs API integration would be implemented here'
-        }
-    except Exception as e:
-        return {
-            'hostname': hostname,
-            'error': str(e)
-        }
+    """Get SSL Labs rating for a domain (not yet implemented)."""
+    return {
+        'hostname': hostname,
+        'not_implemented': True,
+        'message': 'SSL Labs API integration is not yet available.'
+    }
 
 
 def check_ocsp_status(certificate_pem):

@@ -22,11 +22,13 @@ def create_app():
     # Enable CORS
     CORS(app)
     
-    # Enhanced rate limiting with API key support
+    # Defaults to Redis (shared across Gunicorn workers); falls back to memory
+    # for local dev when RATE_LIMIT_STORAGE_URI is not set.
+    rate_limit_storage = os.environ.get('RATE_LIMIT_STORAGE_URI', 'memory://')
     limiter = Limiter(
         key_func=get_api_key_or_ip,
         default_limits=["200 per hour", "50 per minute"],
-        storage_uri="memory://"
+        storage_uri=rate_limit_storage
     )
     limiter.init_app(app)
     
