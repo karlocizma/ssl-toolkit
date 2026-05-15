@@ -33,7 +33,10 @@
   "dashboard": {
     "welcome": "Welcome to Security & Network Toolkit",
     "subtitle": "Professional tools for SSL/TLS certificates, email security, and network diagnostics",
-    "selectTool": "Select a tool to get started"
+    "selectTool": "Select a tool to get started",
+    "openTool": "Open Tool",
+    "aboutTitle": "About this toolkit",
+    "aboutDescription": "Security & Network Toolkit is a self-hosted suite of cryptographic and network diagnostic tools. Generate and validate certificates, inspect email authentication records, decode tokens, and produce server configuration snippets — all without sending sensitive data to third-party services."
   },
   "tools": {
     "certificateDecoder": {
@@ -105,6 +108,26 @@
       "title": "DNS Diagnostics",
       "description": "Diagnose DNS records and configuration",
       "features": ["DNS lookup", "Record validation", "Propagation check", "Troubleshooting"]
+    },
+    "dkimManager": {
+      "title": "DKIM Manager",
+      "description": "Generate DKIM key pairs and validate existing DKIM DNS records",
+      "features": ["RSA key generation", "DNS record builder", "Live DNS lookup", "Tag validation"]
+    },
+    "selfSignedGenerator": {
+      "title": "Self-Signed Cert Generator",
+      "description": "Generate self-signed X.509 certificates for development and internal use",
+      "features": ["RSA & EC keys", "Custom SANs", "Configurable validity", "PEM download"]
+    },
+    "sslConfigGenerator": {
+      "title": "SSL Config Generator",
+      "description": "Generate production-ready TLS configuration snippets for web servers",
+      "features": ["Nginx / Apache / HAProxy", "HSTS support", "OCSP stapling", "TLS 1.2 & 1.3"]
+    },
+    "jwtDecoder": {
+      "title": "JWT Decoder",
+      "description": "Decode and inspect JSON Web Tokens directly in your browser",
+      "features": ["Header & payload decode", "Expiry status", "Date formatting", "Client-side only"]
     }
   },
   "common": {

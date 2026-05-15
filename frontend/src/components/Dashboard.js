@@ -23,6 +23,10 @@ import {
   MarkEmailRead as MarkEmailReadIcon,
   Password as PasswordIcon,
   Dns as DnsIcon,
+  Badge as BadgeIcon,
+  VpnLock as VpnLockIcon,
+  Code as CodeIcon,
+  Token as TokenIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -139,7 +143,39 @@ const getTools = (t) => [
     path: '/dns-diagnostics',
     color: 'primary',
     featuresKeys: ['tools.dnsDiagnostics.features.0', 'tools.dnsDiagnostics.features.1', 'tools.dnsDiagnostics.features.2', 'tools.dnsDiagnostics.features.3']
-  }
+  },
+  {
+    titleKey: 'tools.dkimManager.title',
+    descriptionKey: 'tools.dkimManager.description',
+    icon: <VpnLockIcon sx={{ fontSize: 40 }} />,
+    path: '/dkim-manager',
+    color: 'secondary',
+    featuresKeys: ['tools.dkimManager.features.0', 'tools.dkimManager.features.1', 'tools.dkimManager.features.2', 'tools.dkimManager.features.3']
+  },
+  {
+    titleKey: 'tools.selfSignedGenerator.title',
+    descriptionKey: 'tools.selfSignedGenerator.description',
+    icon: <BadgeIcon sx={{ fontSize: 40 }} />,
+    path: '/self-signed-generator',
+    color: 'info',
+    featuresKeys: ['tools.selfSignedGenerator.features.0', 'tools.selfSignedGenerator.features.1', 'tools.selfSignedGenerator.features.2', 'tools.selfSignedGenerator.features.3']
+  },
+  {
+    titleKey: 'tools.sslConfigGenerator.title',
+    descriptionKey: 'tools.sslConfigGenerator.description',
+    icon: <CodeIcon sx={{ fontSize: 40 }} />,
+    path: '/ssl-config-generator',
+    color: 'success',
+    featuresKeys: ['tools.sslConfigGenerator.features.0', 'tools.sslConfigGenerator.features.1', 'tools.sslConfigGenerator.features.2', 'tools.sslConfigGenerator.features.3']
+  },
+  {
+    titleKey: 'tools.jwtDecoder.title',
+    descriptionKey: 'tools.jwtDecoder.description',
+    icon: <TokenIcon sx={{ fontSize: 40 }} />,
+    path: '/jwt-decoder',
+    color: 'warning',
+    featuresKeys: ['tools.jwtDecoder.features.0', 'tools.jwtDecoder.features.1', 'tools.jwtDecoder.features.2', 'tools.jwtDecoder.features.3']
+  },
 ];
 
 function Dashboard() {

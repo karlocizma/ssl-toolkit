@@ -33,7 +33,10 @@
   "dashboard": {
     "welcome": "Willkommen beim Sicherheits- & Netzwerk-Toolkit",
     "subtitle": "Professionelle Tools für SSL/TLS-Zertifikate, E-Mail-Sicherheit und Netzwerkdiagnose",
-    "selectTool": "Wählen Sie ein Tool aus, um zu beginnen"
+    "selectTool": "Wählen Sie ein Tool aus, um zu beginnen",
+    "openTool": "Tool öffnen",
+    "aboutTitle": "Über dieses Toolkit",
+    "aboutDescription": "Das Sicherheits- & Netzwerk-Toolkit ist eine selbst gehostete Suite kryptografischer und netzwerkdiagnostischer Tools. Zertifikate generieren und validieren, E-Mail-Authentifizierungsdatensätze prüfen, Tokens dekodieren und Server-Konfigurationsschnipsel erstellen – ohne sensible Daten an Drittdienste zu übertragen."
   },
   "tools": {
     "certificateDecoder": {
@@ -105,6 +108,26 @@
       "title": "DNS-Diagnose",
       "description": "DNS-Einträge und -Konfiguration diagnostizieren",
       "features": ["DNS-Lookup", "Datensatz-Validierung", "Propagierungsprüfung", "Fehlerbehebung"]
+    },
+    "dkimManager": {
+      "title": "DKIM-Manager",
+      "description": "DKIM-Schlüsselpaare generieren und vorhandene DKIM-DNS-Einträge validieren",
+      "features": ["RSA-Schlüsselgenerierung", "DNS-Datensatz-Builder", "Live-DNS-Lookup", "Tag-Validierung"]
+    },
+    "selfSignedGenerator": {
+      "title": "Selbstsign. Zertifikat-Generator",
+      "description": "Selbstsignierte X.509-Zertifikate für Entwicklung und internen Einsatz erstellen",
+      "features": ["RSA & EC Schlüssel", "Benutzerdefinierte SANs", "Konfigurierbare Gültigkeit", "PEM-Download"]
+    },
+    "sslConfigGenerator": {
+      "title": "SSL-Konfigurations-Generator",
+      "description": "Produktionsreife TLS-Konfigurationsschnipsel für Webserver generieren",
+      "features": ["Nginx / Apache / HAProxy", "HSTS-Unterstützung", "OCSP-Stapling", "TLS 1.2 & 1.3"]
+    },
+    "jwtDecoder": {
+      "title": "JWT-Decoder",
+      "description": "JSON Web Tokens direkt im Browser dekodieren und prüfen",
+      "features": ["Header & Payload dekodieren", "Ablaufstatus", "Datumsformatierung", "Nur clientseitig"]
     }
   },
   "common": {
