@@ -302,6 +302,6 @@ For production deployments:
 
 ---
 
-**For detailed feature documentation, see [FEATURES.md](./FEATURES.md)**
+**For API documentation, see the [README](./README.md#api-reference) and the Swagger UI at `/api/docs`**
 
-**For quick start guide, see [QUICK_START_NEW_FEATURES.md](./QUICK_START_NEW_FEATURES.md)**
+**For setup, see the [README](./README.md#quick-start)**
