@@ -19,6 +19,9 @@ REQUEST_BODIES = {
     '/check/domain': {'required': ['hostname'], 'properties': {**_HOST, 'timeout': {'type': 'integer', 'default': 10}}},
     '/check/chain': {'required': ['hostname'], 'properties': {**_HOST, 'timeout': {'type': 'integer', 'default': 10}}},
     '/check/tls': {'required': ['hostname'], 'properties': {**_HOST, 'timeout': {'type': 'number', 'default': 5}}},
+    '/check/autodiscover': {'properties': {
+        'domain': {**_STR, 'example': 'example.com'},
+        'email': {**_STR, 'description': 'Optional mailbox to test with (defaults to test@<domain>)'}}},
     '/check/headers': {'properties': {'url': {'type': 'string', 'example': 'https://example.com'}}},
     '/certificate/decode': {'required': ['certificate'], 'properties': {'certificate': {**_STR, 'description': 'PEM certificate'}}},
     '/csr/decode': {'required': ['csr'], 'properties': {'csr': {**_STR, 'description': 'PEM CSR'}}},

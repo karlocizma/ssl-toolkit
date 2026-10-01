@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [Phase 8] — 2026-10-01
+
+### Added
+- Autodiscover check (`POST /api/check/autodiscover`, closes #15): Outlook/Exchange Autodiscover sequence, Thunderbird autoconfig and RFC 6186 SRV lookups with a step-by-step report, redirect tracing and findings (certificate mismatches, missing CNAME for Microsoft 365, missing submission SRV). Redirects and SRV targets pass the SSRF guard. Command line: `python -m app.services.autodiscover example.com`.
+- Frontend page and dashboard card (en/de)
+
+---
+
 ## [Phase 7] — 2026-10-01
 
 ### Security

@@ -28,6 +28,7 @@
     "tlsScanner": "TLS-Scanner",
     "securityHeaders": "Sicherheits-Header",
     "domainMonitor": "Domain-Überwachung",
+    "autodiscover": "Autodiscover-Prüfung",
     "jwtDecoder": "JWT-Decoder",
     "group": {
       "sslTls": "SSL / TLS",
@@ -153,6 +154,11 @@
       "title": "ACME / Let's Encrypt",
       "description": "Kostenlose, vertrauenswürdige Zertifikate per ACME erhalten",
       "features": ["Manuell DNS/HTTP", "Automatisches DNS", "Wildcard-Unterstützung", "Nichts gespeichert"]
+    },
+    "autodiscover": {
+      "title": "Autodiscover-Prüfung",
+      "description": "Outlook-Autodiscover, Thunderbird-Autoconfig und SRV-Records testen",
+      "features": ["Outlook-Ablauf", "Thunderbird-Autoconfig", "RFC-6186-SRV", "Bericht Schritt für Schritt"]
     },
     "jwtDecoder": {
       "title": "JWT-Decoder",
