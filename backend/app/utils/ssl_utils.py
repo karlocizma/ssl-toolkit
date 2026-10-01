@@ -2,6 +2,8 @@ import os
 import tempfile
 import base64
 import hashlib
+import ipaddress
+import re
 from datetime import datetime, timezone, timedelta
 from cryptography import x509
 from cryptography.x509.oid import NameOID, SignatureAlgorithmOID
@@ -237,6 +239,27 @@ def generate_private_key(key_type='RSA', key_size=2048, curve_name='secp256r1'):
     
     return private_key
 
+_DNS_NAME_RE = re.compile(r'^(?=.{1,253}$)[A-Za-z0-9_]([A-Za-z0-9_-]{0,61}[A-Za-z0-9_])?'
+                          r'(\.[A-Za-z0-9_]([A-Za-z0-9_-]{0,61}[A-Za-z0-9_])?)*$')
+
+
+def _san_general_name(entry):
+    """Classify one subject alternative name; invalid entries raise instead of being dropped."""
+    entry = entry.strip()
+    try:
+        return x509.IPAddress(ipaddress.ip_address(entry))
+    except ValueError:
+        pass
+    if '@' in entry:
+        if validators.email(entry):
+            return x509.RFC822Name(entry)
+        raise ValueError(f'Invalid subject alternative name: {entry}')
+    host = entry[2:] if entry.startswith('*.') else entry  # wildcard certificates
+    if _DNS_NAME_RE.match(host):
+        return x509.DNSName(entry)
+    raise ValueError(f'Invalid subject alternative name: {entry}')
+
+
 def generate_csr(subject_data, private_key, san_list=None):
     """Generate a Certificate Signing Request"""
     # Build subject name
@@ -265,15 +288,8 @@ def generate_csr(subject_data, private_key, san_list=None):
     
     # Add SAN extension if provided
     if san_list:
-        san_names = []
-        for san in san_list:
-            if validators.domain(san):
-                san_names.append(x509.DNSName(san))
-            elif validators.email(san):
-                san_names.append(x509.RFC822Name(san))
-            elif validators.ipv4(san) or validators.ipv6(san):
-                san_names.append(x509.IPAddress(san))
-        
+        san_names = [_san_general_name(san) for san in san_list if san and san.strip()]
+
         if san_names:
             builder = builder.add_extension(
                 x509.SubjectAlternativeName(san_names),
