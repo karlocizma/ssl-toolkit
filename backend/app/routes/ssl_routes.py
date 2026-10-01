@@ -975,3 +975,66 @@ def ssl_config_generate():
     except Exception as e:
         return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
 
+
+
+# Domain monitoring & alerting
+@ssl_bp.route('/monitor/domain/add', methods=['POST'])
+def add_domain_to_monitor():
+    from app.services import domain_monitor
+    data = request.get_json(silent=True) or {}
+    if not data.get('hostname'):
+        return jsonify({'error': 'Hostname is required'}), 400
+    result = domain_monitor.add_domain(data['hostname'], data.get('port', 443),
+                                       data.get('label'), data.get('tags'))
+    return jsonify(result), (200 if result['success'] else 400)
+
+
+@ssl_bp.route('/monitor/domain/list', methods=['GET'])
+def list_monitored_domains():
+    from app.services import domain_monitor
+    return jsonify(domain_monitor.list_domains())
+
+
+@ssl_bp.route('/monitor/domain/<domain_id>', methods=['GET'])
+def get_monitored_domain(domain_id):
+    from app.services import domain_monitor
+    result = domain_monitor.get_domain(domain_id)
+    return jsonify(result), (200 if result['success'] else 404)
+
+
+@ssl_bp.route('/monitor/domain/<domain_id>', methods=['DELETE'])
+def remove_monitored_domain(domain_id):
+    from app.services import domain_monitor
+    result = domain_monitor.remove_domain(domain_id)
+    return jsonify(result), (200 if result['success'] else 404)
+
+
+@ssl_bp.route('/monitor/domain/<domain_id>/check', methods=['POST'])
+def check_monitored_domain_now(domain_id):
+    from app.services import domain_monitor
+    result = domain_monitor.check_domain(domain_id)
+    return jsonify(result), (200 if result['success'] else 404)
+
+
+@ssl_bp.route('/monitor/alerts/config', methods=['GET'])
+@require_admin_token
+def alerts_config():
+    from app.services import alerts
+    return jsonify({'success': True, 'config': alerts.get_config()})
+
+
+@ssl_bp.route('/monitor/alerts/test', methods=['POST'])
+@require_admin_token
+def alerts_test():
+    """Send a test notification through every configured channel."""
+    from app.services import alerts
+    event = {'kind': 'test', 'detail': 'This is a test alert from SSL Toolkit'}
+    return jsonify({'success': True, 'deliveries': alerts.dispatch([event], 'SSL Toolkit: test alert')})
+
+
+@ssl_bp.route('/monitor/alerts/run', methods=['POST'])
+@require_admin_token
+def alerts_run():
+    """Run a full re-check and alert cycle immediately."""
+    from app.services import alerts
+    return jsonify({'success': True, 'result': alerts.run_checks()})
