@@ -1038,3 +1038,36 @@ def alerts_run():
     """Run a full re-check and alert cycle immediately."""
     from app.services import alerts
     return jsonify({'success': True, 'result': alerts.run_checks()})
+
+
+# TLS scanner & security headers
+@ssl_bp.route('/check/tls', methods=['POST'])
+def check_tls_configuration():
+    from app.services.tls_scanner import scan_tls
+    from app.utils.net_safety import UnsafeTargetError
+    data = request.get_json(silent=True) or {}
+    if not data.get('hostname'):
+        return jsonify({'error': 'Hostname is required'}), 400
+    try:
+        result = scan_tls(data['hostname'], data.get('port', 443), data.get('timeout', 5))
+        return jsonify({'success': True, 'result': result})
+    except (UnsafeTargetError, ValueError) as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f'Scan failed: {str(e)}'}), 500
+
+
+@ssl_bp.route('/check/headers', methods=['POST'])
+def check_http_security_headers():
+    from app.services.security_headers import check_security_headers
+    from app.utils.net_safety import UnsafeTargetError
+    data = request.get_json(silent=True) or {}
+    if not data.get('url') and not data.get('hostname'):
+        return jsonify({'error': 'URL or hostname is required'}), 400
+    try:
+        result = check_security_headers(data.get('url') or data['hostname'])
+        return jsonify({'success': True, 'result': result})
+    except (UnsafeTargetError, ValueError) as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f'Header check failed: {str(e)}'}), 502

@@ -89,7 +89,11 @@ def _request(method: str, url: str, **kwargs):
     kwargs['allow_redirects'] = False  # a redirect could point at an internal host
     kwargs.setdefault('timeout', 10)
     kwargs['stream'] = True
+    read_body = kwargs.pop('read_body', True)
     response = requests.request(method, url, **kwargs)
+    if not read_body:  # headers only; don't download the page
+        response.close()
+        return response
     content = b''
     for chunk in response.iter_content(65536):
         content += chunk

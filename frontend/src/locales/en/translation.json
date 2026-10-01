@@ -23,6 +23,9 @@
     "dkimManager": "DKIM Manager",
     "selfSignedGenerator": "Self-Signed Cert",
     "sslConfigGenerator": "SSL Config Generator",
+    "tlsScanner": "TLS Scanner",
+    "securityHeaders": "Security Headers",
+    "domainMonitor": "Domain Monitor",
     "jwtDecoder": "JWT Decoder",
     "group": {
       "sslTls": "SSL / TLS",

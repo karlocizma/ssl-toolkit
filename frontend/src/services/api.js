@@ -52,7 +52,18 @@ export const sslCheckAPI = {
   checkChain: (data) => api.post('/check/chain', data),
   checkSSLLabs: (data) => api.post('/check/ssl-labs', data),
   checkOCSP: (data) => api.post('/check/ocsp', data),
-  checkCRL: (data) => api.post('/check/crl', data)
+  checkCRL: (data) => api.post('/check/crl', data),
+  scanTLS: (data) => api.post('/check/tls', data, { timeout: 120000 }),
+  checkHeaders: (data) => api.post('/check/headers', data)
+};
+
+// Domain monitoring
+export const monitorAPI = {
+  addDomain: (data) => api.post('/monitor/domain/add', data, { timeout: 60000 }),
+  listDomains: () => api.get('/monitor/domain/list'),
+  getDomain: (id) => api.get(`/monitor/domain/${id}`),
+  removeDomain: (id) => api.delete(`/monitor/domain/${id}`),
+  checkDomain: (id) => api.post(`/monitor/domain/${id}/check`, null, { timeout: 60000 })
 };
 
 // Sysadmin helpers
