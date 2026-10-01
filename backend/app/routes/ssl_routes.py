@@ -1072,3 +1072,30 @@ def check_http_security_headers():
         return jsonify({'error': str(e)}), 400
     except Exception as e:
         return jsonify({'error': f'Header check failed: {str(e)}'}), 502
+
+
+# Private CA
+@ssl_bp.route('/ca/create', methods=['POST'])
+def private_ca_create():
+    """Create a new private root CA (certificate and key are returned, not stored)"""
+    from app.services.private_ca import create_ca
+    try:
+        return jsonify({'success': True, 'result': create_ca(request.get_json(silent=True))})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+
+
+@ssl_bp.route('/ca/issue', methods=['POST'])
+def private_ca_issue():
+    """Issue a server/client certificate from a private CA"""
+    from app.services.private_ca import issue_certificate
+    try:
+        data = request.get_json(silent=True) or {}
+        _check_input_size(data, 'ca_certificate', 'ca_private_key', 'csr')
+        return jsonify({'success': True, 'result': issue_certificate(data)})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500

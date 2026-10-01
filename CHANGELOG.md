@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [Phase 6] — 2026-10-01
+
+### Added
+- SSRF protection for all outbound connections (`app/utils/net_safety.py`); `ALLOW_PRIVATE_TARGETS` opt-in
+- Domain monitoring with scheduled re-checks, expiry history, renewal/issuer change detection (`/api/monitor/domain/*`)
+- Expiry alerts via email and Slack/Teams/generic webhooks, deduplicated per threshold; background scheduler elected across Gunicorn workers
+- TLS scanner (`/api/check/tls`): protocol + cipher probing, weak cipher and forward-secrecy detection, A–F grade
+- Security header audit (`/api/check/headers`): HSTS, CSP, framing, referrer, cookies; 0–100 score
+- Stateless private CA (`/api/ca/create`, `/api/ca/issue`): root CA, server/client certificates, CSR signing, PKCS#12 export
+- OpenAPI spec (`/api/openapi.json`) and Swagger UI (`/api/docs`)
+- GitHub Actions CI (backend tests, frontend test + build, Docker build) and Dependabot
+- Frontend pages: TLS Scanner, Security Headers, Domain Monitor, Private CA
+
+### Changed
+- API keys are stored hashed on the persistent volume instead of plaintext in `/tmp`; legacy keys are migrated on first load. `include_keys` on the list endpoint no longer returns full keys.
+
+### Fixed
+- Certificate decoding failed on the pinned `cryptography` 41 (`not_valid_*_utc`)
+- Unused imports that would fail a strict (`CI=true`) frontend build
+
+---
+
 ## [Phase 5] — 2026-05-15
 
 ### Added

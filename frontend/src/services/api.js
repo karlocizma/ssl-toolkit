@@ -57,6 +57,12 @@ export const sslCheckAPI = {
   checkHeaders: (data) => api.post('/check/headers', data)
 };
 
+// Private CA
+export const caAPI = {
+  create: (data) => api.post('/ca/create', data, { timeout: 60000 }),
+  issue: (data) => api.post('/ca/issue', data, { timeout: 60000 })
+};
+
 // Domain monitoring
 export const monitorAPI = {
   addDomain: (data) => api.post('/monitor/domain/add', data, { timeout: 60000 }),

@@ -28,6 +28,14 @@ REQUEST_BODIES = {
         'certificate': _STR, 'label': _STR, 'tags': {'type': 'array', 'items': _STR}}},
     '/dns/lookup': {'required': ['domain'], 'properties': {
         'domain': _STR, 'record_types': {'type': 'array', 'items': _STR, 'example': ['A', 'MX', 'TXT']}}},
+    '/ca/create': {'required': ['common_name'], 'properties': {
+        'common_name': _STR, 'organization': _STR, 'validity_days': {'type': 'integer', 'default': 3650},
+        'key_type': {**_STR, 'enum': ['RSA', 'EC']}}},
+    '/ca/issue': {'required': ['ca_certificate', 'ca_private_key'], 'properties': {
+        'ca_certificate': _STR, 'ca_private_key': _STR, 'ca_key_password': _STR, 'csr': _STR,
+        'common_name': _STR, 'sans': {'type': 'array', 'items': _STR},
+        'usage': {**_STR, 'enum': ['server', 'client', 'both']},
+        'validity_days': {'type': 'integer', 'default': 365}, 'pkcs12_password': _STR}},
     '/admin/apikey/generate': {'required': ['name'], 'properties': {
         'name': _STR, 'rate_limit': {**_STR, 'example': '200 per hour'}, 'description': _STR}},
 }
@@ -36,7 +44,7 @@ TAGS = [
     ('certificate', 'Certificates'), ('csr', 'CSR'), ('key', 'Keys'), ('convert', 'Conversion'),
     ('check', 'Checks'), ('monitor', 'Monitoring'), ('batch', 'Batch'), ('admin', 'Admin'),
     ('dmarc', 'Email security'), ('spf', 'Email security'), ('dkim', 'Email security'),
-    ('email', 'Email security'), ('dns', 'DNS'), ('upload', 'Uploads'), ('ssl-config', 'Config'),
+    ('email', 'Email security'), ('dns', 'DNS'), ('upload', 'Uploads'), ('ssl-config', 'Config'), ('ca', 'Private CA'),
 ]
 
 
