@@ -27,6 +27,7 @@ import {
   VpnLock as VpnLockIcon,
   Code as CodeIcon,
   Token as TokenIcon,
+  AlternateEmail as AlternateEmailIcon,
   Lock as LockIcon,
   Http as HttpIcon,
   Visibility as VisibilityIcon,
@@ -220,6 +221,14 @@ const getTools = (t) => [
     path: '/acme',
     color: 'success',
     featuresKeys: ['tools.acme.features.0', 'tools.acme.features.1', 'tools.acme.features.2', 'tools.acme.features.3']
+  },
+  {
+    titleKey: 'tools.autodiscover.title',
+    descriptionKey: 'tools.autodiscover.description',
+    icon: <AlternateEmailIcon sx={{ fontSize: 40 }} />,
+    path: '/autodiscover',
+    color: 'secondary',
+    featuresKeys: ['tools.autodiscover.features.0', 'tools.autodiscover.features.1', 'tools.autodiscover.features.2', 'tools.autodiscover.features.3']
   },
 ];
 

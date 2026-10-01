@@ -185,6 +185,15 @@ SMTP_HOST=smtp.example.com                  # plus SMTP_PORT, SMTP_USER, SMTP_PA
 
 **ACME / Let's Encrypt:** `POST /api/acme/order` + `/api/acme/complete` (manual dns-01 or http-01) and `POST /api/acme/issue` (automatic dns-01 via Cloudflare or RFC 2136/TSIG). Certificates, domain keys and provider credentials are never stored: the account key (generated if you don't send one) and the domain key are returned to you, and an order is identified by its URL. The default CA is Let's Encrypt **staging**; pass `"directory": "letsencrypt"` for production. Set `ACME_CA_BUNDLE` to trust a private ACME CA, and `ACME_DNS_RESOLVERS` (default `1.1.1.1,8.8.8.8`) to change the resolvers used to confirm TXT propagation.
 
+**Autodiscover check:** `POST /api/check/autodiscover` runs the lookups mail clients use to configure themselves and reports every step (status, redirects, settings found): the Outlook/Exchange sequence (`https://<domain>/…`, `https://autodiscover.<domain>/…`, the HTTP redirect, `_autodiscover._tcp` SRV), Thunderbird autoconfig, and RFC 6186 SRV records. No credentials are sent; a 401 from Exchange is reported as healthy.
+
+```bash
+curl -s -X POST http://localhost/api/check/autodiscover \
+  -H 'Content-Type: application/json' -d '{"domain": "example.com"}'
+# or from the command line, without the web stack:
+cd backend && python -m app.services.autodiscover example.com [user@example.com]
+```
+
 Interactive API docs (Swagger UI) are served at `/api/docs`; the raw spec is at `/api/openapi.json`.
 
 **SSRF protection:** every outbound check refuses targets that resolve to loopback, private, link-local or otherwise non-public addresses, and does not follow redirects blindly. Set `ALLOW_PRIVATE_TARGETS=true` only on trusted internal deployments.

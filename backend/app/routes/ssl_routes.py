@@ -1170,3 +1170,19 @@ def acme_complete():
 def acme_issue():
     """Issue a certificate automatically using dns-01 and a DNS provider"""
     return _acme_endpoint('issue_automatic')
+
+
+# Mail client auto-configuration
+@ssl_bp.route('/check/autodiscover', methods=['POST'])
+def check_mail_autodiscover():
+    """Run the Outlook Autodiscover, Thunderbird autoconfig and RFC 6186 lookups for a domain"""
+    from app.services.autodiscover import check_autodiscover
+    data = request.get_json(silent=True) or {}
+    if not data.get('domain') and not data.get('email'):
+        return jsonify({'error': 'domain (or email) is required'}), 400
+    try:
+        return jsonify({'success': True, 'result': check_autodiscover(data.get('domain'), data.get('email'))})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f'Autodiscover check failed: {str(e)}'}), 500

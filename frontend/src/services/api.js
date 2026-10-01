@@ -77,7 +77,8 @@ export const sslCheckAPI = {
   checkOCSP: (data) => api.post('/check/ocsp', data),
   checkCRL: (data) => api.post('/check/crl', data),
   scanTLS: (data) => api.post('/check/tls', data, { timeout: 120000 }),
-  checkHeaders: (data) => api.post('/check/headers', data)
+  checkHeaders: (data) => api.post('/check/headers', data),
+  checkAutodiscover: (data) => api.post('/check/autodiscover', data, { timeout: 90000 })
 };
 
 // Private CA
