@@ -36,6 +36,20 @@ REQUEST_BODIES = {
         'common_name': _STR, 'sans': {'type': 'array', 'items': _STR},
         'usage': {**_STR, 'enum': ['server', 'client', 'both']},
         'validity_days': {'type': 'integer', 'default': 365}, 'pkcs12_password': _STR}},
+    '/acme/order': {'properties': {
+        'domains': {'type': 'array', 'items': _STR, 'example': ['example.com', '*.example.com']},
+        'directory': {**_STR, 'description': "'letsencrypt', 'letsencrypt-staging' (default) or a directory URL"},
+        'email': _STR, 'challenge_type': {**_STR, 'enum': ['dns-01', 'http-01']},
+        'account_key_pem': {**_STR, 'description': 'Reuse an account; generated and returned if omitted'},
+        'csr': {**_STR, 'description': 'Optional: your own CSR (the private key then never leaves you)'}}},
+    '/acme/complete': {'required': ['order_url', 'account_key_pem', 'csr_pem'], 'properties': {
+        'directory': _STR, 'order_url': _STR, 'account_key_pem': _STR, 'csr_pem': _STR,
+        'challenge_type': {**_STR, 'enum': ['dns-01', 'http-01']}}},
+    '/acme/issue': {'required': ['dns_provider'], 'properties': {
+        'domains': {'type': 'array', 'items': _STR}, 'directory': _STR, 'email': _STR, 'csr': _STR,
+        'account_key_pem': _STR, 'propagation_timeout': {'type': 'integer', 'default': 90},
+        'dns_provider': {'type': 'object', 'description': "cloudflare: {type, api_token, zone_id?}; "
+                         "rfc2136: {type, server, zone, tsig_name, tsig_secret, tsig_algorithm?, port?}"}}},
     '/admin/apikey/generate': {'required': ['name'], 'properties': {
         'name': _STR, 'rate_limit': {**_STR, 'example': '200 per hour'}, 'description': _STR}},
 }
@@ -44,7 +58,7 @@ TAGS = [
     ('certificate', 'Certificates'), ('csr', 'CSR'), ('key', 'Keys'), ('convert', 'Conversion'),
     ('check', 'Checks'), ('monitor', 'Monitoring'), ('batch', 'Batch'), ('admin', 'Admin'),
     ('dmarc', 'Email security'), ('spf', 'Email security'), ('dkim', 'Email security'),
-    ('email', 'Email security'), ('dns', 'DNS'), ('upload', 'Uploads'), ('ssl-config', 'Config'), ('ca', 'Private CA'),
+    ('email', 'Email security'), ('dns', 'DNS'), ('upload', 'Uploads'), ('ssl-config', 'Config'), ('ca', 'Private CA'), ('acme', 'ACME'),
 ]
 
 

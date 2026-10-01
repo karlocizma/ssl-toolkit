@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - TLS scanner (`/api/check/tls`): protocol + cipher probing, weak cipher and forward-secrecy detection, A–F grade
 - Security header audit (`/api/check/headers`): HSTS, CSP, framing, referrer, cookies; 0–100 score
 - Stateless private CA (`/api/ca/create`, `/api/ca/issue`): root CA, server/client certificates, CSR signing, PKCS#12 export
+- ACME client (RFC 8555, no extra dependencies): manual dns-01/http-01 flow and automatic dns-01 issuance via Cloudflare or RFC 2136 (TSIG); wildcard support; stateless, nothing stored server-side; integration-tested against Pebble
 - OpenAPI spec (`/api/openapi.json`) and Swagger UI (`/api/docs`)
 - GitHub Actions CI (backend tests, frontend test + build, Docker build) and Dependabot
 - Frontend pages: TLS Scanner, Security Headers, Domain Monitor, Private CA

@@ -63,6 +63,13 @@ export const caAPI = {
   issue: (data) => api.post('/ca/issue', data, { timeout: 60000 })
 };
 
+// ACME (Let's Encrypt & compatible CAs)
+export const acmeAPI = {
+  order: (data) => api.post('/acme/order', data, { timeout: 120000 }),
+  complete: (data) => api.post('/acme/complete', data, { timeout: 300000 }),
+  issue: (data) => api.post('/acme/issue', data, { timeout: 300000 })
+};
+
 // Domain monitoring
 export const monitorAPI = {
   addDomain: (data) => api.post('/monitor/domain/add', data, { timeout: 60000 }),

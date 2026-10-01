@@ -23,6 +23,7 @@
     "dkimManager": "DKIM Manager",
     "selfSignedGenerator": "Self-Signed Cert",
     "sslConfigGenerator": "SSL Config Generator",
+    "acme": "ACME / Let's Encrypt",
     "privateCA": "Private CA",
     "tlsScanner": "TLS Scanner",
     "securityHeaders": "Security Headers",

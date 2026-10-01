@@ -27,6 +27,7 @@ import TLSScanner from './components/TLSScanner';
 import SecurityHeaders from './components/SecurityHeaders';
 import DomainMonitor from './components/DomainMonitor';
 import PrivateCA from './components/PrivateCA';
+import ACMEIssuer from './components/ACMEIssuer';
 import './App.css';
 
 function App() {
@@ -85,6 +86,7 @@ function App() {
               <Route path="/self-signed-generator" element={<SelfSignedGenerator />} />
               <Route path="/ssl-config-generator" element={<SSLConfigGenerator />} />
               <Route path="/jwt-decoder" element={<JWTDecoder />} />
+              <Route path="/acme" element={<ACMEIssuer />} />
               <Route path="/private-ca" element={<PrivateCA />} />
               <Route path="/tls-scanner" element={<TLSScanner />} />
               <Route path="/security-headers" element={<SecurityHeaders />} />

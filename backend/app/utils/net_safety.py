@@ -110,3 +110,8 @@ def safe_get(url: str, **kwargs):
 
 def safe_post(url: str, **kwargs):
     return _request('POST', url, **kwargs)
+
+
+def safe_request(method: str, url: str, **kwargs):
+    """Validated request of any method (used by the ACME client)."""
+    return _request(method.upper(), url, **kwargs)

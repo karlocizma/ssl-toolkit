@@ -1099,3 +1099,35 @@ def private_ca_issue():
         return jsonify({'error': str(e)}), 400
     except Exception as e:
         return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+
+
+# ACME (Let's Encrypt & compatible CAs) — stateless, nothing is stored server-side
+def _acme_endpoint(service_fn_name):
+    from app.services import acme_service
+
+    data = request.get_json(silent=True) or {}
+    try:
+        _check_input_size(data, 'account_key_pem', 'csr', 'csr_pem')
+        return jsonify({'success': True, 'result': getattr(acme_service, service_fn_name)(data)})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f'ACME request failed: {str(e)}'}), 502
+
+
+@ssl_bp.route('/acme/order', methods=['POST'])
+def acme_order():
+    """Start a manual ACME order and get the DNS/HTTP challenge details"""
+    return _acme_endpoint('start_order')
+
+
+@ssl_bp.route('/acme/complete', methods=['POST'])
+def acme_complete():
+    """Finish a manual ACME order after publishing the challenges"""
+    return _acme_endpoint('complete_order')
+
+
+@ssl_bp.route('/acme/issue', methods=['POST'])
+def acme_issue():
+    """Issue a certificate automatically using dns-01 and a DNS provider"""
+    return _acme_endpoint('issue_automatic')
