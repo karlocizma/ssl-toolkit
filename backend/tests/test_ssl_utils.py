@@ -1,4 +1,5 @@
 import pytest
+from cryptography import x509
 from cryptography.hazmat.primitives.asymmetric import rsa, ec
 from cryptography.hazmat.primitives import serialization
 
@@ -125,3 +126,34 @@ class TestCleanPemData:
         pem = b'-----BEGIN CERTIFICATE-----\nabc\n-----END CERTIFICATE-----'
         result = clean_pem_data(pem)
         assert isinstance(result, str)
+
+
+class TestCsrSubjectAlternativeNames:
+    """generate_csr must keep every valid SAN and reject (not silently drop) invalid ones."""
+
+    @staticmethod
+    def _sans(sans):
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        from app.utils.ssl_utils import generate_csr
+        key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        csr = generate_csr({'common_name': 'x.example.com'}, key, sans)
+        ext = csr.extensions.get_extension_for_class(x509.SubjectAlternativeName).value
+        return ext
+
+    def test_dns_wildcard_ip_email_and_underscore_names(self):
+        ext = self._sans(['a.example.com', '*.example.com', '10.0.0.5', '2001:db8::1',
+                          'ops@example.com', 'my_host.example.com', 'localhost'])
+        assert ext.get_values_for_type(x509.DNSName) == [
+            'a.example.com', '*.example.com', 'my_host.example.com', 'localhost']
+        assert [str(i) for i in ext.get_values_for_type(x509.IPAddress)] == ['10.0.0.5', '2001:db8::1']
+        assert ext.get_values_for_type(x509.RFC822Name) == ['ops@example.com']
+
+    def test_blank_entries_ignored_and_whitespace_trimmed(self):
+        ext = self._sans(['  a.example.com ', '', '   '])
+        assert ext.get_values_for_type(x509.DNSName) == ['a.example.com']
+
+    @pytest.mark.parametrize('bad', ['not a name!', 'exa mple.com', '-bad.example.com', 'a..example.com',
+                                     '*.*.example.com', 'bad@@example.com', 'http://example.com'])
+    def test_invalid_san_raises(self, bad):
+        with pytest.raises(ValueError, match='Invalid subject alternative name'):
+            self._sans(['ok.example.com', bad])
