@@ -15,7 +15,7 @@
     "@mui/icons-material": "^5.18.0",
     "@emotion/react": "^11.10.6",
     "@emotion/styled": "^11.14.1",
-    "@mui/lab": "^5.0.0-alpha.120",
+    "@mui/lab": "^5.0.0-alpha.177",
     "react-dropzone": "^14.4.1",
     "react-i18next": "^12.2.0",
     "i18next": "^22.4.10",
