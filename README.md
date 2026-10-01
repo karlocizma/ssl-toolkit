@@ -168,7 +168,24 @@ SECRET_KEY=change-this-in-production        # Flask secret key
 FLASK_ENV=production
 ADMIN_TOKEN=your-admin-bearer-token         # Required for /api/admin/* endpoints
 REACT_APP_API_URL=/api
+
+# Outbound-scan safety
+ALLOW_PRIVATE_TARGETS=false                 # true = allow checks against private/internal IPs (internal PKI)
+
+# Expiry alerts for monitored certificates and domains (all optional)
+ALERT_THRESHOLDS=30,14,7,1                  # days before expiry
+ALERT_CHECK_INTERVAL_HOURS=12               # 0 disables the background scheduler
+ALERT_WEBHOOK_URL=https://hooks.slack.com/...   # Slack, Teams or any JSON webhook
+SMTP_HOST=smtp.example.com                  # plus SMTP_PORT, SMTP_USER, SMTP_PASSWORD, ALERT_EMAIL_FROM, ALERT_EMAIL_TO
 ```
+
+**ACME / Let's Encrypt:** `POST /api/acme/order` + `/api/acme/complete` (manual dns-01 or http-01) and `POST /api/acme/issue` (automatic dns-01 via Cloudflare or RFC 2136/TSIG). Certificates, domain keys and provider credentials are never stored: the account key (generated if you don't send one) and the domain key are returned to you, and an order is identified by its URL. The default CA is Let's Encrypt **staging**; pass `"directory": "letsencrypt"` for production. Set `ACME_CA_BUNDLE` to trust a private ACME CA, and `ACME_DNS_RESOLVERS` (default `1.1.1.1,8.8.8.8`) to change the resolvers used to confirm TXT propagation.
+
+Interactive API docs (Swagger UI) are served at `/api/docs`; the raw spec is at `/api/openapi.json`.
+
+**SSRF protection:** every outbound check refuses targets that resolve to loopback, private, link-local or otherwise non-public addresses, and does not follow redirects blindly. Set `ALLOW_PRIVATE_TARGETS=true` only on trusted internal deployments.
+
+**Persistence:** monitored certificates, monitored domains and API keys (stored only as SHA-256 hashes) live on the `cert-monitor-data` volume. Test alert channels with `POST /api/monitor/alerts/test` (admin token required).
 
 ### Rate limiting defaults
 

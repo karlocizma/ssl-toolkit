@@ -48,6 +48,7 @@ def require_admin_token(f):
         if not auth_header.startswith('Bearer ') or auth_header[7:] != admin_token:
             return jsonify({'error': 'Unauthorized'}), 401
         return f(*args, **kwargs)
+    decorated.requires_admin = True  # surfaced in the OpenAPI spec
     return decorated
 
 
@@ -975,3 +976,158 @@ def ssl_config_generate():
     except Exception as e:
         return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
 
+
+
+# Domain monitoring & alerting
+@ssl_bp.route('/monitor/domain/add', methods=['POST'])
+def add_domain_to_monitor():
+    from app.services import domain_monitor
+    data = request.get_json(silent=True) or {}
+    if not data.get('hostname'):
+        return jsonify({'error': 'Hostname is required'}), 400
+    result = domain_monitor.add_domain(data['hostname'], data.get('port', 443),
+                                       data.get('label'), data.get('tags'))
+    return jsonify(result), (200 if result['success'] else 400)
+
+
+@ssl_bp.route('/monitor/domain/list', methods=['GET'])
+def list_monitored_domains():
+    from app.services import domain_monitor
+    return jsonify(domain_monitor.list_domains())
+
+
+@ssl_bp.route('/monitor/domain/<domain_id>', methods=['GET'])
+def get_monitored_domain(domain_id):
+    from app.services import domain_monitor
+    result = domain_monitor.get_domain(domain_id)
+    return jsonify(result), (200 if result['success'] else 404)
+
+
+@ssl_bp.route('/monitor/domain/<domain_id>', methods=['DELETE'])
+def remove_monitored_domain(domain_id):
+    from app.services import domain_monitor
+    result = domain_monitor.remove_domain(domain_id)
+    return jsonify(result), (200 if result['success'] else 404)
+
+
+@ssl_bp.route('/monitor/domain/<domain_id>/check', methods=['POST'])
+def check_monitored_domain_now(domain_id):
+    from app.services import domain_monitor
+    result = domain_monitor.check_domain(domain_id)
+    return jsonify(result), (200 if result['success'] else 404)
+
+
+@ssl_bp.route('/monitor/alerts/config', methods=['GET'])
+@require_admin_token
+def alerts_config():
+    from app.services import alerts
+    return jsonify({'success': True, 'config': alerts.get_config()})
+
+
+@ssl_bp.route('/monitor/alerts/test', methods=['POST'])
+@require_admin_token
+def alerts_test():
+    """Send a test notification through every configured channel."""
+    from app.services import alerts
+    event = {'kind': 'test', 'detail': 'This is a test alert from SSL Toolkit'}
+    return jsonify({'success': True, 'deliveries': alerts.dispatch([event], 'SSL Toolkit: test alert')})
+
+
+@ssl_bp.route('/monitor/alerts/run', methods=['POST'])
+@require_admin_token
+def alerts_run():
+    """Run a full re-check and alert cycle immediately."""
+    from app.services import alerts
+    return jsonify({'success': True, 'result': alerts.run_checks()})
+
+
+# TLS scanner & security headers
+@ssl_bp.route('/check/tls', methods=['POST'])
+def check_tls_configuration():
+    from app.services.tls_scanner import scan_tls
+    from app.utils.net_safety import UnsafeTargetError
+    data = request.get_json(silent=True) or {}
+    if not data.get('hostname'):
+        return jsonify({'error': 'Hostname is required'}), 400
+    try:
+        result = scan_tls(data['hostname'], data.get('port', 443), data.get('timeout', 5))
+        return jsonify({'success': True, 'result': result})
+    except (UnsafeTargetError, ValueError) as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f'Scan failed: {str(e)}'}), 500
+
+
+@ssl_bp.route('/check/headers', methods=['POST'])
+def check_http_security_headers():
+    from app.services.security_headers import check_security_headers
+    from app.utils.net_safety import UnsafeTargetError
+    data = request.get_json(silent=True) or {}
+    if not data.get('url') and not data.get('hostname'):
+        return jsonify({'error': 'URL or hostname is required'}), 400
+    try:
+        result = check_security_headers(data.get('url') or data['hostname'])
+        return jsonify({'success': True, 'result': result})
+    except (UnsafeTargetError, ValueError) as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f'Header check failed: {str(e)}'}), 502
+
+
+# Private CA
+@ssl_bp.route('/ca/create', methods=['POST'])
+def private_ca_create():
+    """Create a new private root CA (certificate and key are returned, not stored)"""
+    from app.services.private_ca import create_ca
+    try:
+        return jsonify({'success': True, 'result': create_ca(request.get_json(silent=True))})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+
+
+@ssl_bp.route('/ca/issue', methods=['POST'])
+def private_ca_issue():
+    """Issue a server/client certificate from a private CA"""
+    from app.services.private_ca import issue_certificate
+    try:
+        data = request.get_json(silent=True) or {}
+        _check_input_size(data, 'ca_certificate', 'ca_private_key', 'csr')
+        return jsonify({'success': True, 'result': issue_certificate(data)})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+
+
+# ACME (Let's Encrypt & compatible CAs) — stateless, nothing is stored server-side
+def _acme_endpoint(service_fn_name):
+    from app.services import acme_service
+
+    data = request.get_json(silent=True) or {}
+    try:
+        _check_input_size(data, 'account_key_pem', 'csr', 'csr_pem')
+        return jsonify({'success': True, 'result': getattr(acme_service, service_fn_name)(data)})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f'ACME request failed: {str(e)}'}), 502
+
+
+@ssl_bp.route('/acme/order', methods=['POST'])
+def acme_order():
+    """Start a manual ACME order and get the DNS/HTTP challenge details"""
+    return _acme_endpoint('start_order')
+
+
+@ssl_bp.route('/acme/complete', methods=['POST'])
+def acme_complete():
+    """Finish a manual ACME order after publishing the challenges"""
+    return _acme_endpoint('complete_order')
+
+
+@ssl_bp.route('/acme/issue', methods=['POST'])
+def acme_issue():
+    """Issue a certificate automatically using dns-01 and a DNS provider"""
+    return _acme_endpoint('issue_automatic')

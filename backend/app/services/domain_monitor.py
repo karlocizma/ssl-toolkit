@@ -1,0 +1,220 @@
+"""Live-domain monitoring: scheduled re-checks, expiry history and change detection."""
+import fcntl
+import json
+import os
+import re
+import uuid
+from datetime import datetime, timezone
+from typing import Dict, List, Optional
+
+from app.services.ssl_checker import _fetch_single_certificate
+from app.utils.net_safety import UnsafeTargetError, resolve_public, validate_port
+
+DOMAIN_DATA_FILE = os.environ.get('DOMAIN_MONITOR_FILE', '/app/data/monitored_domains.json')
+HISTORY_LIMIT = 90
+_HOSTNAME_RE = re.compile(r'^(?=.{1,253}$)([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$')
+
+
+def _lock_path() -> str:
+    return DOMAIN_DATA_FILE + '.lock'
+
+
+def _load() -> Dict:
+    os.makedirs(os.path.dirname(DOMAIN_DATA_FILE), exist_ok=True)
+    with open(_lock_path(), 'w') as lock_fh:
+        fcntl.flock(lock_fh, fcntl.LOCK_SH)
+        try:
+            with open(DOMAIN_DATA_FILE) as f:
+                return json.load(f)
+        except (OSError, json.JSONDecodeError):
+            return {'domains': []}
+        finally:
+            fcntl.flock(lock_fh, fcntl.LOCK_UN)
+
+
+def _save(data: Dict) -> None:
+    os.makedirs(os.path.dirname(DOMAIN_DATA_FILE), exist_ok=True)
+    with open(_lock_path(), 'w') as lock_fh:
+        fcntl.flock(lock_fh, fcntl.LOCK_EX)
+        try:
+            tmp = DOMAIN_DATA_FILE + '.tmp'
+            with open(tmp, 'w') as f:
+                json.dump(data, f, indent=2)
+            os.replace(tmp, DOMAIN_DATA_FILE)
+        finally:
+            fcntl.flock(lock_fh, fcntl.LOCK_UN)
+
+
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _public_view(entry: Dict, include_history: bool = False) -> Dict:
+    view = {k: v for k, v in entry.items() if k not in ('history', 'notified')}
+    if include_history:
+        view['history'] = entry.get('history', [])
+    return view
+
+
+def add_domain(hostname: str, port=443, label: Optional[str] = None, tags: Optional[List[str]] = None) -> Dict:
+    hostname = (hostname or '').strip().lower().rstrip('.')
+    if not _HOSTNAME_RE.match(hostname):
+        return {'success': False, 'message': 'Invalid hostname'}
+    try:
+        port = validate_port(port)
+        resolve_public(hostname, port)  # reject internal targets up front
+    except UnsafeTargetError as e:
+        return {'success': False, 'message': str(e)}
+    except OSError as e:
+        return {'success': False, 'message': f'DNS resolution error: {e}'}
+
+    data = _load()
+    for existing in data['domains']:
+        if existing['hostname'] == hostname and existing['port'] == port:
+            return {'success': False, 'message': 'Domain already being monitored', 'domain_id': existing['id']}
+
+    entry = {
+        'id': f'dom_{uuid.uuid4().hex[:12]}',
+        'hostname': hostname,
+        'port': port,
+        'label': label or hostname,
+        'tags': tags or [],
+        'added_at': _now(),
+        'last_check': None,
+        'status': 'pending',
+        'last_error': None,
+        'not_after': None,
+        'days_until_expiry': None,
+        'issuer': None,
+        'serial_number': None,
+        'fingerprint_sha256': None,
+        'changes': [],
+        'history': [],
+        'notified': [],
+    }
+    data['domains'].append(entry)
+    _save(data)
+    check_domain(entry['id'])
+    return {'success': True, 'message': 'Domain added to monitoring', 'domain_id': entry['id']}
+
+
+def remove_domain(domain_id: str) -> Dict:
+    data = _load()
+    remaining = [d for d in data['domains'] if d['id'] != domain_id]
+    if len(remaining) == len(data['domains']):
+        return {'success': False, 'message': 'Domain not found'}
+    data['domains'] = remaining
+    _save(data)
+    return {'success': True, 'message': 'Domain removed from monitoring'}
+
+
+def list_domains() -> Dict:
+    domains = [_public_view(d) for d in _load()['domains']]
+    return {'success': True, 'count': len(domains), 'domains': domains}
+
+
+def get_domain(domain_id: str) -> Dict:
+    for d in _load()['domains']:
+        if d['id'] == domain_id:
+            return {'success': True, 'domain': _public_view(d, include_history=True)}
+    return {'success': False, 'message': 'Domain not found'}
+
+
+def apply_check_result(entry: Dict, cert_info: Optional[Dict], error: Optional[str]) -> List[Dict]:
+    """Update an entry in place from a check result; returns change events."""
+    events = []
+    entry['last_check'] = _now()
+
+    if cert_info is None:
+        if entry['status'] != 'error':
+            events.append({'kind': 'unreachable', 'domain_id': entry['id'],
+                           'hostname': entry['hostname'], 'detail': error or 'Unable to fetch certificate'})
+        entry['status'] = 'error'
+        entry['last_error'] = error or 'Unable to fetch certificate'
+        return events
+
+    validity = cert_info['validity']
+    issuer = cert_info['issuer'].get('common_name') or cert_info['issuer'].get('organization')
+    serial = cert_info['serial_number']
+    fingerprint = cert_info['fingerprints']['sha256']
+
+    if entry['status'] == 'error':
+        events.append({'kind': 'recovered', 'domain_id': entry['id'],
+                       'hostname': entry['hostname'], 'detail': 'Domain is reachable again'})
+
+    previous_serial = entry.get('serial_number')
+    if previous_serial and previous_serial != serial:
+        change = {
+            'detected_at': entry['last_check'],
+            'old_serial': previous_serial, 'new_serial': serial,
+            'old_issuer': entry.get('issuer'), 'new_issuer': issuer,
+            'issuer_changed': entry.get('issuer') != issuer,
+        }
+        entry['changes'] = (entry.get('changes', []) + [change])[-20:]
+        entry['notified'] = []  # fresh certificate: re-arm expiry alerts
+        detail = 'Certificate replaced (renewed)'
+        if change['issuer_changed']:
+            detail = f"Certificate replaced and issuer changed: {change['old_issuer']} -> {issuer}"
+        events.append({'kind': 'changed', 'domain_id': entry['id'],
+                       'hostname': entry['hostname'], 'detail': detail})
+
+    entry.update({
+        'status': 'ok',
+        'last_error': None,
+        'not_after': validity['not_after'],
+        'days_until_expiry': validity['days_until_expiry'],
+        'issuer': issuer,
+        'serial_number': serial,
+        'fingerprint_sha256': fingerprint,
+    })
+    history = entry.setdefault('history', [])
+    history.append({'checked_at': entry['last_check'], 'days_until_expiry': validity['days_until_expiry'],
+                    'serial_number': serial, 'issuer': issuer})
+    entry['history'] = history[-HISTORY_LIMIT:]
+    return events
+
+
+def check_domain(domain_id: str) -> Dict:
+    """Re-check one domain now and persist the outcome."""
+    data = _load()
+    for entry in data['domains']:
+        if entry['id'] == domain_id:
+            events = _check_entry(entry)
+            _save(data)
+            return {'success': True, 'domain': _public_view(entry), 'events': events}
+    return {'success': False, 'message': 'Domain not found'}
+
+
+def _check_entry(entry: Dict) -> List[Dict]:
+    try:
+        cert_info = _fetch_single_certificate(entry['hostname'], entry['port'], 10)
+        error = None if cert_info else 'Unable to retrieve certificate'
+    except Exception as e:  # defensive: never let one domain break a scheduled run
+        cert_info, error = None, str(e)
+    return apply_check_result(entry, cert_info, error)
+
+
+def check_all_domains() -> List[Dict]:
+    """Re-check every monitored domain; returns change events (not expiry alerts)."""
+    events = []
+    checked = {}
+    for entry in _load()['domains']:
+        events.extend(_check_entry(entry))
+        checked[entry['id']] = entry
+    # Re-read before saving so domains added/removed during the (slow) run are not clobbered.
+    data = _load()
+    data['domains'] = [checked.get(d['id'], d) for d in data['domains']]
+    _save(data)
+    return events
+
+
+def all_entries() -> List[Dict]:
+    return _load()['domains']
+
+
+def mark_notified(domain_id: str, thresholds: List[int]) -> None:
+    data = _load()
+    for entry in data['domains']:
+        if entry['id'] == domain_id:
+            entry['notified'] = sorted(set(entry.get('notified', [])) | set(thresholds))
+    _save(data)

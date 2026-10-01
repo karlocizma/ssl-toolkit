@@ -107,7 +107,11 @@ def get_certificate_info(cert_data):
         # Format fingerprints with colons
         sha1_fingerprint = ':'.join([sha1_fingerprint[i:i+2] for i in range(0, len(sha1_fingerprint), 2)])
         sha256_fingerprint = ':'.join([sha256_fingerprint[i:i+2] for i in range(0, len(sha256_fingerprint), 2)])
-        
+
+        # *_utc accessors only exist in cryptography >= 42
+        not_before = getattr(cert, 'not_valid_before_utc', None) or cert.not_valid_before.replace(tzinfo=timezone.utc)
+        not_after = getattr(cert, 'not_valid_after_utc', None) or cert.not_valid_after.replace(tzinfo=timezone.utc)
+
         return {
             'subject': {
                 'common_name': subject_cn,
@@ -127,10 +131,10 @@ def get_certificate_info(cert_data):
                 'organizational_unit': get_name_attribute(issuer, NameOID.ORGANIZATIONAL_UNIT_NAME)
             },
             'validity': {
-                'not_before': cert.not_valid_before_utc.isoformat(),
-                'not_after': cert.not_valid_after_utc.isoformat(),
-                'is_expired': cert.not_valid_after_utc < datetime.now(timezone.utc),
-                'days_until_expiry': (cert.not_valid_after_utc - datetime.now(timezone.utc)).days
+                'not_before': not_before.isoformat(),
+                'not_after': not_after.isoformat(),
+                'is_expired': not_after < datetime.now(timezone.utc),
+                'days_until_expiry': (not_after - datetime.now(timezone.utc)).days
             },
             'public_key': {
                 'algorithm': cert.public_key().__class__.__name__,
