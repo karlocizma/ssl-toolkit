@@ -19,8 +19,14 @@ def create_app():
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
     app.config['UPLOAD_FOLDER'] = '/tmp/ssl-toolkit'
     
-    # Enable CORS
-    CORS(app)
+    # The bundled frontend is same-origin behind nginx, so CORS is off unless origins are listed
+    # explicitly (e.g. CORS_ORIGINS=https://tools.example.com for a separately hosted frontend).
+    cors_origins = [o.strip() for o in os.environ.get('CORS_ORIGINS', '').split(',') if o.strip()]
+    if cors_origins:
+        CORS(app, origins=cors_origins)
+
+    if app.config['SECRET_KEY'].startswith('dev') and os.environ.get('FLASK_ENV') == 'production':
+        app.logger.warning('SECRET_KEY is the development default; set a random value in production')
     
     # Defaults to Redis (shared across Gunicorn workers); falls back to memory
     # for local dev when RATE_LIMIT_STORAGE_URI is not set.

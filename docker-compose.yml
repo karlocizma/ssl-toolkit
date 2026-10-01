@@ -23,6 +23,8 @@ services:
       - RATE_LIMIT_STORAGE_URI=${RATE_LIMIT_STORAGE_URI:-redis://redis:6379}
       - ADMIN_TOKEN=${ADMIN_TOKEN:-}
       - ALLOW_PRIVATE_TARGETS=${ALLOW_PRIVATE_TARGETS:-false}
+      - MONITOR_PUBLIC=${MONITOR_PUBLIC:-false}
+      - CORS_ORIGINS=${CORS_ORIGINS:-}
       # Expiry alerts (all optional; see backend/app/services/alerts.py)
       - ALERT_THRESHOLDS=${ALERT_THRESHOLDS:-30,14,7,1}
       - ALERT_CHECK_INTERVAL_HOURS=${ALERT_CHECK_INTERVAL_HOURS:-12}

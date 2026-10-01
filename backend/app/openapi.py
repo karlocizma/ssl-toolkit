@@ -89,6 +89,9 @@ def build_spec(app) -> dict:
             if method in ('POST', 'PUT', 'PATCH'):
                 schema = {'type': 'object', **REQUEST_BODIES.get(path, {})}
                 op['requestBody'] = {'content': {'application/json': {'schema': schema}}}
+            if getattr(view, 'requires_access', False):
+                op['security'] = [{'accessToken': []}]
+                op['responses']['401'] = {'description': 'Missing or invalid access token'}
             if getattr(view, 'requires_admin', False):
                 op['security'] = [{'adminToken': []}]
                 op['responses']['401'] = {'description': 'Missing or invalid admin token'}
@@ -101,6 +104,8 @@ def build_spec(app) -> dict:
         'servers': [{'url': API_PREFIX}],
         'components': {'securitySchemes': {
             'adminToken': {'type': 'http', 'scheme': 'bearer', 'description': 'Value of the ADMIN_TOKEN env var'},
+            'accessToken': {'type': 'apiKey', 'in': 'header', 'name': 'X-Access-Token',
+                            'description': 'An API key or the ADMIN_TOKEN'},
             'apiKey': {'type': 'apiKey', 'in': 'header', 'name': 'X-API-Key'}}},
         'paths': paths,
     }

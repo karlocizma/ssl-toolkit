@@ -27,6 +27,11 @@ import {
   VpnLock as VpnLockIcon,
   Code as CodeIcon,
   Token as TokenIcon,
+  Lock as LockIcon,
+  Http as HttpIcon,
+  Visibility as VisibilityIcon,
+  AccountBalance as AccountBalanceIcon,
+  WorkspacePremium as WorkspacePremiumIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -175,6 +180,46 @@ const getTools = (t) => [
     path: '/jwt-decoder',
     color: 'warning',
     featuresKeys: ['tools.jwtDecoder.features.0', 'tools.jwtDecoder.features.1', 'tools.jwtDecoder.features.2', 'tools.jwtDecoder.features.3']
+  },
+  {
+    titleKey: 'tools.tlsScanner.title',
+    descriptionKey: 'tools.tlsScanner.description',
+    icon: <LockIcon sx={{ fontSize: 40 }} />,
+    path: '/tls-scanner',
+    color: 'primary',
+    featuresKeys: ['tools.tlsScanner.features.0', 'tools.tlsScanner.features.1', 'tools.tlsScanner.features.2', 'tools.tlsScanner.features.3']
+  },
+  {
+    titleKey: 'tools.securityHeaders.title',
+    descriptionKey: 'tools.securityHeaders.description',
+    icon: <HttpIcon sx={{ fontSize: 40 }} />,
+    path: '/security-headers',
+    color: 'secondary',
+    featuresKeys: ['tools.securityHeaders.features.0', 'tools.securityHeaders.features.1', 'tools.securityHeaders.features.2', 'tools.securityHeaders.features.3']
+  },
+  {
+    titleKey: 'tools.domainMonitor.title',
+    descriptionKey: 'tools.domainMonitor.description',
+    icon: <VisibilityIcon sx={{ fontSize: 40 }} />,
+    path: '/domain-monitor',
+    color: 'info',
+    featuresKeys: ['tools.domainMonitor.features.0', 'tools.domainMonitor.features.1', 'tools.domainMonitor.features.2', 'tools.domainMonitor.features.3']
+  },
+  {
+    titleKey: 'tools.privateCA.title',
+    descriptionKey: 'tools.privateCA.description',
+    icon: <AccountBalanceIcon sx={{ fontSize: 40 }} />,
+    path: '/private-ca',
+    color: 'warning',
+    featuresKeys: ['tools.privateCA.features.0', 'tools.privateCA.features.1', 'tools.privateCA.features.2', 'tools.privateCA.features.3']
+  },
+  {
+    titleKey: 'tools.acme.title',
+    descriptionKey: 'tools.acme.description',
+    icon: <WorkspacePremiumIcon sx={{ fontSize: 40 }} />,
+    path: '/acme',
+    color: 'success',
+    featuresKeys: ['tools.acme.features.0', 'tools.acme.features.1', 'tools.acme.features.2', 'tools.acme.features.3']
   },
 ];
 

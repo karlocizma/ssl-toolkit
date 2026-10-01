@@ -104,6 +104,7 @@ def test_alert_endpoints_require_admin(client):
 
 def test_domain_routes(client, monkeypatch):
     monkeypatch.delenv('ALLOW_PRIVATE_TARGETS', raising=False)
+    monkeypatch.setenv('MONITOR_PUBLIC', 'true')
     assert client.post('/api/monitor/domain/add', json={}).status_code == 400
     assert client.post('/api/monitor/domain/add', json={'hostname': '10.0.0.1'}).status_code == 400
     assert client.get('/api/monitor/domain/list').get_json()['count'] == 0

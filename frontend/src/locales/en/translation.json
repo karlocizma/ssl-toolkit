@@ -129,6 +129,31 @@
       "description": "Generate production-ready TLS configuration snippets for web servers",
       "features": ["Nginx / Apache / HAProxy", "HSTS support", "OCSP stapling", "TLS 1.2 & 1.3"]
     },
+    "tlsScanner": {
+      "title": "TLS Scanner",
+      "description": "Test TLS versions and cipher suites and get a grade",
+      "features": ["Protocol support", "Cipher strength", "Forward secrecy", "A–F grade"]
+    },
+    "securityHeaders": {
+      "title": "Security Headers",
+      "description": "Audit HTTP security headers of a website",
+      "features": ["HSTS & CSP", "Framing & referrer", "Cookie flags", "Score out of 100"]
+    },
+    "domainMonitor": {
+      "title": "Domain Monitor",
+      "description": "Watch domains for expiry and certificate changes",
+      "features": ["Scheduled re-checks", "Expiry alerts", "Renewal detection", "Email & webhook"]
+    },
+    "privateCA": {
+      "title": "Private CA",
+      "description": "Create an internal CA and issue server or client certificates",
+      "features": ["Root CA creation", "Server & mTLS certs", "CSR signing", "PKCS#12 export"]
+    },
+    "acme": {
+      "title": "ACME / Let's Encrypt",
+      "description": "Get free, trusted certificates via ACME",
+      "features": ["Manual DNS/HTTP", "Automatic DNS", "Wildcard support", "Nothing stored"]
+    },
     "jwtDecoder": {
       "title": "JWT Decoder",
       "description": "Decode and inspect JSON Web Tokens directly in your browser",

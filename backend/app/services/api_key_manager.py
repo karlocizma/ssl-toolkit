@@ -139,7 +139,7 @@ def validate_api_key(api_key: str) -> Dict:
         }
 
 
-def list_api_keys(include_keys: bool = False) -> Dict:
+def list_api_keys() -> Dict:
     try:
         data = _load_api_keys()
         

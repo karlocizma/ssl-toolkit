@@ -3,6 +3,7 @@ from werkzeug.utils import secure_filename
 import os
 import tempfile
 import base64
+import hmac
 from cryptography.hazmat.primitives import serialization
 from functools import wraps
 
@@ -45,10 +46,38 @@ def require_admin_token(f):
         if not admin_token:
             return jsonify({'error': 'Admin API is disabled: ADMIN_TOKEN env var not set'}), 403
         auth_header = request.headers.get('Authorization', '')
-        if not auth_header.startswith('Bearer ') or auth_header[7:] != admin_token:
+        if not auth_header.startswith('Bearer ') or not hmac.compare_digest(auth_header[7:], admin_token):
             return jsonify({'error': 'Unauthorized'}), 401
         return f(*args, **kwargs)
     decorated.requires_admin = True  # surfaced in the OpenAPI spec
+    return decorated
+
+
+def _has_monitor_access() -> bool:
+    """Admin bearer token, or an X-Access-Token that is the admin token or a valid API key."""
+    admin_token = os.environ.get('ADMIN_TOKEN')
+    bearer = request.headers.get('Authorization', '')
+    if admin_token and bearer.startswith('Bearer ') and hmac.compare_digest(bearer[7:], admin_token):
+        return True
+    token = request.headers.get('X-Access-Token', '')
+    if not token:
+        return False
+    if admin_token and hmac.compare_digest(token, admin_token):
+        return True
+    from app.services.api_key_manager import validate_api_key
+    return validate_api_key(token).get('valid', False)
+
+
+def require_monitor_access(f):
+    """The monitor stores shared data, so it needs credentials unless MONITOR_PUBLIC=true."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if os.environ.get('MONITOR_PUBLIC', '').lower() not in ('1', 'true', 'yes'):
+            if not _has_monitor_access():
+                return jsonify({'error': 'Authentication required: send an API key or the admin token '
+                                         'in the X-Access-Token header (or set MONITOR_PUBLIC=true)'}), 401
+        return f(*args, **kwargs)
+    decorated.requires_access = True  # surfaced in the OpenAPI spec
     return decorated
 
 
@@ -569,6 +598,7 @@ def dns_lookup():
 
 # Certificate Monitoring Routes
 @ssl_bp.route('/monitor/certificate/add', methods=['POST'])
+@require_monitor_access
 def add_certificate_to_monitor():
     """Add a certificate to monitoring"""
     try:
@@ -595,6 +625,7 @@ def add_certificate_to_monitor():
 
 
 @ssl_bp.route('/monitor/certificate/remove/<certificate_id>', methods=['DELETE'])
+@require_monitor_access
 def remove_certificate_from_monitor(certificate_id):
     """Remove a certificate from monitoring"""
     try:
@@ -612,6 +643,7 @@ def remove_certificate_from_monitor(certificate_id):
 
 
 @ssl_bp.route('/monitor/certificate/list', methods=['GET'])
+@require_monitor_access
 def list_monitored_certificates():
     """List all monitored certificates"""
     try:
@@ -631,6 +663,7 @@ def list_monitored_certificates():
 
 
 @ssl_bp.route('/monitor/certificate/<certificate_id>', methods=['GET'])
+@require_monitor_access
 def get_monitored_certificate_details(certificate_id):
     """Get details of a monitored certificate"""
     try:
@@ -648,6 +681,7 @@ def get_monitored_certificate_details(certificate_id):
 
 
 @ssl_bp.route('/monitor/certificate/<certificate_id>', methods=['PATCH'])
+@require_monitor_access
 def update_monitored_certificate_info(certificate_id):
     """Update monitored certificate metadata"""
     try:
@@ -669,6 +703,7 @@ def update_monitored_certificate_info(certificate_id):
 
 
 @ssl_bp.route('/monitor/expiring', methods=['GET'])
+@require_monitor_access
 def get_expiring_certificates():
     """Get certificates expiring soon"""
     try:
@@ -840,9 +875,8 @@ def list_all_api_keys():
     try:
         from app.services.api_key_manager import list_api_keys
         
-        include_keys = request.args.get('include_keys', 'false').lower() == 'true'
         
-        result = list_api_keys(include_keys=include_keys)
+        result = list_api_keys()
         
         if result['success']:
             return jsonify(result)
@@ -980,6 +1014,7 @@ def ssl_config_generate():
 
 # Domain monitoring & alerting
 @ssl_bp.route('/monitor/domain/add', methods=['POST'])
+@require_monitor_access
 def add_domain_to_monitor():
     from app.services import domain_monitor
     data = request.get_json(silent=True) or {}
@@ -991,12 +1026,14 @@ def add_domain_to_monitor():
 
 
 @ssl_bp.route('/monitor/domain/list', methods=['GET'])
+@require_monitor_access
 def list_monitored_domains():
     from app.services import domain_monitor
     return jsonify(domain_monitor.list_domains())
 
 
 @ssl_bp.route('/monitor/domain/<domain_id>', methods=['GET'])
+@require_monitor_access
 def get_monitored_domain(domain_id):
     from app.services import domain_monitor
     result = domain_monitor.get_domain(domain_id)
@@ -1004,6 +1041,7 @@ def get_monitored_domain(domain_id):
 
 
 @ssl_bp.route('/monitor/domain/<domain_id>', methods=['DELETE'])
+@require_monitor_access
 def remove_monitored_domain(domain_id):
     from app.services import domain_monitor
     result = domain_monitor.remove_domain(domain_id)
@@ -1011,6 +1049,7 @@ def remove_monitored_domain(domain_id):
 
 
 @ssl_bp.route('/monitor/domain/<domain_id>/check', methods=['POST'])
+@require_monitor_access
 def check_monitored_domain_now(domain_id):
     from app.services import domain_monitor
     result = domain_monitor.check_domain(domain_id)

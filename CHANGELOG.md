@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [Phase 7] — 2026-10-01
+
+### Security
+- **Breaking:** the monitor endpoints (`/api/monitor/certificate/*`, `/expiring`, `/domain/*`) now require authentication: send an API key or the `ADMIN_TOKEN` in `X-Access-Token` (or `Authorization: Bearer <ADMIN_TOKEN>`). Set `MONITOR_PUBLIC=true` to restore the old open behaviour. Domain Monitor page has a token field.
+- **Breaking:** CORS is now off by default (the bundled frontend is same-origin); list allowed origins in `CORS_ORIGINS` if you host the frontend separately.
+- Admin token comparison is constant-time; warning logged when production runs with the default `SECRET_KEY`.
+- nginx: `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`; removed obsolete `X-XSS-Protection`.
+
+### Added
+- Dashboard cards for TLS Scanner, Security Headers, Domain Monitor, Private CA and ACME (en/de)
+- Frontend tests for the Domain Monitor page
+
+---
+
 ## [Phase 6] — 2026-10-01
 
 ### Added
