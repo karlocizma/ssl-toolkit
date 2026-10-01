@@ -6,6 +6,7 @@ import OpenSSL
 from OpenSSL import SSL, crypto
 
 from app.utils.ssl_utils import get_certificate_info
+from app.utils.net_safety import safe_create_connection, safe_get, safe_post
 
 
 def check_ssl_certificate(hostname, port=443, timeout=10):
@@ -15,7 +16,7 @@ def check_ssl_certificate(hostname, port=443, timeout=10):
         context.check_hostname = True
         context.verify_mode = ssl.CERT_REQUIRED
 
-        with socket.create_connection((hostname, port), timeout=timeout) as sock:
+        with safe_create_connection((hostname, port), timeout=timeout) as sock:
             with context.wrap_socket(sock, server_hostname=hostname) as ssock:
                 cert_der = ssock.getpeercert(binary_form=True)
                 if not cert_der:
@@ -105,7 +106,7 @@ def check_certificate_chain(hostname, port=443, timeout=10):
         context = SSL.Context(SSL.TLS_CLIENT_METHOD)
         context.set_verify(SSL.VERIFY_NONE, lambda *args: True)
 
-        sock = socket.create_connection((hostname, port), timeout=timeout)
+        sock = safe_create_connection((hostname, port), timeout=timeout)
         ssl_conn = SSL.Connection(context, sock)
 
         try:
@@ -227,7 +228,7 @@ def _fetch_single_certificate(hostname: str, port: int, timeout: int):
         context.check_hostname = False
         context.verify_mode = ssl.CERT_NONE
 
-        with socket.create_connection((hostname, port), timeout=timeout) as sock:
+        with safe_create_connection((hostname, port), timeout=timeout) as sock:
             with context.wrap_socket(sock, server_hostname=hostname) as ssock:
                 cert_der = ssock.getpeercert(binary_form=True)
                 if not cert_der:
@@ -301,7 +302,7 @@ def check_ocsp_status(certificate_pem):
             
             ocsp_request_data = ocsp_request.public_bytes(serialization.Encoding.DER)
             
-            response = requests.post(
+            response = safe_post(
                 ocsp_url,
                 data=ocsp_request_data,
                 headers={'Content-Type': 'application/ocsp-request'},
@@ -386,7 +387,7 @@ def _get_issuer_certificate(cert):
             for desc in aia_ext.value:
                 if desc.access_method == x509.OID_CA_ISSUERS:
                     issuer_url = desc.access_location.value
-                    response = requests.get(issuer_url, timeout=10)
+                    response = safe_get(issuer_url, timeout=10)
                     if response.status_code == 200:
                         try:
                             issuer_cert = x509.load_der_x509_certificate(response.content, default_backend())
@@ -438,7 +439,7 @@ def check_crl_status(certificate_pem):
         
         for crl_url in crl_urls[:3]:
             try:
-                response = requests.get(crl_url, timeout=15)
+                response = safe_get(crl_url, timeout=15)
                 if response.status_code != 200:
                     continue
                 
