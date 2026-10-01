@@ -1,18 +1,18 @@
 Flask==2.3.3
 Flask-CORS==6.0.5
-Flask-Limiter[redis]==3.5.0
+Flask-Limiter[redis]==3.12
 cryptography==41.0.7
 requests==2.34.2
 pyOpenSSL==23.3.0
-click==8.1.7
-Werkzeug==2.3.7
-validators==0.22.0
-python-dateutil==2.8.2
-dnspython==2.4.2
+click==8.5.0
+Werkzeug==2.3.8
+validators==0.35.0
+python-dateutil==2.9.0.post0
+dnspython==2.8.0
 gunicorn==21.2.0
 flask-swagger-ui==4.11.1
 
 # Development / testing
-pytest==8.1.1
+pytest==8.4.2
 pytest-cov==5.0.0
 
