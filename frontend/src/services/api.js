@@ -7,6 +7,29 @@ const api = axios.create({
   timeout: 30000,
 });
 
+// The monitor needs an API key or the admin token (sent as X-Access-Token). Kept in
+// sessionStorage so it disappears when the tab closes.
+const TOKEN_KEY = 'ssl-toolkit-access-token';
+export const accessToken = {
+  get: () => {
+    try { return sessionStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; }
+  },
+  set: (value) => {
+    try {
+      if (value) sessionStorage.setItem(TOKEN_KEY, value);
+      else sessionStorage.removeItem(TOKEN_KEY);
+    } catch (e) { /* storage unavailable: token just won't persist */ }
+  }
+};
+
+api.interceptors.request.use((config) => {
+  const token = accessToken.get();
+  if (token && config.url && config.url.startsWith('/monitor/')) {
+    config.headers['X-Access-Token'] = token;
+  }
+  return config;
+});
+
 // Certificate operations
 export const certificateAPI = {
   decode: (certificateData) => api.post('/certificate/decode', { certificate: certificateData }),

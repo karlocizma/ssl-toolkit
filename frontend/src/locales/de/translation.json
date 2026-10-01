@@ -129,6 +129,31 @@
       "description": "Produktionsreife TLS-Konfigurationsschnipsel für Webserver generieren",
       "features": ["Nginx / Apache / HAProxy", "HSTS-Unterstützung", "OCSP-Stapling", "TLS 1.2 & 1.3"]
     },
+    "tlsScanner": {
+      "title": "TLS-Scanner",
+      "description": "TLS-Versionen und Cipher-Suites prüfen und bewerten",
+      "features": ["Protokollunterstützung", "Cipher-Stärke", "Forward Secrecy", "Note A–F"]
+    },
+    "securityHeaders": {
+      "title": "Sicherheits-Header",
+      "description": "HTTP-Sicherheits-Header einer Website prüfen",
+      "features": ["HSTS & CSP", "Framing & Referrer", "Cookie-Flags", "Punktzahl bis 100"]
+    },
+    "domainMonitor": {
+      "title": "Domain-Überwachung",
+      "description": "Domains auf Ablauf und Zertifikatsänderungen überwachen",
+      "features": ["Geplante Prüfungen", "Ablauf-Warnungen", "Erneuerungserkennung", "E-Mail & Webhook"]
+    },
+    "privateCA": {
+      "title": "Private CA",
+      "description": "Interne CA erstellen und Server- oder Client-Zertifikate ausstellen",
+      "features": ["Root-CA erstellen", "Server- & mTLS-Zertifikate", "CSR signieren", "PKCS#12-Export"]
+    },
+    "acme": {
+      "title": "ACME / Let's Encrypt",
+      "description": "Kostenlose, vertrauenswürdige Zertifikate per ACME erhalten",
+      "features": ["Manuell DNS/HTTP", "Automatisches DNS", "Wildcard-Unterstützung", "Nichts gespeichert"]
+    },
     "jwtDecoder": {
       "title": "JWT-Decoder",
       "description": "JSON Web Tokens direkt im Browser dekodieren und prüfen",

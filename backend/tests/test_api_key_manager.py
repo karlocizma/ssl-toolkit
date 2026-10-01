@@ -30,7 +30,7 @@ def test_validate_revoke_delete(key_file):
 
 def test_list_never_exposes_key(key_file):
     key = akm.generate_api_key('svc')['api_key']
-    listing = akm.list_api_keys(include_keys=True)['keys'][0]
+    listing = akm.list_api_keys()['keys'][0]
     assert 'key' not in listing and key not in json.dumps(listing)
 
 

@@ -172,6 +172,10 @@ REACT_APP_API_URL=/api
 # Outbound-scan safety
 ALLOW_PRIVATE_TARGETS=false                 # true = allow checks against private/internal IPs (internal PKI)
 
+# Access control
+MONITOR_PUBLIC=false                        # false (default): /api/monitor/* needs X-Access-Token (an API key or ADMIN_TOKEN)
+CORS_ORIGINS=                               # comma-separated origins; empty = CORS off (same-origin via nginx)
+
 # Expiry alerts for monitored certificates and domains (all optional)
 ALERT_THRESHOLDS=30,14,7,1                  # days before expiry
 ALERT_CHECK_INTERVAL_HOURS=12               # 0 disables the background scheduler

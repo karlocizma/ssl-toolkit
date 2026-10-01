@@ -79,3 +79,7 @@ Thumbs.db
 /backend/uploads/
 /backend/temp/
 
+
+# Python virtual environments
+.venv/
+venv/

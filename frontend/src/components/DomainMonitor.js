@@ -3,7 +3,7 @@ import {
   Alert, Box, Button, Chip, Grid, IconButton, Paper, Stack, TextField, Tooltip, Typography,
 } from '@mui/material';
 import { Delete as DeleteIcon, Refresh as RefreshIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
-import { monitorAPI } from '../services/api';
+import { accessToken, monitorAPI } from '../services/api';
 
 const statusChip = (d) => {
   if (d.status === 'error') return <Chip size="small" color="error" label="Unreachable" />;
@@ -21,6 +21,7 @@ function DomainMonitor() {
   const [port, setPort] = useState(443);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [token, setToken] = useState(accessToken.get());
 
   const load = useCallback(async () => {
     try {
@@ -32,6 +33,12 @@ function DomainMonitor() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const saveToken = () => {
+    accessToken.set(token.trim());
+    setError('');
+    load();
+  };
 
   const run = async (fn) => {
     setError('');
@@ -68,6 +75,15 @@ function DomainMonitor() {
       </Typography>
 
       <Paper sx={{ p: 3, mb: 3 }}>
+        <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
+          <Grid item xs={12} md={9}>
+            <TextField label="Access token (API key or admin token)" type="password" fullWidth value={token}
+              onChange={(e) => setToken(e.target.value)} helperText="Required unless the server sets MONITOR_PUBLIC=true. Kept for this browser tab only." />
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <Button variant="outlined" fullWidth onClick={saveToken}>Use token</Button>
+          </Grid>
+        </Grid>
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} md={6}>
             <TextField label="Hostname" fullWidth value={hostname} placeholder="example.com"
