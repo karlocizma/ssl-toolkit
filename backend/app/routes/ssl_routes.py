@@ -48,6 +48,7 @@ def require_admin_token(f):
         if not auth_header.startswith('Bearer ') or auth_header[7:] != admin_token:
             return jsonify({'error': 'Unauthorized'}), 401
         return f(*args, **kwargs)
+    decorated.requires_admin = True  # surfaced in the OpenAPI spec
     return decorated
 
 

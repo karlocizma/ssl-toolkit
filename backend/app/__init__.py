@@ -42,6 +42,9 @@ def create_app():
     from app.routes.ssl_routes import ssl_bp
     app.register_blueprint(ssl_bp, url_prefix='/api')
 
+    from app.openapi import register_docs
+    register_docs(app)
+
     # Background expiry checks/alerts; one worker is elected via a file lock.
     if not os.environ.get('PYTEST_CURRENT_TEST') and not os.environ.get('DISABLE_SCHEDULER'):
         from app.services.alerts import start_scheduler

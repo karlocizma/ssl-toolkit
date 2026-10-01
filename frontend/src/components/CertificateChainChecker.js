@@ -16,14 +16,12 @@ import {
   ListItem,
   ListItemText,
   Divider,
-  useTheme,
 } from '@mui/material';
 import {
   Link as LinkIcon,
   Security as SecurityIcon,
   Error as ErrorIcon,
   CheckCircle as CheckCircleIcon,
-  Warning as WarningIcon,
   Timeline as TimelineIcon,
 } from '@mui/icons-material';
 import { sslCheckAPI } from '../services/api';
@@ -35,7 +33,6 @@ function CertificateChainChecker() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const theme = useTheme();
 
   const handleCheckChain = async () => {
     if (!hostname.trim()) {
