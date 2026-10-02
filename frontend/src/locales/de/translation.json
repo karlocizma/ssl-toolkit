@@ -30,6 +30,7 @@
     "domainMonitor": "Domain-Überwachung",
     "autodiscover": "Autodiscover-Prüfung",
     "emailDeliverability": "E-Mail-Zustellbarkeit",
+    "ctLookup": "CT-Suche",
     "jwtDecoder": "JWT-Decoder",
     "group": {
       "sslTls": "SSL / TLS",
@@ -165,6 +166,11 @@
       "title": "E-Mail-Zustellbarkeit",
       "description": "SPF, DKIM, DMARC und MTA-STS bewerten, DMARC-Berichte auswerten und Blocklisten prüfen",
       "features": ["SPF-Lookup-Zähler", "DKIM-Selector-Suche", "DMARC-Berichtsanalyse", "Blocklisten-Prüfung (RBL)"]
+    },
+    "ctLookup": {
+      "title": "CT-Suche",
+      "description": "Alle ausgestellten Zertifikate einer Domain über Certificate Transparency finden",
+      "features": ["Alle Zertifikate", "Subdomain-Erkennung", "Warnung bei unerwarteter CA", "Hosts zur Überwachung hinzufügen"]
     },
     "jwtDecoder": {
       "title": "JWT-Decoder",

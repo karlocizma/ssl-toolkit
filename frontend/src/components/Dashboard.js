@@ -28,6 +28,7 @@ import {
   Code as CodeIcon,
   Token as TokenIcon,
   ForwardToInbox as ForwardToInboxIcon,
+  TravelExplore as TravelExploreIcon,
   AlternateEmail as AlternateEmailIcon,
   Lock as LockIcon,
   Http as HttpIcon,
@@ -238,6 +239,14 @@ const getTools = (t) => [
     path: '/email-deliverability',
     color: 'success',
     featuresKeys: ['tools.emailDeliverability.features.0', 'tools.emailDeliverability.features.1', 'tools.emailDeliverability.features.2', 'tools.emailDeliverability.features.3']
+  },
+  {
+    titleKey: 'tools.ctLookup.title',
+    descriptionKey: 'tools.ctLookup.description',
+    icon: <TravelExploreIcon sx={{ fontSize: 40 }} />,
+    path: '/ct-lookup',
+    color: 'info',
+    featuresKeys: ['tools.ctLookup.features.0', 'tools.ctLookup.features.1', 'tools.ctLookup.features.2', 'tools.ctLookup.features.3']
   },
 ];
 

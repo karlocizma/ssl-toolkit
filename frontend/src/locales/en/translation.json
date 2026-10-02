@@ -30,6 +30,7 @@
     "domainMonitor": "Domain Monitor",
     "autodiscover": "Autodiscover Check",
     "emailDeliverability": "Email Deliverability",
+    "ctLookup": "CT Lookup",
     "jwtDecoder": "JWT Decoder",
     "group": {
       "sslTls": "SSL / TLS",
@@ -165,6 +166,11 @@
       "title": "Email Deliverability",
       "description": "Score SPF, DKIM, DMARC and MTA-STS, parse DMARC reports and check blocklists",
       "features": ["SPF lookup counter", "DKIM selector discovery", "DMARC report parser", "Blocklist (RBL) check"]
+    },
+    "ctLookup": {
+      "title": "CT Lookup",
+      "description": "Find every certificate issued for a domain via Certificate Transparency",
+      "features": ["All issued certificates", "Subdomain discovery", "Unexpected CA alerts", "Add hosts to monitor"]
     },
     "jwtDecoder": {
       "title": "JWT Decoder",
