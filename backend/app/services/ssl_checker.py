@@ -1,3 +1,4 @@
+import ipaddress
 import select
 import socket
 import ssl
@@ -90,10 +91,22 @@ def check_hostname_validity(hostname, cert_info):
     if common_name and (common_name == hostname or common_name == wildcard_domain):
         return True
 
+    try:
+        host_ip = ipaddress.ip_address(hostname)
+    except ValueError:
+        host_ip = None
+
     san_list = cert_info.get('subject_alternative_names', [])
     for san in san_list:
         if san == hostname:
             return True
+        if host_ip is not None:  # an IP target matches IP SANs by value (so ::1 equals 0:0:0:0:0:0:0:1)
+            try:
+                if ipaddress.ip_address(san) == host_ip:
+                    return True
+            except ValueError:
+                pass
+            continue
         if san.startswith('*.'):
             domain_part = san[2:]
             if hostname.endswith(domain_part) and hostname.count('.') == domain_part.count('.') + 1:
