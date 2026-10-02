@@ -112,7 +112,7 @@ def get_certificate_info(cert_data):
         
         # Calculate fingerprints
         cert_der = cert.public_bytes(serialization.Encoding.DER)
-        sha1_fingerprint = hashlib.sha1(cert_der).hexdigest().upper()
+        sha1_fingerprint = hashlib.sha1(cert_der, usedforsecurity=False).hexdigest().upper()
         sha256_fingerprint = hashlib.sha256(cert_der).hexdigest().upper()
         
         # Format fingerprints with colons

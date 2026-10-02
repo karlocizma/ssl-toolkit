@@ -13,7 +13,9 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Optional
 from urllib.parse import urljoin, urlsplit
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
+from defusedxml.common import DefusedXmlException
+from xml.etree.ElementTree import Element
 
 import dns.exception
 import dns.resolver
@@ -42,13 +44,13 @@ RFC6186_SERVICES = [
 
 
 # --------------------------------------------------------------------------- parsing
-def _safe_xml(text: str) -> Optional[ET.Element]:
+def _safe_xml(text: str) -> Optional[Element]:
     """Parse XML from an untrusted server; DTDs/entities are refused outright."""
     if '<!DOCTYPE' in text.upper() or '<!ENTITY' in text.upper():
         return None
     try:
         return ET.fromstring(text)
-    except ET.ParseError:
+    except (ET.ParseError, DefusedXmlException):
         return None
 
 
@@ -56,7 +58,7 @@ def _local(tag: str) -> str:
     return tag.rsplit('}', 1)[-1]
 
 
-def _child_text(node: ET.Element, name: str) -> Optional[str]:
+def _child_text(node: Element, name: str) -> Optional[str]:
     for child in node.iter():
         if _local(child.tag) == name and child.text and child.text.strip():
             return child.text.strip()
