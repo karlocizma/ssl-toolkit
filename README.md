@@ -150,7 +150,26 @@ Three Docker containers managed by Compose:
 - [Docker](https://docs.docker.com/get-docker/) and Docker Compose
 - Git
 
-### Run
+### Run the published images (fastest)
+
+Multi-arch (amd64/arm64) images are published to GitHub Container Registry on every release:
+
+| Image | Contents |
+|-------|----------|
+| `ghcr.io/karlocizma/ssl-toolkit-backend` | Flask API (Gunicorn) |
+| `ghcr.io/karlocizma/ssl-toolkit-frontend` | React app served by nginx |
+
+```bash
+git clone https://github.com/karlocizma/ssl-toolkit.git
+cd ssl-toolkit
+cp .env.example .env              # set SECRET_KEY and ADMIN_TOKEN
+docker compose pull               # fetch the images instead of building them
+docker compose up -d --no-build
+```
+
+Pin a release instead of `latest` with `SSL_TOOLKIT_VERSION=1.0.0` (in `.env` or the shell). Tags: `1.0.0`, `1.0` and `latest`.
+
+### Build from source
 
 ```bash
 git clone https://github.com/karlocizma/ssl-toolkit.git
