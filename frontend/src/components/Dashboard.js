@@ -27,6 +27,7 @@ import {
   VpnLock as VpnLockIcon,
   Code as CodeIcon,
   Token as TokenIcon,
+  Layers as LayersIcon,
   ForwardToInbox as ForwardToInboxIcon,
   TravelExplore as TravelExploreIcon,
   AlternateEmail as AlternateEmailIcon,
@@ -247,6 +248,14 @@ const getTools = (t) => [
     path: '/ct-lookup',
     color: 'info',
     featuresKeys: ['tools.ctLookup.features.0', 'tools.ctLookup.features.1', 'tools.ctLookup.features.2', 'tools.ctLookup.features.3']
+  },
+  {
+    titleKey: 'tools.chainBuilder.title',
+    descriptionKey: 'tools.chainBuilder.description',
+    icon: <LayersIcon sx={{ fontSize: 40 }} />,
+    path: '/chain-builder',
+    color: 'primary',
+    featuresKeys: ['tools.chainBuilder.features.0', 'tools.chainBuilder.features.1', 'tools.chainBuilder.features.2', 'tools.chainBuilder.features.3']
   },
 ];
 

@@ -31,6 +31,7 @@ import ACMEIssuer from './components/ACMEIssuer';
 import AutodiscoverChecker from './components/AutodiscoverChecker';
 import EmailDeliverability from './components/EmailDeliverability';
 import CTLookup from './components/CTLookup';
+import ChainBuilder from './components/ChainBuilder';
 import './App.css';
 
 function App() {
@@ -94,6 +95,7 @@ function App() {
               <Route path="/autodiscover" element={<AutodiscoverChecker />} />
               <Route path="/email-deliverability" element={<EmailDeliverability />} />
               <Route path="/ct-lookup" element={<CTLookup />} />
+              <Route path="/chain-builder" element={<ChainBuilder />} />
               <Route path="/tls-scanner" element={<TLSScanner />} />
               <Route path="/security-headers" element={<SecurityHeaders />} />
               <Route path="/domain-monitor" element={<DomainMonitor />} />

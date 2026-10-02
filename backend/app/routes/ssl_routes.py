@@ -1302,3 +1302,16 @@ def import_monitor_domains():
         return jsonify(monitor_export.import_csv(data.get('csv') or ''))
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
+
+
+# Chain builder
+@ssl_bp.route('/chain/build', methods=['POST'])
+def build_certificate_chain():
+    """Build a correctly ordered fullchain.pem for a leaf certificate (or a server), fetching missing intermediates"""
+    from app.services import chain_builder
+    data = request.get_json(silent=True) or {}
+    try:
+        _check_input_size(data, 'certificate')
+        return jsonify({'success': True, 'result': chain_builder.run(data)})
+    except ValueError as e:  # ChainError is a ValueError
+        return jsonify({'error': str(e)}), 400
