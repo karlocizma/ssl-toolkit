@@ -1,0 +1,19 @@
+# Normalise line endings: text files are LF in the repository and in checkouts.
+# (Several files had been committed with Windows line endings, which breaks shell scripts on Linux.)
+* text=auto eol=lf
+
+*.sh   text eol=lf
+*.py   text eol=lf
+Dockerfile text eol=lf
+
+# Binary files
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.woff binary
+*.woff2 binary
+
+# Keep diffs of generated files quiet
+package-lock.json -diff linguist-generated

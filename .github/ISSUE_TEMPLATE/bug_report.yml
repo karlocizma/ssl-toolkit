@@ -1,0 +1,49 @@
+name: Bug report
+description: Something does not work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! Please check the [troubleshooting guide](https://github.com/karlocizma/ssl-toolkit/blob/main/docs/TROUBLESHOOTING.md) first.
+        **Do not include private keys, API keys or tokens.** For security problems use a private advisory instead.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the TLS Scanner
+        2. Enter `example.com`
+        3. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where does it happen?
+      options: [Web UI, REST API, CLI, Docker image, Other]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Release tag, or `git rev-parse --short HEAD`
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: How are you running it?
+      options: [docker compose, Docker images (GHCR), Local development, Behind a reverse proxy / Traefik, Other]
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / output
+      description: "`docker compose logs backend`, browser console, or CLI output."
+      render: shell

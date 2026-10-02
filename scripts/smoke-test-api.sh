@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Always run from the repository root, wherever the script was started from.
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
 # Test script for SSL Toolkit API
 
 echo "🧪 Testing SSL Toolkit API..."
@@ -7,7 +10,7 @@ echo "🧪 Testing SSL Toolkit API..."
 API_BASE="http://localhost/api"
 
 # Test health endpoint
-echo "\n📋 Testing health endpoint..."
+echo -e "\n📋 Testing health endpoint..."
 health_response=$(curl -s "$API_BASE/health")
 if echo "$health_response" | grep -q "healthy"; then
     echo "✅ Health check passed"
@@ -17,7 +20,7 @@ else
 fi
 
 # Test certificate decoder with a sample certificate
-echo "\n🔍 Testing certificate decoder..."
+echo -e "\n🔍 Testing certificate decoder..."
 sample_cert='-----BEGIN CERTIFICATE-----
 MIIBkTCB+wIJAKZvmILy1LI9MA0GCSqGSIb3DQEBCwUAMBQxEjAQBgNVBAMMCWxv
 Y2FsaG9zdDAeFw0yMzAxMDEwMDAwMDBaFw0yNDAxMDEwMDAwMDBaMBQxEjAQBgNV
@@ -39,7 +42,7 @@ else
 fi
 
 # Test key generation
-echo "\n🔑 Testing key generation..."
+echo -e "\n🔑 Testing key generation..."
 key_response=$(curl -s -X POST "$API_BASE/key/generate" \
     -H "Content-Type: application/json" \
     -d '{"key_type": "RSA", "key_size": 2048}')
@@ -52,7 +55,7 @@ else
 fi
 
 # Test SSL checker
-echo "\n🌐 Testing SSL checker..."
+echo -e "\n🌐 Testing SSL checker..."
 ssl_response=$(curl -s -X POST "$API_BASE/check/domain" \
     -H "Content-Type: application/json" \
     -d '{"hostname": "google.com", "port": 443, "timeout": 10}')
@@ -63,8 +66,8 @@ else
     echo "⚠️  SSL checker may have issues (external dependency)"
 fi
 
-echo "\n🎯 API testing completed!"
-echo "\n📋 Manual tests:"
+echo -e "\n🎯 API testing completed!"
+echo -e "\n📋 Manual tests:"
 echo "   • Open http://localhost in your browser"
 echo "   • Try uploading a certificate file"
 echo "   • Test the Certificate Decoder tool"

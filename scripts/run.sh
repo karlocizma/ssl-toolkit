@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Always run from the repository root, wherever the script was started from.
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
 # SSL Toolkit Run Script
 
 set -e
@@ -57,7 +60,7 @@ if curl -f http://localhost &> /dev/null; then
         echo "✅ Frontend service is healthy"
     else
         echo "⚠️  Frontend is running but may not be built correctly"
-        echo "   If you see a default page, run: ./rebuild-frontend.sh"
+        echo "   If you see a default page, run: ./scripts/rebuild-frontend.sh"
     fi
 else
     echo "⚠️  Frontend service may not be ready yet"
@@ -89,7 +92,7 @@ echo "  View backend:     $DOCKER_COMPOSE logs -f backend"
 echo "  View frontend:    $DOCKER_COMPOSE logs -f frontend"
 echo "  Stop:             $DOCKER_COMPOSE down"
 echo "  Restart:          $DOCKER_COMPOSE restart"
-echo "  Rebuild frontend: ./rebuild-frontend.sh"
+echo "  Rebuild frontend: ./scripts/rebuild-frontend.sh"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "🔧 Available Tools:"
@@ -109,9 +112,9 @@ echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "💡 Tips:"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  • If you see a default page: ./rebuild-frontend.sh"
+echo "  • If you see a default page: ./scripts/rebuild-frontend.sh"
 echo "  • HTTPS is disabled by default (dev mode)"
-echo "  • For troubleshooting: See TROUBLESHOOTING.md"
+echo "  • For troubleshooting: See docs/TROUBLESHOOTING.md"
 echo ""
 echo "Happy SSL certificate management! 🔐"
 
