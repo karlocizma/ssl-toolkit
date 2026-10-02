@@ -22,3 +22,12 @@ def test_unexpected_errors_do_not_leak_details():
         response = client.post('/api/certificate/decode', json={'certificate': '-----BEGIN CERTIFICATE-----\nAAAA\n-----END CERTIFICATE-----'})
     assert response.status_code == 500
     assert 'secret' not in response.get_data(as_text=True)
+
+
+def test_passphrase_key_is_salted_and_usable():
+    from cryptography.fernet import Fernet
+    from app.services.sysadmin_tools import _derive_fernet_key
+    key1, source = _derive_fernet_key(passphrase='correct horse')
+    key2, _ = _derive_fernet_key(passphrase='correct horse')
+    assert source == 'derived' and key1 != key2
+    assert Fernet(key1).decrypt(Fernet(key1).encrypt(b'x')) == b'x'

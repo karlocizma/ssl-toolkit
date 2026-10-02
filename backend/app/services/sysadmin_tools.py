@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import os
 import ipaddress
 import math
 import re
@@ -567,7 +568,9 @@ def _derive_fernet_key(raw_key: Optional[str] = None, passphrase: Optional[str] 
         except Exception:
             raise ValueError('Provided encryption key is not a valid Fernet key')
     if passphrase:
-        digest = hashlib.sha256(passphrase.encode('utf-8')).digest()
+        # The derived key is returned to the caller and used directly to decrypt, so the salt
+        # need not be reproducible from the passphrase.
+        digest = hashlib.pbkdf2_hmac('sha256', passphrase.encode('utf-8'), os.urandom(16), 600_000)
         return base64.urlsafe_b64encode(digest), 'derived'
     return Fernet.generate_key(), 'generated'
 

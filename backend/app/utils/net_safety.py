@@ -11,6 +11,9 @@ from typing import List, Tuple
 from urllib.parse import urlsplit
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.connection import HTTPConnection, HTTPSConnection
+from urllib3.connectionpool import HTTPConnectionPool, HTTPSConnectionPool
 
 MAX_RESPONSE_BYTES = 10 * 1024 * 1024  # OCSP/CRL/AIA downloads
 
@@ -77,6 +80,31 @@ def safe_create_connection(address, timeout=10):
     raise last_err or OSError('Connection failed')
 
 
+class _PinnedHTTPConnection(HTTPConnection):
+    """Connects to an IP vetted by safe_create_connection, so the name is not resolved a second time."""
+
+    def _new_conn(self):
+        return safe_create_connection((self._dns_host, self.port), self.timeout)
+
+
+class _PinnedHTTPSConnection(_PinnedHTTPConnection, HTTPSConnection):
+    pass
+
+
+class _PinnedHTTPPool(HTTPConnectionPool):
+    ConnectionCls = _PinnedHTTPConnection
+
+
+class _PinnedHTTPSPool(HTTPSConnectionPool):
+    ConnectionCls = _PinnedHTTPSConnection
+
+
+class _PinnedAdapter(HTTPAdapter):
+    def init_poolmanager(self, *args, **kwargs):
+        super().init_poolmanager(*args, **kwargs)
+        self.poolmanager.pool_classes_by_scheme = {'http': _PinnedHTTPPool, 'https': _PinnedHTTPSPool}
+
+
 def _check_url(url: str) -> None:
     parts = urlsplit(url)
     if parts.scheme not in ('http', 'https') or not parts.hostname:
@@ -90,16 +118,24 @@ def _request(method: str, url: str, **kwargs):
     kwargs.setdefault('timeout', 10)
     kwargs['stream'] = True
     read_body = kwargs.pop('read_body', True)
-    response = requests.request(method, url, **kwargs)
-    if not read_body:  # headers only; don't download the page
-        response.close()
-        return response
-    content = b''
-    for chunk in response.iter_content(65536):
-        content += chunk
-        if len(content) > MAX_RESPONSE_BYTES:
+    session = requests.Session()
+    session.trust_env = False  # an environment proxy would bypass the address check
+    adapter = _PinnedAdapter()
+    session.mount('http://', adapter)
+    session.mount('https://', adapter)
+    try:
+        response = session.request(method, url, **kwargs)
+        if not read_body:  # headers only; don't download the page
             response.close()
-            raise UnsafeTargetError('Response too large')
+            return response
+        content = b''
+        for chunk in response.iter_content(65536):
+            content += chunk
+            if len(content) > MAX_RESPONSE_BYTES:
+                response.close()
+                raise UnsafeTargetError('Response too large')
+    finally:
+        session.close()
     response._content = content
     return response
 

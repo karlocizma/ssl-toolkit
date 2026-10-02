@@ -51,3 +51,37 @@ def test_domain_check_route_blocks_internal(client, monkeypatch):
     body = resp.get_json()
     assert body['result']['connection_secure'] is False
     assert 'non-public' in body['result']['errors'][0]
+
+
+def test_dns_rebinding_between_check_and_request_is_blocked(monkeypatch):
+    """The name must not be resolved a second time by the HTTP client (public first, loopback second)."""
+    monkeypatch.delenv('ALLOW_PRIVATE_TARGETS', raising=False)
+    import socket
+    answers = iter([[(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('93.184.216.34', 80))],
+                    [(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('127.0.0.1', 80))]])
+    monkeypatch.setattr(net_safety.socket, 'getaddrinfo', lambda *a, **k: next(answers))
+    with pytest.raises(UnsafeTargetError):
+        safe_get('http://rebind.example/')
+
+
+def test_safe_get_reads_body_from_allowed_host(monkeypatch):
+    import threading
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.send_header('Content-Length', '2')
+            self.end_headers()
+            self.wfile.write(b'ok')
+
+        def log_message(self, *a):
+            pass
+
+    server = HTTPServer(('127.0.0.1', 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    monkeypatch.setenv('ALLOW_PRIVATE_TARGETS', 'true')
+    try:
+        assert safe_get(f'http://127.0.0.1:{server.server_port}/').content == b'ok'
+    finally:
+        server.shutdown()
