@@ -198,3 +198,39 @@ class TestAnalyzeEmailHeaders:
         headers = self.SAMPLE.replace('spf=pass', 'spf=fail')
         result = analyze_email_headers({'headers': headers})
         assert any('SPF' in w for w in result['warnings'])
+
+
+class TestSslConfigCaddyTraefik:
+    PARAMS = {'domain': 'app.example.com', 'cert_path': '/etc/ssl/fullchain.pem', 'key_path': '/etc/ssl/key.pem'}
+
+    def gen(self, server, **kw):
+        from app.services.sysadmin_tools import generate_ssl_config
+        return generate_ssl_config({**self.PARAMS, 'server': server, **kw})
+
+    def test_caddy_default(self):
+        r = self.gen('caddy')
+        snippet = r['config_snippet']
+        assert snippet.startswith('app.example.com {')
+        assert 'tls /etc/ssl/fullchain.pem /etc/ssl/key.pem {' in snippet and 'protocols tls1.2 tls1.3' in snippet
+        assert 'Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"' in snippet
+        assert snippet.count('{') == snippet.count('}')
+        assert any('OCSP' in n for n in r['notes'])
+
+    def test_caddy_tls13_only_and_no_hsts(self):
+        snippet = self.gen('caddy', min_tls='TLSv1.3', hsts=False)['config_snippet']
+        assert 'protocols tls1.3' in snippet and 'tls1.2' not in snippet and 'Strict-Transport' not in snippet
+
+    def test_traefik_default(self):
+        snippet = self.gen('traefik')['config_snippet']
+        assert 'certFile: /etc/ssl/fullchain.pem' in snippet and 'keyFile: /etc/ssl/key.pem' in snippet
+        assert 'minVersion: VersionTLS12' in snippet and 'TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384' in snippet
+        assert 'stsSeconds: 63072000' in snippet and 'middlewares: [hsts]' in snippet
+        assert 'Host(`app.example.com`)' in snippet
+
+    def test_traefik_tls13_only_has_no_cipher_list(self):
+        snippet = self.gen('traefik', min_tls='TLSv1.3', hsts=False)['config_snippet']
+        assert 'minVersion: VersionTLS13' in snippet and 'cipherSuites' not in snippet and 'sts' not in snippet
+
+    def test_unknown_server_lists_all_options(self):
+        with pytest.raises(ValueError, match='caddy, traefik'):
+            self.gen('iis')

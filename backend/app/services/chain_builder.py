@@ -16,6 +16,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.serialization import pkcs7
 from OpenSSL import SSL, crypto
 
+from app.services.ssl_checker import pyopenssl_handshake
 from app.utils.net_safety import UnsafeTargetError, safe_create_connection, safe_get, validate_port
 
 MAX_CHAIN = 8
@@ -229,7 +230,7 @@ def fetch_served_chain(hostname: str, port: int = 443) -> List[x509.Certificate]
     try:
         conn.set_tlsext_host_name(hostname.encode())
         conn.set_connect_state()
-        conn.do_handshake()
+        pyopenssl_handshake(conn, sock, 10)
         chain = conn.get_peer_cert_chain() or []
         return [x509.load_pem_x509_certificate(crypto.dump_certificate(crypto.FILETYPE_PEM, c)) for c in chain]
     finally:

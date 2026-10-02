@@ -1,5 +1,7 @@
+import select
 import socket
 import ssl
+import time
 from typing import List, Optional, Tuple
 
 import OpenSSL
@@ -100,6 +102,26 @@ def check_hostname_validity(hostname, cert_info):
     return False
 
 
+def pyopenssl_handshake(conn, sock, timeout: float = 10) -> None:
+    """Complete a pyOpenSSL handshake on a socket that has a timeout.
+
+    A timeout socket is non-blocking internally, so do_handshake() raises WantReadError/WantWriteError
+    until the peer has answered; it must be retried when the socket becomes ready.
+    """
+    deadline = time.time() + timeout
+    while True:
+        try:
+            conn.do_handshake()
+            return
+        except SSL.WantReadError:
+            wait = ([sock], [], [])
+        except SSL.WantWriteError:
+            wait = ([], [sock], [])
+        remaining = deadline - time.time()
+        if remaining <= 0 or not any(select.select(*wait, remaining)):
+            raise socket.timeout('TLS handshake timed out')
+
+
 def check_certificate_chain(hostname, port=443, timeout=10):
     """Check the complete certificate chain"""
     try:
@@ -112,7 +134,7 @@ def check_certificate_chain(hostname, port=443, timeout=10):
         try:
             ssl_conn.set_connect_state()
             ssl_conn.set_tlsext_host_name(hostname.encode())
-            ssl_conn.do_handshake()
+            pyopenssl_handshake(ssl_conn, sock, timeout)
 
             cert_chain = ssl_conn.get_peer_cert_chain() or []
             chain_info = _serialize_certificate_chain(cert_chain)

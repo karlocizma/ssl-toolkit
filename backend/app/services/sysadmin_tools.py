@@ -900,8 +900,8 @@ def generate_ssl_config(params: dict) -> dict:
     cert_path = params.get('cert_path', '').strip()
     key_path = params.get('key_path', '').strip()
 
-    if server not in ('nginx', 'apache', 'haproxy'):
-        raise ValueError("server must be one of: nginx, apache, haproxy")
+    if server not in ('nginx', 'apache', 'haproxy', 'caddy', 'traefik'):
+        raise ValueError("server must be one of: nginx, apache, haproxy, caddy, traefik")
     if not domain:
         raise ValueError("domain is required")
     if not cert_path:
@@ -967,6 +967,53 @@ def generate_ssl_config(params: dict) -> dict:
         )
         if hsts:
             notes.append("Ensure mod_headers is enabled: a2enmod headers")
+
+    elif server == 'caddy':
+        tls13_only = min_tls == 'TLSv1.3'
+        hsts_line = ('    header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"\n') if hsts else ''
+        snippet = (f'{domain} {{\n'
+                   f'    tls {cert_path} {key_path} {{\n'
+                   f'        protocols {"tls1.3" if tls13_only else "tls1.2 tls1.3"}\n'
+                   f'    }}\n'
+                   f'{hsts_line}'
+                   f'    # reverse_proxy localhost:8080\n'
+                   f'}}\n')
+        if tls13_only:
+            notes.append("TLSv1.3-only mode: very secure but may exclude older clients.")
+        notes.append("Caddy staples OCSP automatically; the certificate file should contain the full chain "
+                     "(leaf first). Caddy obtains and renews certificates itself unless you point it at your own.")
+
+    elif server == 'traefik':
+        tls13_only = min_tls == 'TLSv1.3'
+        lines = ['# Traefik dynamic configuration (file provider)',
+                 'tls:',
+                 '  certificates:',
+                 f'    - certFile: {cert_path}',
+                 f'      keyFile: {key_path}',
+                 '  options:',
+                 '    default:',
+                 f'      minVersion: {"VersionTLS13" if tls13_only else "VersionTLS12"}',
+                 '      sniStrict: true']
+        if not tls13_only:
+            lines += ['      cipherSuites:',
+                      '        - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256',
+                      '        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256',
+                      '        - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384',
+                      '        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384',
+                      '        - TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305',
+                      '        - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305']
+        if hsts:
+            lines += ['http:', '  middlewares:', '    hsts:', '      headers:', '        stsSeconds: 63072000',
+                      '        stsIncludeSubdomains: true', '        stsPreload: true',
+                      '        forceSTSHeader: true']
+        lines += ['# Attach to a router, for example:',
+                  '#   http.routers.app: {rule: "Host(`' + domain + '`)", tls: {}, service: app'
+                  + (', middlewares: [hsts]' if hsts else '') + '}']
+        snippet = '\n'.join(lines) + '\n'
+        if tls13_only:
+            notes.append("TLSv1.3-only mode: very secure but may exclude older clients.")
+        notes.append("Traefik staples OCSP automatically; certFile should contain the full chain (leaf first). "
+                     "Load this file with providers.file in the static configuration.")
 
     else:  # haproxy
         if chain_path:

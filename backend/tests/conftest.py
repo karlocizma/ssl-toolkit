@@ -1,3 +1,7 @@
+import socket
+import ssl
+import threading
+
 import pytest
 from cryptography import x509
 from cryptography.x509.oid import NameOID
@@ -72,3 +76,35 @@ def app():
 @pytest.fixture
 def client(app):
     return app.test_client()
+
+
+@pytest.fixture
+def local_tls(tmp_path, sample_cert_pem, sample_key_pem):
+    cert, key = tmp_path / 'c.pem', tmp_path / 'k.pem'
+    cert.write_text(sample_cert_pem)
+    key.write_text(sample_key_pem)
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ctx.load_cert_chain(cert, key)
+    ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+    srv = socket.socket()
+    srv.bind(('127.0.0.1', 0))
+    srv.listen(64)
+    stop = threading.Event()
+
+    def serve():
+        srv.settimeout(0.2)
+        while not stop.is_set():
+            try:
+                conn, _ = srv.accept()
+            except OSError:
+                continue
+            try:
+                ctx.wrap_socket(conn, server_side=True).close()
+            except (ssl.SSLError, OSError):
+                conn.close()
+    threading.Thread(target=serve, daemon=True).start()
+    yield srv.getsockname()[1]
+    stop.set()
+    srv.close()
+
+
