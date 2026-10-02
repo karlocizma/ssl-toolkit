@@ -238,6 +238,7 @@ CORS_ORIGINS=                               # comma-separated origins; empty = C
 
 # Integrations (all optional)
 CT_API_URL=https://crt.sh/                  # Certificate Transparency search service
+CT_CACHE_SECONDS=900                        # cache CT results per domain (crt.sh rate-limits by IP); 0 disables
 RBL_RESOLVERS=                              # your own DNS resolver for blocklist checks (public resolvers are often refused)
 RBL_LISTS=                                  # comma-separated DNSBL zones to replace the defaults
 ACME_CA_BUNDLE=                             # trust a private ACME CA (e.g. Pebble, step-ca)
@@ -513,7 +514,7 @@ All require `Authorization: Bearer <ADMIN_TOKEN>`.
 | `POST /api/ct/lookup` | `{domain, include_expired?, expected_issuers?[]}`: all logged certificates, discovered hostnames, issuer summary, findings |
 | `POST /api/monitor/domain/add-bulk` | `{hostnames[], port?, tags?}`: add up to 50 hosts to the Domain Monitor (needs the monitor access token) |
 
-The domain name you search for is sent to crt.sh (or `CT_API_URL`).
+The domain name you search for is sent to crt.sh (or `CT_API_URL`). crt.sh rate-limits by IP address (HTTP 429): results are cached for `CT_CACHE_SECONDS` (default 15 minutes) and a rate limit is reported as such instead of being retried. If you hit it often, point `CT_API_URL` at another CT search service or a mirror.
 
 ### Email deliverability
 
