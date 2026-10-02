@@ -94,6 +94,15 @@ export const acmeAPI = {
   issue: (data) => api.post('/acme/issue', data, { timeout: 300000 })
 };
 
+// Email deliverability
+export const deliverabilityAPI = {
+  overview: (data) => api.post('/email/deliverability', data, { timeout: 90000 }),
+  spf: (data) => api.post('/email/spf/analyze', data, { timeout: 90000 }),
+  dkim: (data) => api.post('/email/dkim/discover', data, { timeout: 90000 }),
+  dmarcReport: (data) => api.post('/email/dmarc/report', data),
+  blocklist: (data) => api.post('/email/blocklist', data, { timeout: 90000 })
+};
+
 // Domain monitoring
 export const monitorAPI = {
   addDomain: (data) => api.post('/monitor/domain/add', data, { timeout: 60000 }),

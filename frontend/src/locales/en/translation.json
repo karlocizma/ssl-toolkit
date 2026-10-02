@@ -29,6 +29,7 @@
     "securityHeaders": "Security Headers",
     "domainMonitor": "Domain Monitor",
     "autodiscover": "Autodiscover Check",
+    "emailDeliverability": "Email Deliverability",
     "jwtDecoder": "JWT Decoder",
     "group": {
       "sslTls": "SSL / TLS",
@@ -159,6 +160,11 @@
       "title": "Autodiscover Check",
       "description": "Test Outlook Autodiscover, Thunderbird autoconfig and SRV records",
       "features": ["Outlook sequence", "Thunderbird autoconfig", "RFC 6186 SRV", "Step-by-step report"]
+    },
+    "emailDeliverability": {
+      "title": "Email Deliverability",
+      "description": "Score SPF, DKIM, DMARC and MTA-STS, parse DMARC reports and check blocklists",
+      "features": ["SPF lookup counter", "DKIM selector discovery", "DMARC report parser", "Blocklist (RBL) check"]
     },
     "jwtDecoder": {
       "title": "JWT Decoder",

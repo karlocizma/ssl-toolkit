@@ -22,6 +22,15 @@ REQUEST_BODIES = {
     '/check/autodiscover': {'properties': {
         'domain': {**_STR, 'example': 'example.com'},
         'email': {**_STR, 'description': 'Optional mailbox to test with (defaults to test@<domain>)'}}},
+    '/email/deliverability': {'required': ['domain'], 'properties': {'domain': {**_STR, 'example': 'example.com'}}},
+    '/email/spf/analyze': {'required': ['domain'], 'properties': {'domain': {**_STR, 'example': 'example.com'}}},
+    '/email/dkim/discover': {'required': ['domain'], 'properties': {
+        'domain': _STR, 'selectors': {'type': 'array', 'items': _STR, 'description': 'Extra selectors to try'}}},
+    '/email/dmarc/report': {'properties': {
+        'xml': {**_STR, 'description': 'Report XML text'},
+        'file_base64': {**_STR, 'description': 'Report file (xml, .gz or .zip), base64 encoded'}}},
+    '/email/blocklist': {'required': ['target'], 'properties': {
+        'target': {**_STR, 'description': 'IPv4 address or a domain (its A and MX hosts are checked)'}}},
     '/check/headers': {'properties': {'url': {'type': 'string', 'example': 'https://example.com'}}},
     '/certificate/decode': {'required': ['certificate'], 'properties': {'certificate': {**_STR, 'description': 'PEM certificate'}}},
     '/csr/decode': {'required': ['csr'], 'properties': {'csr': {**_STR, 'description': 'PEM CSR'}}},
