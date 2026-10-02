@@ -36,6 +36,13 @@ A self-hosted, web-based toolkit for SSL/TLS certificate management, email secur
 | Key–Certificate Match | Verify that a private key matches a given certificate |
 | Certificate Chain Checker | Validate the full certificate chain for a domain |
 | Self-Signed Cert Generator | Generate self-signed X.509 certificates with custom SANs |
+| TLS Scanner | Test supported TLS versions and cipher suites, weak-cipher and forward-secrecy detection, A–F grade |
+| Security Headers | Audit HSTS, CSP, framing, referrer policy and cookie flags with a 0–100 score |
+| Chain Builder | Build a correct, ordered `fullchain.pem`: fetches missing intermediates (AIA), checks the Mozilla trust store, repairs a server's chain |
+| CT Lookup | Every certificate ever logged in Certificate Transparency for a domain, subdomain discovery, unexpected-CA alerts, one-click add to the monitor |
+| Private CA | Create an internal root CA and issue server / client (mTLS) certificates, sign CSRs, export PKCS#12. Nothing is stored |
+| ACME / Let's Encrypt | Issue certificates (manual dns-01/http-01 or automatic via Cloudflare, RFC 2136, acme-dns), wildcards, external account binding, renewal-window check. Nothing is stored |
+| Domain Monitor | Scheduled re-checks of live domains with expiry history, renewal/issuer-change detection, email and webhook alerts, CSV/JSON export and import, Prometheus metrics |
 
 ### Email Security Tools
 
@@ -45,6 +52,8 @@ A self-hosted, web-based toolkit for SSL/TLS certificate management, email secur
 | SPF Manager | Build and validate SPF TXT records |
 | Email Header Analyzer | Parse email headers, trace hops, and check authentication results |
 | DKIM Manager | Generate RSA DKIM key pairs and validate existing DKIM records |
+| Email Deliverability | Overall score (MX, SPF, DKIM, DMARC, MTA-STS, TLS-RPT), SPF DNS-lookup counter, DKIM selector discovery, DMARC aggregate report parser, DNS blocklist checks |
+| Autodiscover Check | Outlook Autodiscover, Thunderbird autoconfig and RFC 6186 SRV lookups with a step-by-step report |
 
 ### Network & Security Tools
 
@@ -52,7 +61,7 @@ A self-hosted, web-based toolkit for SSL/TLS certificate management, email secur
 |------|-------------|
 | Password Toolkit | Secure password generation, strength analysis, and hashing |
 | DNS Diagnostics | Look up A, AAAA, MX, TXT, NS, and other DNS record types |
-| SSL Config Generator | Generate production-ready Nginx, Apache, or HAProxy TLS config snippets |
+| SSL Config Generator | Generate production-ready Nginx, Apache, HAProxy, Caddy or Traefik TLS config snippets |
 | JWT Decoder | Decode JWT header and payload in-browser, with expiry status chip |
 
 ### Advanced API Features
@@ -175,6 +184,13 @@ ALLOW_PRIVATE_TARGETS=false                 # true = allow checks against privat
 # Access control
 MONITOR_PUBLIC=false                        # false (default): /api/monitor/* needs X-Access-Token (an API key or ADMIN_TOKEN)
 CORS_ORIGINS=                               # comma-separated origins; empty = CORS off (same-origin via nginx)
+
+# Integrations (all optional)
+CT_API_URL=https://crt.sh/                  # Certificate Transparency search service
+RBL_RESOLVERS=                              # your own DNS resolver for blocklist checks (public resolvers are often refused)
+RBL_LISTS=                                  # comma-separated DNSBL zones to replace the defaults
+ACME_CA_BUNDLE=                             # trust a private ACME CA (e.g. Pebble, step-ca)
+ACME_DNS_RESOLVERS=1.1.1.1,8.8.8.8          # resolvers used to confirm dns-01 TXT propagation
 
 # Expiry alerts for monitored certificates and domains (all optional)
 ALERT_THRESHOLDS=30,14,7,1                  # days before expiry
@@ -438,6 +454,72 @@ All require `Authorization: Bearer <ADMIN_TOKEN>`.
 | `GET` | `/api/health` | Returns `{"status": "healthy"}` |
 
 ---
+
+### Certificate Transparency
+
+| Endpoint | Description |
+|----------|-------------|
+| `POST /api/ct/lookup` | `{domain, include_expired?, expected_issuers?[]}`: all logged certificates, discovered hostnames, issuer summary, findings |
+| `POST /api/monitor/domain/add-bulk` | `{hostnames[], port?, tags?}`: add up to 50 hosts to the Domain Monitor (needs the monitor access token) |
+
+The domain name you search for is sent to crt.sh (or `CT_API_URL`).
+
+### Email deliverability
+
+| Endpoint | Description |
+|----------|-------------|
+| `POST /api/email/deliverability` | `{domain}`: score and grade over MX, SPF, DKIM, DMARC, MTA-STS and TLS-RPT |
+| `POST /api/email/spf/analyze` | `{domain}`: recursive SPF evaluation with the DNS-lookup count (limit 10), void lookups, loops, `+all`/`?all`/`ptr` findings |
+| `POST /api/email/dkim/discover` | `{domain, selectors?[]}`: probes ~40 common selectors, reports key size and weak/revoked/test-mode keys |
+| `POST /api/email/dmarc/report` | `{xml}` or `{file_base64}` (xml, .gz or .zip): per-source pass/fail summary of an aggregate report (5 MB limit) |
+| `POST /api/email/blocklist` | `{target}`: IPv4 address or domain, checked against DNS blocklists. Public resolvers are often refused by Spamhaus; set `RBL_RESOLVERS` |
+
+### Chain builder
+
+`POST /api/chain/build` with `{certificate}` (leaf or a messy PEM bundle) or `{hostname, port?}` returns `fullchain_pem` (root excluded unless `include_root`), `chain_pem`, the ordered chain with each certificate's source, and findings (missing issuer, expired or SHA-1 certificates, wrong order, leaf-only server).
+
+### Monitoring: metrics, export, import
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/metrics` | Prometheus metrics (`ssl_toolkit_domain_days_until_expiry`, `_up`, `_certificate_changes_total`, …) |
+| `GET /api/monitor/export?format=csv\|json` | Download all monitored domains and certificates |
+| `POST /api/monitor/domain/import` | `{csv}`: one host per line as `hostname[,port[,label[,tags]]]`, max 100 |
+
+All three need the monitor access token (`Authorization: Bearer <ADMIN_TOKEN>` works for Prometheus). A ready-made Grafana dashboard and Prometheus scrape/alert configuration are in [`docs/monitoring/`](docs/monitoring/).
+
+### ACME
+
+| Endpoint | Description |
+|----------|-------------|
+| `POST /api/acme/order` | Start a manual order; returns the DNS TXT records or http-01 files to publish. Optional `eab_kid` / `eab_hmac_key` for CAs that require external account binding |
+| `POST /api/acme/complete` | Validate, finalize and return the certificate after you published the challenges |
+| `POST /api/acme/issue` | Automatic dns-01 via `dns_provider` (`cloudflare`, `rfc2136`, or `acme-dns` for any DNS host through a one-time CNAME) |
+| `POST /api/acme/renewal-info` | `{certificate, directory?}`: the CA's suggested renewal window (ACME Renewal Information, RFC 9773) |
+
+### Command line
+
+The checks also run from a terminal or CI pipeline, with exit code `0` = pass, `1` = threshold not met, `2` = usage error or the check could not run:
+
+```bash
+bin/ssl-toolkit check example.com --fail-under 14        # certificate expiry and hostname match
+bin/ssl-toolkit tls example.com --min-grade B            # TLS protocol/cipher grade
+bin/ssl-toolkit headers https://example.com --min-score 70
+bin/ssl-toolkit email example.com --min-score 70         # SPF/DKIM/DMARC/MTA-STS
+bin/ssl-toolkit chain example.com                        # chain completeness
+bin/ssl-toolkit ct example.com --expected-issuer "Let's Encrypt"
+bin/ssl-toolkit autodiscover example.com
+bin/ssl-toolkit check a.example.com b.example.com --json # several targets, machine-readable
+# or inside the stack:  docker compose exec backend python -m app.cli check example.com
+```
+
+Example GitHub Actions step:
+
+```yaml
+- run: pip install -r backend/requirements.txt && bin/ssl-toolkit check example.com --fail-under 21
+```
+
+The CLI allows private/internal hosts by default (it runs under your account); set `ALLOW_PRIVATE_TARGETS=false` to apply the web API's restriction.
 
 ## Security
 
