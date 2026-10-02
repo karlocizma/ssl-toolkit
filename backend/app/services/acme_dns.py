@@ -111,6 +111,40 @@ class Rfc2136Provider:
         self._send(update)
 
 
+class AcmeDnsProvider:
+    """acme-dns (github.com/joohoi/acme-dns): works with any DNS host via a one-time CNAME.
+
+    Create an account on the acme-dns server, then add
+        _acme-challenge.<your domain>  CNAME  <subdomain>.<acme-dns zone>
+    at your DNS provider (Hetzner, Route 53, anything). Challenges are answered through acme-dns.
+    """
+
+    def __init__(self, server_url: str, username: str, password: str, subdomain: str):
+        if not all([server_url, username, password, subdomain]):
+            raise DnsProviderError('acme-dns requires server_url, username, password and subdomain')
+        if not server_url.startswith(('http://', 'https://')):
+            raise DnsProviderError('server_url must start with http:// or https://')
+        self.url = server_url.rstrip('/')
+        self.headers = {'X-Api-User': username, 'X-Api-Key': password}
+        self.subdomain = subdomain
+
+    def add_txt(self, name: str, value: str) -> Dict:
+        from app.utils.net_safety import safe_post
+        try:
+            resp = safe_post(f'{self.url}/update', json={'subdomain': self.subdomain, 'txt': value},
+                             headers=self.headers, timeout=15)
+        except UnsafeTargetError as e:
+            raise DnsProviderError(str(e))
+        except requests.RequestException as e:
+            raise DnsProviderError(f'acme-dns request failed: {e}')
+        if resp.status_code != 200:
+            raise DnsProviderError(f'acme-dns rejected the update (HTTP {resp.status_code}); check username, password and subdomain')
+        return {'name': name, 'value': value}
+
+    def remove_txt(self, handle: Dict) -> None:
+        pass  # acme-dns keeps only the two most recent values and has no delete call
+
+
 def build_provider(cfg: Dict):
     cfg = cfg or {}
     kind = cfg.get('type')
@@ -120,7 +154,10 @@ def build_provider(cfg: Dict):
         return Rfc2136Provider(cfg.get('server', ''), cfg.get('zone', ''), cfg.get('tsig_name', ''),
                                cfg.get('tsig_secret', ''), cfg.get('tsig_algorithm', 'hmac-sha256'),
                                cfg.get('port', 53))
-    raise DnsProviderError("dns_provider.type must be 'cloudflare' or 'rfc2136'")
+    if kind == 'acme-dns':
+        return AcmeDnsProvider(cfg.get('server_url', ''), cfg.get('username', ''), cfg.get('password', ''),
+                               cfg.get('subdomain', ''))
+    raise DnsProviderError("dns_provider.type must be 'cloudflare', 'rfc2136' or 'acme-dns'")
 
 
 def _resolvers() -> List[str]:

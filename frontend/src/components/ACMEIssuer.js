@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import {
-  Alert, Box, Button, FormControl, Grid, InputLabel, MenuItem, Paper, Select, Stack, Tab, Table, TableBody,
+  Accordion, AccordionDetails, AccordionSummary, Alert, Box, Button, Chip, FormControl, Grid, InputLabel, MenuItem, Paper,
+  Select, Stack, Tab, Table, TableBody,
   TableCell, TableHead, TableRow, Tabs, TextField, Typography,
 } from '@mui/material';
-import { WorkspacePremium as WorkspacePremiumIcon } from '@mui/icons-material';
+import { ExpandMore as ExpandMoreIcon, WorkspacePremium as WorkspacePremiumIcon } from '@mui/icons-material';
 import { acmeAPI } from '../services/api';
 
 const monoField = { sx: { '& textarea': { fontFamily: 'monospace', fontSize: 12 } } };
@@ -60,13 +61,43 @@ function CommonFields({ form, setForm }) {
               onChange={(e) => setForm({ ...form, directory: e.target.value })}>
               <MenuItem value="letsencrypt-staging">Let's Encrypt staging (untrusted test certificates)</MenuItem>
               <MenuItem value="letsencrypt">Let's Encrypt production</MenuItem>
+              <MenuItem value="custom">Another ACME CA (directory URL)…</MenuItem>
             </Select>
           </FormControl>
+          {form.directory === 'custom' && (
+            <TextField label="ACME directory URL" fullWidth value={form.directory_url || ''}
+              placeholder="https://acme.zerossl.com/v2/DV90" onChange={(e) => setForm({ ...form, directory_url: e.target.value })} />
+          )}
         </Stack>
+      </Grid>
+      <Grid item xs={12}>
+        <Accordion variant="outlined" disableGutters>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography variant="body2">Advanced: external account binding (ZeroSSL, Google Trust Services, …)</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={5}>
+                <TextField label="EAB key ID" fullWidth value={form.eab_kid || ''} onChange={(e) => setForm({ ...form, eab_kid: e.target.value })} />
+              </Grid>
+              <Grid item xs={12} md={7}>
+                <TextField label="EAB HMAC key (base64url)" type="password" fullWidth value={form.eab_hmac_key || ''}
+                  onChange={(e) => setForm({ ...form, eab_hmac_key: e.target.value })}
+                  helperText="Only needed the first time an account is created at CAs that require it." />
+              </Grid>
+            </Grid>
+          </AccordionDetails>
+        </Accordion>
       </Grid>
     </Grid>
   );
 }
+
+const caFields = (form) => ({
+  directory: form.directory === 'custom' ? (form.directory_url || '').trim() : form.directory,
+  eab_kid: form.eab_kid || undefined,
+  eab_hmac_key: form.eab_hmac_key || undefined,
+});
 
 const parseDomains = (text) => text.split(/[\s,]+/).map((d) => d.trim()).filter(Boolean);
 
@@ -93,7 +124,7 @@ function ManualFlow() {
     setResult(null);
     const { data } = await acmeAPI.order({
       domains: parseDomains(form.domains), email: form.email || undefined,
-      directory: form.directory, challenge_type: form.challenge_type,
+      ...caFields(form), challenge_type: form.challenge_type,
     });
     setOrder(data.result);
   });
@@ -161,7 +192,7 @@ function ManualFlow() {
 
 function AutomaticFlow() {
   const [form, setForm] = useState({ domains: '', email: '', directory: 'letsencrypt-staging' });
-  const [provider, setProvider] = useState({ type: 'cloudflare', api_token: '', zone_id: '', server: '', port: 53, zone: '', tsig_name: '', tsig_secret: '', tsig_algorithm: 'hmac-sha256' });
+  const [provider, setProvider] = useState({ type: 'cloudflare', api_token: '', zone_id: '', server: '', port: 53, zone: '', tsig_name: '', tsig_secret: '', tsig_algorithm: 'hmac-sha256', server_url: '', username: '', password: '', subdomain: '' });
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -173,10 +204,12 @@ function AutomaticFlow() {
     try {
       const dns_provider = provider.type === 'cloudflare'
         ? { type: 'cloudflare', api_token: provider.api_token, zone_id: provider.zone_id || undefined }
+        : provider.type === 'acme-dns'
+        ? { type: 'acme-dns', server_url: provider.server_url, username: provider.username, password: provider.password, subdomain: provider.subdomain }
         : { type: 'rfc2136', server: provider.server, port: Number(provider.port), zone: provider.zone,
             tsig_name: provider.tsig_name, tsig_secret: provider.tsig_secret, tsig_algorithm: provider.tsig_algorithm };
       const { data } = await acmeAPI.issue({
-        domains: parseDomains(form.domains), email: form.email || undefined, directory: form.directory, dns_provider,
+        domains: parseDomains(form.domains), email: form.email || undefined, ...caFields(form), dns_provider,
       });
       setResult(data.result);
     } catch (err) {
@@ -202,6 +235,7 @@ function AutomaticFlow() {
               <Select labelId="prov-label" label="DNS provider" value={provider.type} onChange={set('type')}>
                 <MenuItem value="cloudflare">Cloudflare</MenuItem>
                 <MenuItem value="rfc2136">RFC 2136 (BIND, Knot, PowerDNS…)</MenuItem>
+                <MenuItem value="acme-dns">acme-dns (any DNS host via CNAME)</MenuItem>
               </Select>
             </FormControl>
           </Grid>
@@ -213,6 +247,14 @@ function AutomaticFlow() {
               <Grid item xs={12} md={3}>
                 <TextField label="Zone ID (optional)" fullWidth value={provider.zone_id} onChange={set('zone_id')} />
               </Grid>
+            </>
+          ) : provider.type === 'acme-dns' ? (
+            <>
+              <Grid item xs={12} md={5}><TextField label="acme-dns server URL" fullWidth value={provider.server_url} onChange={set('server_url')} placeholder="https://auth.acme-dns.io" /></Grid>
+              <Grid item xs={12} md={3}><TextField label="Username" fullWidth value={provider.username} onChange={set('username')} /></Grid>
+              <Grid item xs={12} md={4}><TextField label="Password" type="password" fullWidth value={provider.password} onChange={set('password')} /></Grid>
+              <Grid item xs={12}><TextField label="Subdomain (from your acme-dns registration)" fullWidth value={provider.subdomain} onChange={set('subdomain')}
+                helperText="One-time setup: at your DNS host add _acme-challenge.<your domain> CNAME <subdomain>.<acme-dns zone>. This works with Hetzner, Route 53 and any other DNS provider." /></Grid>
             </>
           ) : (
             <>
@@ -235,6 +277,70 @@ function AutomaticFlow() {
   );
 }
 
+function RenewalCheck() {
+  const [form, setForm] = useState({ directory: 'letsencrypt-staging' });
+  const [certificate, setCertificate] = useState('');
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const check = async () => {
+    setError('');
+    setResult(null);
+    setLoading(true);
+    try {
+      const { data } = await acmeAPI.renewalInfo({ certificate, directory: caFields(form).directory });
+      setResult(data.result);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Request failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const color = result?.status === 'renew_now' ? 'warning' : 'success';
+  return (
+    <Box>
+      <Typography color="text.secondary" paragraph>
+        Ask the CA when to renew. Let's Encrypt publishes a suggested renewal window per certificate (ACME Renewal Information) and may ask for early renewal, for example after a revocation event. Paste a certificate it issued.
+      </Typography>
+      <Grid container spacing={2}>
+        <Grid item xs={12} md={5}>
+          <FormControl fullWidth>
+            <InputLabel id="ri-dir">Certificate authority</InputLabel>
+            <Select labelId="ri-dir" label="Certificate authority" value={form.directory} onChange={(e) => setForm({ ...form, directory: e.target.value })}>
+              <MenuItem value="letsencrypt-staging">Let's Encrypt staging</MenuItem>
+              <MenuItem value="letsencrypt">Let's Encrypt production</MenuItem>
+              <MenuItem value="custom">Another ACME CA (directory URL)…</MenuItem>
+            </Select>
+          </FormControl>
+          {form.directory === 'custom' && (
+            <TextField label="ACME directory URL" fullWidth sx={{ mt: 2 }} value={form.directory_url || ''} onChange={(e) => setForm({ ...form, directory_url: e.target.value })} />
+          )}
+        </Grid>
+        <Grid item xs={12}>
+          <TextField label="Certificate (PEM)" multiline minRows={4} maxRows={10} fullWidth value={certificate}
+            onChange={(e) => setCertificate(e.target.value)} sx={{ '& textarea': { fontFamily: 'monospace', fontSize: 12 } }} />
+        </Grid>
+      </Grid>
+      <Button variant="contained" sx={{ mt: 2 }} disabled={loading || !certificate.trim()} onClick={check}>
+        {loading ? 'Asking the CA...' : 'Check renewal window'}
+      </Button>
+      {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+      {result && (
+        <Stack spacing={1} sx={{ mt: 3 }}>
+          <Alert severity={color}>{result.message}</Alert>
+          <Stack direction="row" spacing={1} flexWrap="wrap">
+            {result.suggested_window_start && <Chip label={`Window opens ${new Date(result.suggested_window_start).toLocaleString()}`} />}
+            {result.suggested_window_end && <Chip label={`Window closes ${new Date(result.suggested_window_end).toLocaleString()}`} />}
+          </Stack>
+          {result.explanation_url && <Typography variant="body2">Why: <a href={result.explanation_url} target="_blank" rel="noreferrer">{result.explanation_url}</a></Typography>}
+        </Stack>
+      )}
+    </Box>
+  );
+}
+
 function ACMEIssuer() {
   const [tab, setTab] = useState(0);
   return (
@@ -250,8 +356,9 @@ function ACMEIssuer() {
         <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
           <Tab label="Manual" />
           <Tab label="Automatic (DNS provider)" />
+          <Tab label="Renewal check" />
         </Tabs>
-        {tab === 0 ? <ManualFlow /> : <AutomaticFlow />}
+        {tab === 0 ? <ManualFlow /> : tab === 1 ? <AutomaticFlow /> : <RenewalCheck />}
       </Paper>
     </Box>
   );
