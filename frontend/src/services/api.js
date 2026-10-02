@@ -91,7 +91,8 @@ export const caAPI = {
 export const acmeAPI = {
   order: (data) => api.post('/acme/order', data, { timeout: 120000 }),
   complete: (data) => api.post('/acme/complete', data, { timeout: 300000 }),
-  issue: (data) => api.post('/acme/issue', data, { timeout: 300000 })
+  issue: (data) => api.post('/acme/issue', data, { timeout: 300000 }),
+  renewalInfo: (data) => api.post('/acme/renewal-info', data, { timeout: 60000 })
 };
 
 // Chain builder

@@ -6,6 +6,8 @@ All HTTP goes through the SSRF guard. Operators can trust a private ACME CA
 (e.g. Pebble, step-ca) with ACME_CA_BUNDLE=/path/to/ca.pem.
 """
 import base64
+import hashlib
+import hmac
 import json
 import os
 import time
@@ -169,10 +171,32 @@ class AcmeClient:
         return resp
 
     # -- account / order ---------------------------------------------
-    def register(self, email: Optional[str] = None) -> str:
+    def _external_account_binding(self, eab_kid: str, eab_hmac_key: str) -> Dict:
+        """RFC 8555 7.3.4: bind this account key to an account at a CA that requires it (ZeroSSL, Google, ...)."""
+        try:  # strict: the default decoder silently drops invalid characters
+            normalized = eab_hmac_key.strip().replace('-', '+').replace('_', '/')
+            mac_key = base64.b64decode(normalized + '=' * (-len(normalized) % 4), validate=True)
+            if not mac_key:
+                raise ValueError
+        except Exception:
+            raise AcmeError('eab_hmac_key must be base64url encoded')
+        protected = b64u(json.dumps({'alg': 'HS256', 'kid': eab_kid, 'url': self.directory['newAccount']}).encode())
+        payload = b64u(json.dumps(_jwk(self.key)).encode())
+        signature = hmac.new(mac_key, f'{protected}.{payload}'.encode(), hashlib.sha256).digest()
+        return {'protected': protected, 'payload': payload, 'signature': b64u(signature)}
+
+    def register(self, email: Optional[str] = None, eab_kid: Optional[str] = None,
+                 eab_hmac_key: Optional[str] = None) -> str:
         payload = {'termsOfServiceAgreed': True}
         if email:
             payload['contact'] = [f'mailto:{email}']
+        if eab_kid or eab_hmac_key:
+            if not (eab_kid and eab_hmac_key):
+                raise AcmeError('Both eab_kid and eab_hmac_key are required for external account binding')
+            payload['externalAccountBinding'] = self._external_account_binding(eab_kid, eab_hmac_key)
+        elif self.directory.get('meta', {}).get('externalAccountRequired'):
+            raise AcmeError('This CA requires external account binding: provide eab_kid and eab_hmac_key '
+                            'from your CA account')
         resp = self._post(self.directory['newAccount'], payload, use_jwk=True)
         self.kid = resp.headers['Location']
         return self.kid
@@ -253,3 +277,37 @@ class AcmeClient:
             raise AcmeError(f"Order ended with status '{order['status']}'")
         resp = self._post(order['certificate'], None)
         return resp.text
+
+
+def certificate_id(cert: x509.Certificate) -> str:
+    """ARI certificate identifier (RFC 9773): base64url(AKI keyIdentifier) '.' base64url(serial)."""
+    try:
+        aki = cert.extensions.get_extension_for_class(x509.AuthorityKeyIdentifier).value.key_identifier
+    except x509.ExtensionNotFound:
+        aki = None
+    if not aki:
+        raise AcmeError('The certificate has no Authority Key Identifier, so its renewal information cannot be queried')
+    serial = cert.serial_number
+    serial_bytes = serial.to_bytes((serial.bit_length() // 8) + 1, 'big')  # minimal two's complement, sign byte kept
+    return f'{b64u(aki)}.{b64u(serial_bytes)}'
+
+
+def fetch_renewal_info(directory: str, cert_pem: str) -> Dict:
+    """Ask the CA when this certificate should be renewed (ACME Renewal Information)."""
+    try:
+        cert = x509.load_pem_x509_certificate(cert_pem.encode())
+    except Exception:
+        raise AcmeError('certificate is not a valid PEM certificate')
+    client = AcmeClient(directory, new_account_key())  # ARI is unauthenticated: no account needed
+    base = client.directory.get('renewalInfo')
+    if not base:
+        raise AcmeError('This CA does not support ACME Renewal Information (ARI)')
+    resp = client._http('GET', f"{base.rstrip('/')}/{certificate_id(cert)}")
+    if resp.status_code == 404:
+        raise AcmeError('The CA does not know this certificate (was it issued by this CA?)')
+    if resp.status_code != 200:
+        raise AcmeError(f'Renewal info request failed ({resp.status_code})')
+    info = resp.json()
+    window = info.get('suggestedWindow') or {}
+    return {'suggested_window_start': window.get('start'), 'suggested_window_end': window.get('end'),
+            'explanation_url': info.get('explanationURL'), 'retry_after': resp.headers.get('Retry-After')}

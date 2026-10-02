@@ -77,7 +77,7 @@ def _client(params: Dict, register: bool):
         key, generated = new_account_key(), True
     client = AcmeClient(directory, key)
     if register:
-        client.register(params.get('email'))
+        client.register(params.get('email'), params.get('eab_kid'), params.get('eab_hmac_key'))
     else:
         client.lookup_account()
     return client, generated
@@ -200,3 +200,28 @@ def _issue_automatic(params: Dict) -> Dict:
     if cleanup_errors:
         result['cleanup_warnings'] = cleanup_errors
     return result
+
+
+def renewal_info(params: Dict) -> Dict:
+    """When does the CA suggest renewing this certificate? (ARI, RFC 9773)"""
+    return _wrap(_renewal_info, params)
+
+
+def _renewal_info(params: Dict) -> Dict:
+    from datetime import datetime, timezone
+    from app.services.acme_client import fetch_renewal_info
+    if not params.get('certificate'):
+        raise ValueError('certificate is required')
+    info = fetch_renewal_info(resolve_directory(params.get('directory')), params['certificate'])
+    now = datetime.now(timezone.utc)
+    start = datetime.fromisoformat(info['suggested_window_start'].replace('Z', '+00:00')) if info['suggested_window_start'] else None
+    end = datetime.fromisoformat(info['suggested_window_end'].replace('Z', '+00:00')) if info['suggested_window_end'] else None
+    if start and now >= start:
+        info['status'], info['message'] = 'renew_now', 'The CA recommends renewing now (the suggested window has opened).'
+    elif start:
+        days = (start - now).days
+        info['status'], info['message'] = 'wait', f'The CA suggests renewing in about {days} day(s), from {start.date()}.'
+    else:
+        info['status'], info['message'] = 'unknown', 'The CA did not suggest a renewal window.'
+    info['days_until_window'] = (start - now).days if start else None
+    return info

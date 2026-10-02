@@ -1315,3 +1315,11 @@ def build_certificate_chain():
         return jsonify({'success': True, 'result': chain_builder.run(data)})
     except ValueError as e:  # ChainError is a ValueError
         return jsonify({'error': str(e)}), 400
+
+
+@ssl_bp.route('/acme/renewal-info', methods=['POST'])
+def acme_renewal_info():
+    """Ask the CA when a certificate should be renewed (ACME Renewal Information, RFC 9773)"""
+    return _acme_endpoint('renewal_info')
+
+

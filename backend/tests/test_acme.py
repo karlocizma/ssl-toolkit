@@ -1,4 +1,5 @@
 import base64
+import socket
 import json
 import os
 import shutil
@@ -174,6 +175,19 @@ CHALL = shutil.which('pebble-challtestsrv') or os.path.join(PEBBLE_DIR, 'pebble-
 DIRECTORY = 'https://127.0.0.1:14000/dir'
 MGMT = 'http://127.0.0.1:8055'
 
+def wait_ports_free(*ports, timeout=10):
+    """A previous test run's Pebble may still be shutting down; starting on top of it makes the readiness
+    probe pass against the dying process."""
+    deadline = time.time() + timeout
+    for port in ports:
+        while time.time() < deadline:
+            with socket.socket() as s:
+                s.settimeout(0.2)
+                if s.connect_ex(('127.0.0.1', port)) != 0:
+                    break
+            time.sleep(0.2)
+
+
 needs_pebble = pytest.mark.skipif(not (os.path.exists(PEBBLE) and os.path.exists(CHALL)),
                                   reason='pebble / pebble-challtestsrv not installed')
 
@@ -189,6 +203,7 @@ def pebble(tmp_path_factory):
         'certificate': str(d / 'c.pem'), 'privateKey': str(d / 'k.pem'), 'httpPort': 5002, 'tlsPort': 5001,
         'ocspResponderURL': '', 'externalAccountBindingRequired': False}}))
     env = dict(os.environ, PEBBLE_VA_NOSLEEP='1', PEBBLE_WFE_NONCEREJECT='0')
+    wait_ports_free(14000, 15000, 8055, 5002)
     chall = subprocess.Popen([CHALL, '-dnsserver', '127.0.0.1:8053', '-management', '127.0.0.1:8055',
                               '-defaultIPv6', '', '-http01', '127.0.0.1:5002', '-https01', '', '-tlsalpn01', '', '-doh', ''],
                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -203,6 +218,7 @@ def pebble(tmp_path_factory):
     else:
         peb.kill(); chall.kill()
         pytest.fail('pebble did not start')
+    assert peb.poll() is None and chall.poll() is None, 'pebble exited right after start (port still in use?)'
     mp = pytest.MonkeyPatch()
     mp.setenv('ACME_CA_BUNDLE', str(d / 'c.pem'))
     mp.setenv('ALLOW_PRIVATE_TARGETS', 'true')
