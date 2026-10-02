@@ -225,6 +225,7 @@ def fetch_served_chain(hostname: str, port: int = 443) -> List[x509.Certificate]
     port = validate_port(port)
     ctx = SSL.Context(SSL.TLS_CLIENT_METHOD)
     ctx.set_min_proto_version(SSL.TLS1_2_VERSION)
+    ctx.set_options(SSL.OP_NO_SSLv2 | SSL.OP_NO_SSLv3 | SSL.OP_NO_TLSv1 | SSL.OP_NO_TLSv1_1)  # no TLS < 1.2 (the TLS scanner covers legacy protocols)
     ctx.set_verify(SSL.VERIFY_NONE, lambda *a: True)
     sock = safe_create_connection((hostname, port), timeout=10)
     conn = SSL.Connection(ctx, sock)
