@@ -139,7 +139,8 @@ jobs:
         run: |
           # nginx resolves the upstream `backend` at startup, so give it a stand-in on the same network.
           docker network create ci-net
-          docker run -d --name backend --network ci-net busybox httpd -f -p 5000 -h /www
+          docker run -d --name backend --network ci-net busybox httpd -f -p 5000 -h /tmp
+          sleep 1 && docker ps --filter name=backend --format '{{.Names}} {{.Status}}'
           docker run -d --name web --network ci-net -p 8080:80 ssl-toolkit-frontend:ci
           for i in $(seq 1 30); do curl -fsS http://localhost:8080/ > /dev/null && break; sleep 1; done
           curl -fsS http://localhost:8080/ | grep -q '<div id="root">'
@@ -151,6 +152,7 @@ jobs:
           docker ps -a
           docker logs app 2>&1 | tail -50 || true
           docker logs web 2>&1 | tail -50 || true
+          docker logs backend 2>&1 | tail -20 || true
 
   compose:
     name: docker compose config
