@@ -37,6 +37,8 @@ REQUEST_BODIES = {
     '/monitor/domain/add-bulk': {'required': ['hostnames'], 'properties': {
         'hostnames': {'type': 'array', 'items': _STR}, 'port': {'type': 'integer', 'default': 443},
         'tags': {'type': 'array', 'items': _STR}}},
+    '/monitor/domain/import': {'required': ['csv'], 'properties': {
+        'csv': {**_STR, 'description': 'One host per line: hostname[,port[,label[,tags]]]'}}},
     '/check/headers': {'properties': {'url': {'type': 'string', 'example': 'https://example.com'}}},
     '/certificate/decode': {'required': ['certificate'], 'properties': {'certificate': {**_STR, 'description': 'PEM certificate'}}},
     '/csr/decode': {'required': ['csr'], 'properties': {'csr': {**_STR, 'description': 'PEM CSR'}}},

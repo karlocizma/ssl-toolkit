@@ -1,9 +1,21 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Alert, Box, Button, Chip, Grid, IconButton, Paper, Stack, TextField, Tooltip, Typography,
+  Alert, Box, Button, Chip, Collapse, Grid, IconButton, Paper, Stack, TextField, Tooltip, Typography,
 } from '@mui/material';
-import { Delete as DeleteIcon, Refresh as RefreshIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
+import {
+  Delete as DeleteIcon, Refresh as RefreshIcon, Visibility as VisibilityIcon, Timeline as TimelineIcon,
+} from '@mui/icons-material';
 import { accessToken, monitorAPI } from '../services/api';
+import ExpiryHistoryChart from './ExpiryHistoryChart';
+
+const saveBlob = (blob, filename) => {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+};
 
 const statusChip = (d) => {
   if (d.status === 'error') return <Chip size="small" color="error" label="Unreachable" />;
@@ -22,6 +34,10 @@ function DomainMonitor() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [token, setToken] = useState(accessToken.get());
+  const [openHistory, setOpenHistory] = useState({});
+  const [histories, setHistories] = useState({});
+  const [importText, setImportText] = useState('');
+  const [notice, setNotice] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -51,6 +67,39 @@ function DomainMonitor() {
     } finally {
       setBusy(false);
     }
+  };
+
+  const toggleHistory = async (id) => {
+    const opening = !openHistory[id];
+    setOpenHistory({ ...openHistory, [id]: opening });
+    if (opening) {
+      try {
+        const { data } = await monitorAPI.getDomain(id);
+        setHistories((h) => ({ ...h, [id]: data.domain }));
+      } catch (err) {
+        setError(err.response?.data?.message || 'Could not load the history.');
+      }
+    }
+  };
+
+  const exportAs = (format) => run(async () => {
+    const { data } = await monitorAPI.exportData(format);
+    saveBlob(data, `monitor-export.${format}`);
+  });
+
+  const importHosts = () => run(async () => {
+    const { data } = await monitorAPI.importCsv(importText);
+    const skipped = data.results.filter((r) => r.status !== 'added');
+    setNotice(`Imported ${data.added} host(s).${skipped.length ? ` Skipped: ${skipped.map((r) => `${r.hostname} (${r.message})`).join('; ')}` : ''}`);
+    setImportText('');
+  });
+
+  const onImportFile = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setImportText(String(reader.result));
+    reader.readAsText(file);
   };
 
   const handleAdd = () => {
@@ -99,6 +148,20 @@ function DomainMonitor() {
         {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
       </Paper>
 
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ mb: 2 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, mr: 1 }}>Import / export</Typography>
+          <Button size="small" variant="outlined" disabled={busy} onClick={() => exportAs('csv')}>Export CSV</Button>
+          <Button size="small" variant="outlined" disabled={busy} onClick={() => exportAs('json')}>Export JSON</Button>
+          <Button size="small" component="label">Load CSV file<input hidden type="file" accept=".csv,text/csv,text/plain" onChange={onImportFile} /></Button>
+        </Stack>
+        <TextField label="Import hosts: one per line as hostname[,port[,label[,tags]]] (max 100)" multiline minRows={3} maxRows={8}
+          fullWidth value={importText} onChange={(e) => setImportText(e.target.value)}
+          placeholder={'example.com\nmail.example.com,993,Mail server,prod'} sx={{ '& textarea': { fontFamily: 'monospace', fontSize: 12 } }} />
+        <Button variant="contained" sx={{ mt: 1 }} disabled={busy || !importText.trim()} onClick={importHosts}>Import hosts</Button>
+        {notice && <Alert severity="success" sx={{ mt: 2 }}>{notice}</Alert>}
+      </Paper>
+
       <Stack spacing={1.5}>
         {domains.length === 0 && <Typography color="text.secondary">No domains monitored yet.</Typography>}
         {domains.map((d) => (
@@ -124,6 +187,9 @@ function DomainMonitor() {
               </Box>
               <Stack direction="row" alignItems="center" spacing={1}>
                 {statusChip(d)}
+                <Tooltip title="Expiry history">
+                  <IconButton aria-label={`History for ${d.hostname}`} onClick={() => toggleHistory(d.id)}><TimelineIcon /></IconButton>
+                </Tooltip>
                 <Tooltip title="Check now">
                   <span>
                     <IconButton disabled={busy} onClick={() => run(() => monitorAPI.checkDomain(d.id))}>
@@ -140,6 +206,13 @@ function DomainMonitor() {
                 </Tooltip>
               </Stack>
             </Stack>
+            <Collapse in={!!openHistory[d.id]} unmountOnExit>
+              <Box sx={{ mt: 2 }}>
+                {histories[d.id]
+                  ? <ExpiryHistoryChart history={histories[d.id].history} changes={histories[d.id].changes} />
+                  : <Typography variant="caption">Loading…</Typography>}
+              </Box>
+            </Collapse>
           </Paper>
         ))}
       </Stack>
