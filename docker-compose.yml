@@ -12,6 +12,7 @@ services:
       retries: 3
 
   backend:
+    image: ghcr.io/karlocizma/ssl-toolkit-backend:${SSL_TOOLKIT_VERSION:-latest}
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -53,6 +54,7 @@ services:
       start_period: 40s
 
   frontend:
+    image: ghcr.io/karlocizma/ssl-toolkit-frontend:${SSL_TOOLKIT_VERSION:-latest}
     build:
       context: ./frontend
       dockerfile: Dockerfile
