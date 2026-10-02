@@ -58,6 +58,12 @@ def _local(tag: str) -> str:
     return tag.rsplit('}', 1)[-1]
 
 
+def _in_domain(host: str, domain: str) -> bool:
+    """True if host is the domain or one of its subdomains (a plain substring test also matches evil-outlook.com.example)."""
+    host = (host or '').rstrip('.').lower()
+    return host == domain or host.endswith('.' + domain)
+
+
 def _child_text(node: Element, name: str) -> Optional[str]:
     for child in node.iter():
         if _local(child.tag) == name and child.text and child.text.strip():
@@ -322,8 +328,8 @@ def _summarize(domain, steps, srv_autodiscover, rfc6186, dns_info) -> Dict:
     cname = dns_info.get('autodiscover_cname')
     if cname:
         add('info', f'autodiscover.{domain} is a CNAME to {cname}')
-    if any('protection.outlook.com' in mx for mx in dns_info.get('mx', [])) and not (
-            cname and 'outlook.com' in cname):
+    if any(_in_domain(mx, 'protection.outlook.com') for mx in dns_info.get('mx', [])) and not (
+            cname and _in_domain(cname, 'outlook.com')):
         add('warning', 'MX points to Microsoft 365 but autodiscover.%s does not CNAME to autodiscover.outlook.com' % domain)
     if not thunderbird_ok:
         add('warning', 'No Thunderbird/Mozilla autoconfig found (Thunderbird falls back to its public database)')

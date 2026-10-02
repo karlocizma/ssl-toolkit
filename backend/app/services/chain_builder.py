@@ -21,7 +21,7 @@ from app.utils.net_safety import UnsafeTargetError, safe_create_connection, safe
 
 MAX_CHAIN = 8
 MAX_POOL = 20
-_PEM_RE = re.compile(r'-----BEGIN CERTIFICATE-----.+?-----END CERTIFICATE-----', re.S)
+_PEM_RE = re.compile(r'-----BEGIN CERTIFICATE-----[A-Za-z0-9+/=\s]+-----END CERTIFICATE-----')
 WEAK_SIG = ('md5', 'sha1')
 
 
@@ -224,6 +224,7 @@ def build_chain(leaf: x509.Certificate, pool: List[x509.Certificate], include_ro
 def fetch_served_chain(hostname: str, port: int = 443) -> List[x509.Certificate]:
     port = validate_port(port)
     ctx = SSL.Context(SSL.TLS_CLIENT_METHOD)
+    ctx.set_min_proto_version(SSL.TLS1_2_VERSION)
     ctx.set_verify(SSL.VERIFY_NONE, lambda *a: True)
     sock = safe_create_connection((hostname, port), timeout=10)
     conn = SSL.Connection(ctx, sock)

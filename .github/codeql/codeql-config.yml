@@ -1,0 +1,12 @@
+name: SSL Toolkit CodeQL config
+
+# Test code builds deliberately malformed inputs and asserts on URLs/hostnames.
+paths-ignore:
+  - backend/tests
+  - frontend/src/**/*.test.js
+
+query-filters:
+  # The remaining `{'error': str(e)}` responses return deliberate ValueError validation messages
+  # (400s). Unexpected exceptions are logged and answered with a generic 500 (see _internal_error).
+  - exclude:
+      id: py/stack-trace-exposure
