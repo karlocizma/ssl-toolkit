@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [Phase 9] — 2026-10-02
+
+### Added
+- **Certificate Transparency lookup** (`POST /api/ct/lookup`) via crt.sh: all logged certificates, hostname discovery, unexpected-CA and wildcard findings; **bulk add** to the Domain Monitor (`/api/monitor/domain/add-bulk`)
+- **Email deliverability suite**: overall score, SPF recursive DNS-lookup counter, DKIM selector discovery, DMARC aggregate report parser (xml/gzip/zip), DNS blocklist checks (`/api/email/*`)
+- **Monitoring extras**: Prometheus `/api/metrics`, CSV/JSON export, CSV import, expiry history charts, Grafana dashboard and Prometheus config in `docs/monitoring/`
+- **Chain builder** (`POST /api/chain/build`): correct ordered `fullchain.pem`, missing intermediates fetched via AIA, trust-store check, server-chain repair
+- **ACME follow-ups**: external account binding, renewal info (ARI, RFC 9773, `POST /api/acme/renewal-info`), acme-dns provider
+- **CLI** (`bin/ssl-toolkit`, `python -m app.cli`) with thresholds and CI exit codes
+- Caddy and Traefik in the SSL config generator
+- Frontend pages for each new tool (en/de), and frontend tests for the TLS Scanner, Security Headers, Private CA and the new pages
+
+### Fixed
+- The Certificate Chain Checker never worked against a real server: pyOpenSSL raised `WantReadError` on sockets with a timeout and only mocked tests ran. Shared handshake helper, regression tests against a real local TLS server
+- CSR generation dropped wildcard SANs, crashed on IP SANs and silently discarded invalid entries (fixed in #40, now also covered by the `validators` upgrade)
+
+---
+
 ## [Phase 8] — 2026-10-01
 
 ### Added
