@@ -1321,3 +1321,5 @@ def build_certificate_chain():
 def acme_renewal_info():
     """Ask the CA when a certificate should be renewed (ACME Renewal Information, RFC 9773)"""
     return _acme_endpoint('renewal_info')
+
+
