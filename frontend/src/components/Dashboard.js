@@ -27,6 +27,7 @@ import {
   VpnLock as VpnLockIcon,
   Code as CodeIcon,
   Token as TokenIcon,
+  ForwardToInbox as ForwardToInboxIcon,
   TravelExplore as TravelExploreIcon,
   AlternateEmail as AlternateEmailIcon,
   Lock as LockIcon,
@@ -230,6 +231,14 @@ const getTools = (t) => [
     path: '/autodiscover',
     color: 'secondary',
     featuresKeys: ['tools.autodiscover.features.0', 'tools.autodiscover.features.1', 'tools.autodiscover.features.2', 'tools.autodiscover.features.3']
+  },
+  {
+    titleKey: 'tools.emailDeliverability.title',
+    descriptionKey: 'tools.emailDeliverability.description',
+    icon: <ForwardToInboxIcon sx={{ fontSize: 40 }} />,
+    path: '/email-deliverability',
+    color: 'success',
+    featuresKeys: ['tools.emailDeliverability.features.0', 'tools.emailDeliverability.features.1', 'tools.emailDeliverability.features.2', 'tools.emailDeliverability.features.3']
   },
   {
     titleKey: 'tools.ctLookup.title',

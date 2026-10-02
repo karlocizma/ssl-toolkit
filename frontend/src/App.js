@@ -29,6 +29,7 @@ import DomainMonitor from './components/DomainMonitor';
 import PrivateCA from './components/PrivateCA';
 import ACMEIssuer from './components/ACMEIssuer';
 import AutodiscoverChecker from './components/AutodiscoverChecker';
+import EmailDeliverability from './components/EmailDeliverability';
 import CTLookup from './components/CTLookup';
 import './App.css';
 
@@ -91,6 +92,7 @@ function App() {
               <Route path="/acme" element={<ACMEIssuer />} />
               <Route path="/private-ca" element={<PrivateCA />} />
               <Route path="/autodiscover" element={<AutodiscoverChecker />} />
+              <Route path="/email-deliverability" element={<EmailDeliverability />} />
               <Route path="/ct-lookup" element={<CTLookup />} />
               <Route path="/tls-scanner" element={<TLSScanner />} />
               <Route path="/security-headers" element={<SecurityHeaders />} />

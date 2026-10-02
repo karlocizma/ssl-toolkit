@@ -1188,6 +1188,55 @@ def check_mail_autodiscover():
         return jsonify({'error': f'Autodiscover check failed: {str(e)}'}), 500
 
 
+# Email deliverability
+def _deliverability(fn_name, *args_from):
+    from app.services import deliverability
+
+    data = request.get_json(silent=True) or {}
+    try:
+        _check_input_size(data, 'xml', 'file_base64')
+        return jsonify({'success': True, 'result': getattr(deliverability, fn_name)(*[data.get(a) for a in args_from])})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+
+
+@ssl_bp.route('/email/deliverability', methods=['POST'])
+def email_deliverability():
+    """Score a domain's email authentication: MX, SPF, DKIM, DMARC, MTA-STS and TLS-RPT"""
+    return _deliverability('check_deliverability', 'domain')
+
+
+@ssl_bp.route('/email/spf/analyze', methods=['POST'])
+def email_spf_analyze():
+    """Evaluate an SPF policy recursively and count DNS lookups against the limit of 10"""
+    return _deliverability('analyze_spf', 'domain')
+
+
+@ssl_bp.route('/email/dkim/discover', methods=['POST'])
+def email_dkim_discover():
+    """Find DKIM selectors in use by probing common names (plus any you supply)"""
+    return _deliverability('discover_dkim', 'domain', 'selectors')
+
+
+@ssl_bp.route('/email/dmarc/report', methods=['POST'])
+def email_dmarc_report():
+    """Parse a DMARC aggregate report (XML, gzip or zip) into a per-source summary"""
+    from app.services import deliverability
+
+    data = request.get_json(silent=True) or {}
+    try:
+        _check_input_size(data, 'xml')
+        if isinstance(data.get('file_base64'), str) and len(data['file_base64']) > 8_000_000:
+            raise ValueError('file_base64 exceeds the maximum allowed size')
+        return jsonify({'success': True, 'result': deliverability.analyze_dmarc_report(data)})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+
+
+@ssl_bp.route('/email/blocklist', methods=['POST'])
+def email_blocklist():
+    """Check an IPv4 address or a domain's mail hosts against DNS blocklists"""
+    return _deliverability('check_blocklists', 'target')
 # Certificate Transparency
 @ssl_bp.route('/ct/lookup', methods=['POST'])
 def ct_lookup():

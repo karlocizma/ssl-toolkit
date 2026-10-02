@@ -29,6 +29,7 @@
     "securityHeaders": "Sicherheits-Header",
     "domainMonitor": "Domain-Überwachung",
     "autodiscover": "Autodiscover-Prüfung",
+    "emailDeliverability": "E-Mail-Zustellbarkeit",
     "ctLookup": "CT-Suche",
     "jwtDecoder": "JWT-Decoder",
     "group": {
@@ -160,6 +161,11 @@
       "title": "Autodiscover-Prüfung",
       "description": "Outlook-Autodiscover, Thunderbird-Autoconfig und SRV-Records testen",
       "features": ["Outlook-Ablauf", "Thunderbird-Autoconfig", "RFC-6186-SRV", "Bericht Schritt für Schritt"]
+    },
+    "emailDeliverability": {
+      "title": "E-Mail-Zustellbarkeit",
+      "description": "SPF, DKIM, DMARC und MTA-STS bewerten, DMARC-Berichte auswerten und Blocklisten prüfen",
+      "features": ["SPF-Lookup-Zähler", "DKIM-Selector-Suche", "DMARC-Berichtsanalyse", "Blocklisten-Prüfung (RBL)"]
     },
     "ctLookup": {
       "title": "CT-Suche",
