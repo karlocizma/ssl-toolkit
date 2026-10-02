@@ -38,6 +38,15 @@ def clean_pem_data(pem_data):
     
     return result
 
+def san_to_text(name) -> str:
+    """Render one Subject Alternative Name entry as text. An IPAddress entry's .value is an ipaddress
+    object (not a string, not JSON-serialisable); other types such as otherName hold bytes."""
+    value = name.value
+    if isinstance(value, bytes):
+        return value.hex()
+    return value if isinstance(value, str) else str(value)
+
+
 def get_certificate_info(cert_data):
     """Extract detailed information from a certificate"""
     try:
@@ -77,7 +86,7 @@ def get_certificate_info(cert_data):
         san_list = []
         try:
             san_ext = cert.extensions.get_extension_for_oid(x509.oid.ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
-            san_list = [name.value for name in san_ext.value]
+            san_list = [san_to_text(name) for name in san_ext.value]
         except x509.ExtensionNotFound:
             pass
         
@@ -191,7 +200,7 @@ def get_csr_info(csr_data):
         try:
             for ext in csr.extensions:
                 if ext.oid == x509.oid.ExtensionOID.SUBJECT_ALTERNATIVE_NAME:
-                    san_list = [name.value for name in ext.value]
+                    san_list = [san_to_text(name) for name in ext.value]
                     break
         except x509.ExtensionNotFound:
             pass

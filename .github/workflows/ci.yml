@@ -3,14 +3,26 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore: ['**.md', 'docs/**', 'LICENSE', '.github/ISSUE_TEMPLATE/**', '.github/PULL_REQUEST_TEMPLATE.md']
   pull_request:
+    paths-ignore: ['**.md', 'docs/**', 'LICENSE', '.github/ISSUE_TEMPLATE/**', '.github/PULL_REQUEST_TEMPLATE.md']
+
+# A new push to a PR supersedes the run in progress.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
 
+env:
+  PEBBLE_VERSION: v2.10.1   # ACME test CA used by the ACME integration tests
+
 jobs:
   backend:
+    name: backend
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: backend
@@ -21,19 +33,31 @@ jobs:
           python-version: '3.11'
           cache: pip
           cache-dependency-path: backend/requirements.txt
+      # Compiling Pebble took ~25 s on every run; the binaries are cached per pinned version.
+      - name: Cache Pebble
+        id: pebble
+        uses: actions/cache@v4
+        with:
+          path: ~/pebble-bin
+          key: pebble-${{ runner.os }}-${{ env.PEBBLE_VERSION }}
       - uses: actions/setup-go@v7
+        if: steps.pebble.outputs.cache-hit != 'true'
         with:
           go-version: stable
-      - name: Install Pebble (ACME test CA used by the ACME integration tests)
+          cache: false
+      - name: Build Pebble
+        if: steps.pebble.outputs.cache-hit != 'true'
         run: |
-          GOBIN="$HOME/pebble-bin" go install github.com/letsencrypt/pebble/v2/cmd/pebble@latest
-          GOBIN="$HOME/pebble-bin" go install github.com/letsencrypt/pebble/v2/cmd/pebble-challtestsrv@latest
-          echo "PEBBLE_BIN_DIR=$HOME/pebble-bin" >> "$GITHUB_ENV"
+          GOBIN="$HOME/pebble-bin" go install "github.com/letsencrypt/pebble/v2/cmd/pebble@${PEBBLE_VERSION}"
+          GOBIN="$HOME/pebble-bin" go install "github.com/letsencrypt/pebble/v2/cmd/pebble-challtestsrv@${PEBBLE_VERSION}"
+      - run: echo "PEBBLE_BIN_DIR=$HOME/pebble-bin" >> "$GITHUB_ENV"
       - run: pip install -r requirements.txt
       - run: python -m pytest -q --cov=app --cov-report=term-missing
 
-  frontend:
+  frontend-test:
+    name: frontend (tests)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: frontend
@@ -41,20 +65,99 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
+          node-version: 22
+      - id: deps
+        uses: actions/cache@v4
+        with:
+          path: frontend/node_modules
+          key: node-modules-${{ runner.os }}-22-${{ hashFiles('frontend/package-lock.json') }}
+      - if: steps.deps.outputs.cache-hit != 'true'
+        run: npm ci --no-audit --no-fund
       - run: npm test -- --watchAll=false
         env:
           CI: 'true'
+
+  # Test and build run in parallel: the build is the slow step and does not need the test run.
+  frontend-build:
+    name: frontend (build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - id: deps
+        uses: actions/cache@v4
+        with:
+          path: frontend/node_modules
+          key: node-modules-${{ runner.os }}-22-${{ hashFiles('frontend/package-lock.json') }}
+      - if: steps.deps.outputs.cache-hit != 'true'
+        run: npm ci --no-audit --no-fund
+      # Babel/ESLint caches: restored from the newest earlier run and refreshed every time.
+      - uses: actions/cache@v4
+        with:
+          path: frontend/node_modules/.cache
+          key: cra-cache-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}-${{ github.sha }}
+          restore-keys: cra-cache-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}-
       - run: npm run build
         env:
           CI: 'true'  # treats ESLint warnings as errors
 
+  # Build both images in parallel with layer caching, then start them and check they really serve.
   docker:
+    name: docker (${{ matrix.image }})
     runs-on: ubuntu-latest
-    needs: [backend, frontend]
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [backend, frontend]
     steps:
       - uses: actions/checkout@v7
-      - run: docker compose build
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.image }}
+          load: true
+          tags: ssl-toolkit-${{ matrix.image }}:ci
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+      - name: Smoke test (backend)
+        if: matrix.image == 'backend'
+        run: |
+          docker run -d --name app -p 5000:5000 ssl-toolkit-backend:ci
+          for i in $(seq 1 30); do curl -fsS http://localhost:5000/api/health && break; sleep 1; done
+          curl -fsS http://localhost:5000/api/health | grep -q healthy
+          curl -fsS http://localhost:5000/api/openapi.json | grep -q '"openapi"'
+          docker exec app python -m app.cli --help > /dev/null
+      - name: Smoke test (frontend)
+        if: matrix.image == 'frontend'
+        run: |
+          # nginx resolves the upstream `backend` at startup, so give it a stand-in on the same network.
+          docker network create ci-net
+          docker run -d --name backend --network ci-net busybox httpd -f -p 5000 -h /tmp
+          sleep 1 && docker ps --filter name=backend --format '{{.Names}} {{.Status}}'
+          docker run -d --name web --network ci-net -p 8080:80 ssl-toolkit-frontend:ci
+          for i in $(seq 1 30); do curl -fsS http://localhost:8080/ > /dev/null && break; sleep 1; done
+          curl -fsS http://localhost:8080/ | grep -q '<div id="root">'
+          # an unknown API path must reach the stand-in backend (404 from busybox), not fail in nginx (502)
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/ping)" = "404"
+      - name: Container logs on failure
+        if: failure()
+        run: |
+          docker ps -a
+          docker logs app 2>&1 | tail -50 || true
+          docker logs web 2>&1 | tail -50 || true
+          docker logs backend 2>&1 | tail -20 || true
+
+  compose:
+    name: docker compose config
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker compose config -q
