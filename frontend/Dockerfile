@@ -1,5 +1,6 @@
+# syntax=docker/dockerfile:1
 # Multi-stage build for React app
-FROM node:18-alpine as build
+FROM node:22-alpine AS build
 
 # Set working directory
 WORKDIR /app
@@ -7,8 +8,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies (reproducible: exactly what package-lock.json says)
+RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
 
 # Copy source code
 COPY . .
