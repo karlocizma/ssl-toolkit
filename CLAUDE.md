@@ -11,8 +11,8 @@ docker compose up -d               # Start in background
 docker compose down                # Stop all containers
 docker compose logs -f             # Tail all logs
 docker compose logs -f backend     # Backend logs only
-./rebuild-frontend.sh              # Rebuild frontend if showing default page
-./test_api.sh                      # Smoke-test the API
+./scripts/rebuild-frontend.sh              # Rebuild frontend if showing default page
+./scripts/smoke-test-api.sh                      # Smoke-test the API
 ```
 
 ### Backend (local dev)
@@ -62,4 +62,4 @@ Default limits: 200/hour and 50/minute per IP. The key function (`get_api_key_or
 
 ## Key Gotcha
 
-The frontend Dockerfile is a two-stage build: Node compiles the React app, then the output is copied into an nginx image. If you see a default nginx page, it means the React build step was skipped or cached incorrectly — run `./rebuild-frontend.sh` or `docker compose build frontend --no-cache`.
+The frontend Dockerfile is a two-stage build: Node compiles the React app, then the output is copied into an nginx image. If you see a default nginx page, it means the React build step was skipped or cached incorrectly — run `./scripts/rebuild-frontend.sh` or `docker compose build frontend --no-cache`.

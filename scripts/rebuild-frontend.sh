@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Always run from the repository root, wherever the script was started from.
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
 # Script to rebuild the frontend container
 # This is needed if you see the Apache/nginx default page instead of the SSL Toolkit app
 

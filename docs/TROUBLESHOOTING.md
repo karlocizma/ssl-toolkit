@@ -22,7 +22,7 @@ docker compose down
 docker compose up -d
 
 # Or use the run script
-./run.sh
+./scripts/run.sh
 ```
 
 The `docker-compose.yml` now includes the required port mappings:
@@ -52,7 +52,7 @@ The frontend container serves a static build of the React application. If you se
 Run the provided script:
 
 ```bash
-./rebuild-frontend.sh
+./scripts/rebuild-frontend.sh
 ```
 
 Or manually:

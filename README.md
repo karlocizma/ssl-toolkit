@@ -128,8 +128,8 @@ docker compose up --build
 
 Open **http://localhost** in your browser.
 
-> If you see a default nginx page instead of the app, run `./rebuild-frontend.sh`.  
-> This is a known Docker build-cache issue — see [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+> If you see a default nginx page instead of the app, run `./scripts/rebuild-frontend.sh`.  
+> This is a known Docker build-cache issue — see [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
 
 ### Useful commands
 
@@ -138,8 +138,8 @@ docker compose up -d            # Start in background
 docker compose down             # Stop all containers
 docker compose logs -f          # Tail all logs
 docker compose logs -f backend  # Backend logs only
-./rebuild-frontend.sh           # Force-rebuild the frontend
-./test_api.sh                   # Smoke-test the API
+./scripts/rebuild-frontend.sh           # Force-rebuild the frontend
+./scripts/smoke-test-api.sh                   # Smoke-test the API
 ```
 
 ---
@@ -558,11 +558,11 @@ The backend is stateless by design. Replace the in-memory rate limiter and cert 
 
 ## Troubleshooting
 
-See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for detailed solutions.
+See [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for detailed solutions.
 
 | Symptom | Quick fix |
 |---------|-----------|
-| Default nginx page | `./rebuild-frontend.sh` |
+| Default nginx page | `./scripts/rebuild-frontend.sh` |
 | Backend won't start | `docker compose build backend --no-cache && docker compose up -d` |
 | View all logs | `docker compose logs -f` |
 
@@ -570,7 +570,7 @@ See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for detailed solutions.
 
 ## Roadmap
 
-See [ROADMAP.md](ROADMAP.md) for the planned feature roadmap with phases, priorities, and rationale.
+See [ROADMAP.md](docs/ROADMAP.md) for the planned feature roadmap with phases, priorities, and rationale.
 
 ---
 

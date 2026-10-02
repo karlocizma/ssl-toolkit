@@ -1,6 +1,6 @@
 # Security & Network Toolkit — Developer Wiki
 
-This document is the technical reference for contributors and operators. For user-facing docs see [README.md](../README.md). For planned work see [ROADMAP.md](../ROADMAP.md).
+This document is the technical reference for contributors and operators. For user-facing docs see [README.md](../README.md). For planned work see [ROADMAP.md](ROADMAP.md).
 
 ---
 
@@ -27,22 +27,39 @@ This document is the technical reference for contributors and operators. For use
 ssl-toolkit/
 ├── backend/
 │   ├── app/
-│   │   ├── __init__.py            # Flask app factory, rate limiter
+│   │   ├── __init__.py            # Flask app factory, rate limiter, CORS, scheduler start
+│   │   ├── openapi.py             # OpenAPI 3 spec generated from the URL map + Swagger UI
+│   │   ├── cli.py                 # Command line interface (CI-friendly exit codes)
 │   │   ├── routes/
-│   │   │   └── ssl_routes.py      # All 44 route handlers, one blueprint
+│   │   │   └── ssl_routes.py      # All 70 route handlers, one blueprint
 │   │   ├── services/
 │   │   │   ├── ssl_checker.py     # Live domain SSL, OCSP, CRL, chain
+│   │   │   ├── tls_scanner.py     # TLS versions / cipher suites, A-F grade
+│   │   │   ├── security_headers.py# HTTP security header audit, 0-100 score
+│   │   │   ├── chain_builder.py   # Build a correct fullchain.pem (AIA fetch, trust store)
+│   │   │   ├── ct_lookup.py       # Certificate Transparency (crt.sh)
+│   │   │   ├── private_ca.py      # Stateless mini CA
+│   │   │   ├── acme_client.py     # RFC 8555 client (EAB, ARI)
+│   │   │   ├── acme_service.py    # ACME orchestration (manual and automatic)
+│   │   │   ├── acme_dns.py        # DNS providers: Cloudflare, RFC 2136, acme-dns
+│   │   │   ├── cert_monitor.py    # Monitored (uploaded) certificates
+│   │   │   ├── domain_monitor.py  # Monitored live domains, history, change detection
+│   │   │   ├── alerts.py          # Expiry alerts (email/webhook) and the scheduler
+│   │   │   ├── monitor_export.py  # Prometheus metrics, CSV/JSON export, CSV import
+│   │   │   ├── deliverability.py  # SPF/DKIM/DMARC/MTA-STS, report parser, blocklists
+│   │   │   ├── autodiscover.py    # Outlook Autodiscover, autoconfig, RFC 6186
 │   │   │   ├── sysadmin_tools.py  # DMARC, SPF, DKIM, DNS, passwords, SSL config
-│   │   │   ├── cert_monitor.py    # In-memory certificate expiry monitor
 │   │   │   ├── batch_processor.py # Parallel batch operations
-│   │   │   └── api_key_manager.py # API key CRUD and validation
+│   │   │   └── api_key_manager.py # API key CRUD and validation (hashed at rest)
 │   │   └── utils/
-│   │       └── ssl_utils.py       # Core crypto: cert/CSR/key/self-signed generation
+│   │       ├── ssl_utils.py       # Core crypto: cert/CSR/key/self-signed generation
+│   │       └── net_safety.py      # SSRF guard for every outbound connection
 │   ├── main.py                    # Gunicorn entrypoint (create_app())
 │   ├── app.py                     # Local dev entrypoint
 │   ├── requirements.txt
 │   ├── Dockerfile
-│   └── pytest.ini
+│   ├── pytest.ini
+│   └── tests/                     # pytest suite (incl. integration tests against Pebble)
 │
 ├── frontend/
 │   ├── src/
@@ -62,13 +79,17 @@ ssl-toolkit/
 ├── nginx/
 │   └── nginx.conf
 │
+├── scripts/                       # run.sh, rebuild-frontend.sh, smoke-test-api.sh
+├── bin/ssl-toolkit                # CLI launcher
+├── docs/
+│   ├── WIKI.md                    # This file
+│   ├── ROADMAP.md
+│   ├── TROUBLESHOOTING.md
+│   └── monitoring/                # Grafana dashboard, Prometheus config
+├── .github/                       # CI, CodeQL, release workflows, issue/PR templates
 ├── docker-compose.yml
 ├── README.md
-├── ROADMAP.md
-├── CHANGELOG.md
-├── TROUBLESHOOTING.md
-└── docs/
-    └── WIKI.md                    # This file
+└── CHANGELOG.md
 ```
 
 ---
@@ -205,7 +226,7 @@ docker-compose.yml
 1. **Build stage (Node):** `npm run build` → `/app/build`
 2. **Serve stage (nginx):** Copy `/app/build` to `/usr/share/nginx/html`
 
-If Docker caches stage 1 incorrectly, nginx serves stale or empty HTML. Run `./rebuild-frontend.sh` (wraps `docker compose build frontend --no-cache`) to force a clean rebuild.
+If Docker caches stage 1 incorrectly, nginx serves stale or empty HTML. Run `./scripts/rebuild-frontend.sh` (wraps `docker compose build frontend --no-cache`) to force a clean rebuild.
 
 ### Nginx proxy rules
 
@@ -400,7 +421,7 @@ Uses Jest and React Testing Library. Test files live alongside components (`Comp
 ### Smoke tests
 
 ```bash
-./test_api.sh
+./scripts/smoke-test-api.sh
 ```
 
 Runs `curl` commands against a running stack. Good for a quick sanity check after rebuilding containers.
@@ -419,7 +440,19 @@ All operations are stateless from the user's perspective. Adding sessions would 
 
 ### Why is the admin API protected by a single shared token?
 
-The admin endpoints manage API keys, not user data. The `ADMIN_TOKEN` bearer pattern is appropriate for a single-operator self-hosted tool. Multi-user auth is planned for Phase 8.
+The admin endpoints manage API keys, not user data. The `ADMIN_TOKEN` bearer pattern (compared in constant time) is appropriate for a single-operator self-hosted tool. The monitor endpoints accept the admin token or any valid API key in `X-Access-Token`, because the monitor stores shared data; `MONITOR_PUBLIC=true` opts out. Multi-user auth is on the roadmap.
+
+### Why does every outbound connection go through `net_safety`?
+
+The tool connects to hosts chosen by the caller (TLS checks, OCSP/CRL/AIA downloads, redirects, DNS-derived targets). Without a guard that is a server-side request forgery primitive: anyone could probe the server's internal network or cloud metadata endpoint. `app/utils/net_safety.py` resolves each target, refuses non-public addresses (loopback, private, link-local, multicast), connects to the vetted IP rather than the name (no DNS rebinding), follows redirects only by hand so each hop is re-checked, and caps response sizes. `ALLOW_PRIVATE_TARGETS=true` is the explicit opt-in for scanning an internal PKI. The CLI enables it by default because it runs under the user's own account.
+
+### Why are the CA, ACME and key tools stateless?
+
+Private keys and certificates are never persisted. The private CA and the ACME client return their keys to the caller (the account key and the order URL are all the state an ACME flow needs); DNS-provider credentials live only for the duration of the request. Nothing sensitive is written to disk, which removes the biggest liability of hosting such a tool.
+
+### Why is untrusted XML parsed with a DTD ban?
+
+Autodiscover, autoconfig and DMARC reports come from remote servers or mail providers. Documents containing a DTD or entity declaration are rejected before parsing (billion-laughs and XXE), and decompressed report size is capped.
 
 ### Why is OCSP/CRL done server-side?
 
@@ -433,31 +466,17 @@ JWT decoding is just base64url-decode + JSON parse. It requires no secret and pr
 
 ## 11. Storage
 
-### Development (current)
-
 | Data | Location | Format |
 |------|----------|--------|
-| Certificate monitor | `/tmp/ssl-toolkit/monitored_certificates.json` | JSON |
-| API keys | `/tmp/ssl-toolkit/api_keys.json` | JSON |
-| Rate limiter state | Process memory | In-memory dict |
+| Monitored certificates | `/app/data/monitored_certificates.json` (`MONITOR_DATA_FILE`) | JSON |
+| Monitored domains and history | `/app/data/monitored_domains.json` (`DOMAIN_MONITOR_FILE`) | JSON |
+| API keys | `/app/data/api_keys.json` (`API_KEYS_FILE`) | JSON, **SHA-256 hashes only** (mode 0600) |
+| Scheduler election lock | `/app/data/scheduler.lock` | file lock |
+| Rate limiter state | Redis (`RATE_LIMIT_STORAGE_URI`), in-memory fallback | |
 
-Both JSON files are created automatically on first use. They live inside the container and are lost when the container is replaced.
+`docker-compose.yml` mounts the `cert-monitor-data` named volume at `/app/data`, so this data survives container replacement. Writes are atomic (temporary file + rename) and guarded by `fcntl` file locks, which makes them safe across the Gunicorn workers of one host.
 
-To persist them across restarts, add a named volume in `docker-compose.yml`:
-```yaml
-volumes:
-  - ssl-toolkit-data:/tmp/ssl-toolkit
-```
-
-### Production (recommended)
-
-| Data | Target |
-|------|--------|
-| Certificate monitor | PostgreSQL table |
-| API keys | PostgreSQL table with encrypted `api_key` column |
-| Rate limiter | Redis (`storage_uri="redis://redis:6379"`) |
-
-Migration path: replace the JSON read/write calls in `cert_monitor.py` and `api_key_manager.py` with SQLAlchemy model calls. Add Alembic for schema migrations. No route changes required.
+**Scaling beyond one host.** The JSON files are single-node storage. For several backend replicas, put `/app/data` on a shared volume (file locks need a POSIX-compliant filesystem) or replace the read/write helpers in `cert_monitor.py`, `domain_monitor.py` and `api_key_manager.py` with a database; no route changes are needed. Exactly one process per data directory runs the alert scheduler (elected with a file lock).
 
 ---
 
@@ -465,9 +484,11 @@ Migration path: replace the JSON read/write calls in `cert_monitor.py` and `api_
 
 | Limitation | Detail |
 |------------|--------|
-| JSON storage is ephemeral | Cert monitor and API keys are lost on container restart unless `/tmp/ssl-toolkit` is volume-mounted |
-| In-memory rate limiter | Limits reset on backend restart; does not work correctly with multiple backend replicas |
-| OCSP/CRL require internet access | Certificates from internal CAs or those without distribution points return "unavailable" |
-| Cert monitor not thread-safe | The in-memory dict in `cert_monitor.py` is not protected by a lock; concurrent Gunicorn workers can race on writes |
+| JSON storage is single-node | See [Storage](#11-storage); several replicas need a shared volume or a database |
+| Rate limiter needs Redis for multiple workers | Without `RATE_LIMIT_STORAGE_URI` limits are per process and reset on restart |
+| OCSP/CRL/AIA need internet access | Certificates from internal CAs or without distribution points return "unavailable" |
+| Third-party services | The CT lookup sends the domain to crt.sh (`CT_API_URL`); blocklist checks send DNS queries to the DNSBL operators, and Spamhaus refuses most public resolvers (set `RBL_RESOLVERS`) |
+| Scans originate from the server | Checks run from the backend's network position, so results can differ from what end users see (firewalls, split-horizon DNS, geo-blocking) |
 | No server-side key storage | Private keys are returned to the browser and not retained; the user is responsible for saving them |
 | Admin endpoint error leaks config state | If `ADMIN_TOKEN` is not set, the 403 response body reveals that the variable is missing |
+| ACME providers | Native providers: Cloudflare, RFC 2136 (TSIG) and acme-dns (covers any DNS host through a CNAME). Hetzner and Route 53 are not built in |
