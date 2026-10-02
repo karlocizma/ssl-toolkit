@@ -68,8 +68,15 @@ def test_normalize_strips_wildcard_and_case():
 
 
 class Resp:
-    def __init__(self, status, text=''):
-        self.status_code, self.text = status, text
+    def __init__(self, status, text='', headers=None):
+        self.status_code, self.text, self.headers = status, text, headers or {}
+
+
+@pytest.fixture(autouse=True)
+def _clear_cache():
+    ct._cache.clear()
+    yield
+    ct._cache.clear()
 
 
 def test_fetch_retries_then_succeeds(monkeypatch):
@@ -140,3 +147,35 @@ def test_bulk_route_requires_access_and_validates(client, monitor_file, monkeypa
     assert client.post('/api/monitor/domain/add-bulk', json={}, headers=h).status_code == 400
     ok = client.post('/api/monitor/domain/add-bulk', json={'hostnames': ['a.example.com']}, headers=h)
     assert ok.status_code == 200 and ok.get_json()['added'] == 1
+
+
+def test_rate_limit_is_not_retried_and_is_explained(monkeypatch):
+    calls = []
+    monkeypatch.setattr(ct.time, 'sleep', lambda s: None)
+    monkeypatch.setattr(ct, 'safe_get', lambda url, **kw: calls.append(1) or Resp(429, headers={'Retry-After': '120'}))
+    with pytest.raises(ct.CTLookupError, match=r'rate-limiting.*2 minute'):
+        ct.fetch_entries('example.com')
+    assert len(calls) == 1
+
+
+def test_results_are_cached(monkeypatch):
+    calls = []
+    monkeypatch.setattr(ct, 'safe_get', lambda url, **kw: calls.append(1) or Resp(200, json.dumps(ENTRIES)))
+    assert ct.fetch_entries('example.com') == ct.fetch_entries('example.com')
+    assert len(calls) == 1
+    ct.fetch_entries('example.org')
+    assert len(calls) == 2
+    monkeypatch.setattr(ct, 'CT_CACHE_SECONDS', 0)
+    ct._cache.clear()
+    ct.fetch_entries('example.com')
+    ct.fetch_entries('example.com')
+    assert len(calls) == 4
+
+
+def test_failures_are_not_cached(monkeypatch):
+    monkeypatch.setattr(ct.time, 'sleep', lambda s: None)
+    monkeypatch.setattr(ct, 'safe_get', lambda url, **kw: Resp(503))
+    with pytest.raises(ct.CTLookupError):
+        ct.fetch_entries('example.com')
+    monkeypatch.setattr(ct, 'safe_get', lambda url, **kw: Resp(200, json.dumps(ENTRIES)))
+    assert len(ct.fetch_entries('example.com')) == 5

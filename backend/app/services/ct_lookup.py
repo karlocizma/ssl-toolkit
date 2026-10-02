@@ -17,6 +17,9 @@ CT_API_URL = os.environ.get('CT_API_URL', 'https://crt.sh/')
 MAX_RAW_ENTRIES = 20000
 MAX_CERTS_RETURNED = 200
 CT_TIMEOUT = 40  # crt.sh is slow for large domains
+CT_CACHE_SECONDS = int(os.environ.get('CT_CACHE_SECONDS', '900'))  # 0 disables the cache
+_CACHE_MAX = 200
+_cache: Dict = {}  # (query) -> (expires_at, entries); repeat searches must not count against the CT service's rate limit
 _HOSTNAME_RE = re.compile(r'^(?=.{1,253}$)([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,63}$')
 
 
@@ -43,8 +46,16 @@ def _parse_time(value: Optional[str]) -> Optional[datetime]:
     return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
 
 
+def _retry_after(resp) -> Optional[int]:
+    value = (getattr(resp, 'headers', None) or {}).get('Retry-After', '')
+    return int(value) if str(value).isdigit() else None
+
+
 def fetch_entries(domain: str, include_subdomains: bool = True) -> List[Dict]:
     query = f'%.{domain}' if include_subdomains else domain
+    cached = _cache.get(query)
+    if cached and cached[0] > time.time():
+        return cached[1]
     last_error = None
     for attempt in range(2):  # crt.sh regularly answers 502/504 under load
         try:
@@ -60,7 +71,16 @@ def fetch_entries(domain: str, include_subdomains: bool = True) -> List[Dict]:
                     raise CTLookupError('The CT service returned an invalid response')
                 if not isinstance(data, list):
                     raise CTLookupError('The CT service returned an unexpected response')
-                return data[:MAX_RAW_ENTRIES]
+                data = data[:MAX_RAW_ENTRIES]
+                if CT_CACHE_SECONDS > 0:
+                    if len(_cache) >= _CACHE_MAX:
+                        _cache.clear()
+                    _cache[query] = (time.time() + CT_CACHE_SECONDS, data)
+                return data
+            if resp.status_code == 429:  # retrying immediately only prolongs the block
+                wait = _retry_after(resp)
+                hint = f' Try again in about {max(1, round(wait / 60))} minute(s).' if wait else ' Try again in a few minutes.'
+                raise CTLookupError('The CT search service is rate-limiting this server (HTTP 429).' + hint)
             last_error = f'HTTP {resp.status_code}'
         time.sleep(1)
     raise CTLookupError(f'The CT search service is unavailable ({last_error}); try again shortly')
