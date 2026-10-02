@@ -1,22 +1,54 @@
+<div align="center">
+
 # Security & Network Toolkit
 
-A self-hosted, web-based toolkit for SSL/TLS certificate management, email security, network diagnostics, and cryptographic tooling. Built with a Flask backend and React frontend, orchestrated with Docker Compose.
+**A self-hosted toolkit for SSL/TLS certificates, email security and network diagnostics.**<br>
+Decode, check, scan, issue and monitor certificates, and fix mail-authentication problems, from a web UI, a REST API or the command line.
+
+[![CI](https://github.com/karlocizma/ssl-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/karlocizma/ssl-toolkit/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Python](https://img.shields.io/badge/python-3.11-3776AB?logo=python&logoColor=white)
+![React](https://img.shields.io/badge/react-18-61DAFB?logo=react&logoColor=black)
+![Docker](https://img.shields.io/badge/docker-compose-2496ED?logo=docker&logoColor=white)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
+[Quick start](#quick-start) · [Features](#features) · [API docs](#api-reference) · [CLI](#command-line) · [Contributing](CONTRIBUTING.md) · [Security policy](SECURITY.md)
+
+<img src="docs/images/dashboard.png" alt="Dashboard" width="880">
+
+</div>
+
+> Nothing is sent to third-party scanners and nothing sensitive is stored: private keys, ACME account keys and issued certificates are returned to you and never kept on the server.
 
 ---
 
 ## Table of Contents
 
+- [Screenshots](#screenshots)
 - [Features](#features)
 - [Architecture](#architecture)
 - [Quick Start](#quick-start)
 - [Development Setup](#development-setup)
 - [Configuration](#configuration)
 - [API Reference](#api-reference)
+- [Command line](#command-line)
 - [Security](#security)
 - [Deployment](#deployment)
 - [Troubleshooting](#troubleshooting)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
+
+---
+
+## Screenshots
+
+Sample data from a local demo environment (fictional `acme-corp.example` hosts, internal CA).
+
+| | |
+|---|---|
+| ![SSL checker](docs/images/ssl-checker.png)<br>**SSL Checker**: live certificate, chain, cipher and hostname check | ![TLS scanner](docs/images/tls-scanner.png)<br>**TLS Scanner**: protocol and cipher support with an A–F grade |
+| ![Domain monitor](docs/images/domain-monitor.png)<br>**Domain Monitor**: scheduled checks, history, change detection and alerts | ![Private CA](docs/images/private-ca.png)<br>**Private CA**: internal root CA, server and client certificates, nothing stored |
+| ![Email deliverability](docs/images/email-deliverability.png)<br>**Email Deliverability**: SPF, DKIM, DMARC, MTA-STS and TLS-RPT in one score | |
 
 ---
 
@@ -98,7 +130,7 @@ Three Docker containers managed by Compose:
 |------|---------|
 | `nginx/nginx.conf` | Proxy rules; HTTPS block is present but commented out |
 | `backend/app/__init__.py` | Flask app factory, rate limiter setup |
-| `backend/app/routes/ssl_routes.py` | All 44 API route handlers |
+| `backend/app/routes/ssl_routes.py` | All API route handlers (OpenAPI spec generated from them) |
 | `backend/app/utils/ssl_utils.py` | Core crypto: cert parsing, CSR/key/self-signed generation |
 | `backend/app/services/ssl_checker.py` | Live domain checks, OCSP, CRL, chain analysis |
 | `backend/app/services/sysadmin_tools.py` | DMARC, SPF, DKIM, email headers, DNS lookups, SSL config, passwords |
@@ -121,7 +153,7 @@ Three Docker containers managed by Compose:
 ### Run
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/karlocizma/ssl-toolkit.git
 cd ssl-toolkit
 docker compose up --build
 ```
@@ -129,7 +161,7 @@ docker compose up --build
 Open **http://localhost** in your browser.
 
 > If you see a default nginx page instead of the app, run `./scripts/rebuild-frontend.sh`.  
-> This is a known Docker build-cache issue — see [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
+> This is a known Docker build-cache issue — see [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
 
 ### Useful commands
 
@@ -138,8 +170,8 @@ docker compose up -d            # Start in background
 docker compose down             # Stop all containers
 docker compose logs -f          # Tail all logs
 docker compose logs -f backend  # Backend logs only
-./scripts/rebuild-frontend.sh           # Force-rebuild the frontend
-./scripts/smoke-test-api.sh                   # Smoke-test the API
+./scripts/rebuild-frontend.sh      # Force-rebuild the frontend
+./scripts/smoke-test-api.sh         # Smoke-test the API
 ```
 
 ---
@@ -532,7 +564,7 @@ The CLI allows private/internal hosts by default (it runs under your account); s
 | Non-root containers | Backend and nginx run as unprivileged users |
 | Temporary file cleanup | Uploaded files are removed after processing |
 
-To report a security vulnerability, open a GitHub issue with the `security` label. Do not describe active exploits in public comments.
+To report a vulnerability, follow [SECURITY.md](SECURITY.md) (private reporting, please do not open a public issue).
 
 ---
 
@@ -558,7 +590,7 @@ The backend is stateless by design. Replace the in-memory rate limiter and cert 
 
 ## Troubleshooting
 
-See [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for detailed solutions.
+See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for detailed solutions.
 
 | Symptom | Quick fix |
 |---------|-----------|
@@ -570,13 +602,15 @@ See [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for detailed solutions.
 
 ## Roadmap
 
-See [ROADMAP.md](docs/ROADMAP.md) for the planned feature roadmap with phases, priorities, and rationale.
+See [docs/ROADMAP.md](docs/ROADMAP.md) for the planned feature roadmap with phases, priorities, and rationale.
 
 ---
 
 ## Contributing
 
 See [docs/WIKI.md](docs/WIKI.md) for the full developer wiki, including architecture details and a step-by-step guide to adding a new tool.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/my-feature`
