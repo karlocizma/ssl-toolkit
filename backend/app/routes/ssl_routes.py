@@ -1266,3 +1266,39 @@ def add_domains_to_monitor():
         return jsonify(domain_monitor.add_domains(data.get('hostnames'), data.get('port', 443), data.get('tags')))
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
+
+
+# Monitoring: metrics, export, import
+@ssl_bp.route('/metrics', methods=['GET'])
+@require_monitor_access
+def prometheus_metrics():
+    """Prometheus metrics for the monitored domains and certificates (use a bearer token to scrape)"""
+    from app.services import monitor_export
+    return monitor_export.render_metrics(), 200, {'Content-Type': 'text/plain; version=0.0.4; charset=utf-8'}
+
+
+@ssl_bp.route('/monitor/export', methods=['GET'])
+@require_monitor_access
+def export_monitor_data():
+    """Download all monitored domains and certificates as CSV (default) or JSON"""
+    from app.services import monitor_export
+    fmt = request.args.get('format', 'csv').lower()
+    if fmt == 'json':
+        body, ctype, name = monitor_export.export_json(), 'application/json', 'monitor-export.json'
+    elif fmt == 'csv':
+        body, ctype, name = monitor_export.export_csv(), 'text/csv; charset=utf-8', 'monitor-export.csv'
+    else:
+        return jsonify({'error': "format must be 'csv' or 'json'"}), 400
+    return body, 200, {'Content-Type': ctype, 'Content-Disposition': f'attachment; filename={name}'}
+
+
+@ssl_bp.route('/monitor/domain/import', methods=['POST'])
+@require_monitor_access
+def import_monitor_domains():
+    """Add domains from CSV text: hostname[,port[,label[,tags]]] per line"""
+    from app.services import monitor_export
+    data = request.get_json(silent=True) or {}
+    try:
+        return jsonify(monitor_export.import_csv(data.get('csv') or ''))
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400

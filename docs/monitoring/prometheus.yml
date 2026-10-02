@@ -1,0 +1,22 @@
+# Scrape the toolkit's metrics. The endpoint needs the admin token (or an API key via X-Access-Token).
+scrape_configs:
+  - job_name: ssl-toolkit
+    metrics_path: /api/metrics
+    scrape_interval: 5m          # the toolkit re-checks domains on its own schedule (ALERT_CHECK_INTERVAL_HOURS)
+    scheme: https                # or http when scraping the backend directly
+    authorization:
+      type: Bearer
+      credentials: REPLACE_WITH_ADMIN_TOKEN   # or credentials_file: /etc/prometheus/ssl-toolkit.token
+    static_configs:
+      - targets: ['ssl-toolkit.example.com']
+
+# Example alert rules
+# groups:
+#   - name: ssl-toolkit
+#     rules:
+#       - alert: CertificateExpiringSoon
+#         expr: ssl_toolkit_domain_days_until_expiry < 14
+#         for: 1h
+#       - alert: CertificateCheckFailing
+#         expr: ssl_toolkit_domain_up == 0
+#         for: 30m

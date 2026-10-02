@@ -79,6 +79,7 @@ def _new_entry(hostname: str, port: int, label: Optional[str] = None, tags: Opti
 
 
 MAX_BULK = 50
+MAX_BULK_ENTRIES = 100  # CSV import
 
 
 def _validate_host(hostname: str, port: int) -> Optional[str]:
@@ -94,34 +95,36 @@ def _validate_host(hostname: str, port: int) -> Optional[str]:
     return None
 
 
-def add_domains(hostnames: List[str], port=443, tags: Optional[List[str]] = None) -> Dict:
-    """Add many hosts at once (e.g. from a CT lookup); checks run in parallel and are saved together."""
+def add_domain_entries(entries: List[Dict]) -> Dict:
+    """Add many hosts at once; each entry is {hostname, port?, label?, tags?}.
+    Checks run in parallel and are saved together."""
     from concurrent.futures import ThreadPoolExecutor
-    port = validate_port(port)
-    cleaned = []
-    for h in hostnames or []:
-        h = str(h).strip().lower().rstrip('.')
-        if h and h not in cleaned:
-            cleaned.append(h)
+    cleaned, seen = [], set()
+    for e in entries or []:
+        host = str(e.get('hostname', '')).strip().lower().rstrip('.')
+        port = validate_port(e.get('port', 443))
+        if host and (host, port) not in seen:
+            seen.add((host, port))
+            cleaned.append({'hostname': host, 'port': port, 'label': e.get('label'), 'tags': e.get('tags') or []})
     if not cleaned:
         raise ValueError('hostnames must be a non-empty list')
-    if len(cleaned) > MAX_BULK:
-        raise ValueError(f'At most {MAX_BULK} hosts can be added at once')
+    if len(cleaned) > MAX_BULK_ENTRIES:
+        raise ValueError(f'At most {MAX_BULK_ENTRIES} hosts can be added at once')
 
     with ThreadPoolExecutor(max_workers=8) as pool:
-        errors = list(pool.map(lambda h: _validate_host(h, port), cleaned))
+        errors = list(pool.map(lambda e: _validate_host(e['hostname'], e['port']), cleaned))
     data = _load()
     existing = {(d['hostname'], d['port']) for d in data['domains']}
     results, new_entries = [], []
-    for host, err in zip(cleaned, errors):
+    for e, err in zip(cleaned, errors):
         if err:
-            results.append({'hostname': host, 'status': 'invalid', 'message': err})
-        elif (host, port) in existing:
-            results.append({'hostname': host, 'status': 'exists', 'message': 'Already being monitored'})
+            results.append({'hostname': e['hostname'], 'status': 'invalid', 'message': err})
+        elif (e['hostname'], e['port']) in existing:
+            results.append({'hostname': e['hostname'], 'status': 'exists', 'message': 'Already being monitored'})
         else:
-            entry = _new_entry(host, port, None, tags)
+            entry = _new_entry(e['hostname'], e['port'], e['label'], e['tags'])
             new_entries.append(entry)
-            results.append({'hostname': host, 'status': 'added', 'domain_id': entry['id']})
+            results.append({'hostname': e['hostname'], 'status': 'added', 'domain_id': entry['id']})
     with ThreadPoolExecutor(max_workers=8) as pool:
         list(pool.map(_check_entry, new_entries))
     if new_entries:
@@ -130,6 +133,14 @@ def add_domains(hostnames: List[str], port=443, tags: Optional[List[str]] = None
         data['domains'].extend(new_entries)
         _save(data)
     return {'success': True, 'added': len(new_entries), 'results': results}
+
+
+def add_domains(hostnames: List[str], port=443, tags: Optional[List[str]] = None) -> Dict:
+    """Add many hosts on one port (e.g. from a CT lookup)."""
+    hostnames = list(hostnames or [])
+    if len(hostnames) > MAX_BULK:
+        raise ValueError(f'At most {MAX_BULK} hosts can be added at once')
+    return add_domain_entries([{'hostname': h, 'port': port, 'tags': tags} for h in hostnames])
 
 
 def add_domain(hostname: str, port=443, label: Optional[str] = None, tags: Optional[List[str]] = None) -> Dict:
