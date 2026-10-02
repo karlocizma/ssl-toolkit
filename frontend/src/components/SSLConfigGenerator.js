@@ -23,7 +23,12 @@ const serverOptions = [
   { label: 'Nginx', value: 'nginx' },
   { label: 'Apache', value: 'apache' },
   { label: 'HAProxy', value: 'haproxy' },
+  { label: 'Caddy', value: 'caddy' },
+  { label: 'Traefik', value: 'traefik' },
 ];
+
+// These servers staple OCSP on their own, so the toggle does not apply.
+const autoStaplingServers = ['haproxy', 'caddy', 'traefik'];
 
 const tlsOptions = [
   { label: 'TLS 1.2 + 1.3 (recommended)', value: 'TLSv1.2' },
@@ -164,7 +169,7 @@ function SSLConfigGenerator() {
               label="Enable HSTS"
             />
           </Grid>
-          {form.server !== 'haproxy' && (
+          {!autoStaplingServers.includes(form.server) && (
             <Grid item xs={12} sm={6}>
               <FormControlLabel
                 control={

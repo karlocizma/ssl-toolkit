@@ -169,3 +169,21 @@ def test_route(client, pki, monkeypatch):
     serve(monkeypatch, pki['int'].public_bytes(serialization.Encoding.DER))
     resp = client.post('/api/chain/build', json={'certificate': pem(pki['leaf'])})
     assert resp.status_code == 200 and resp.get_json()['result']['complete']
+
+
+# ---- real handshakes (regression: pyOpenSSL raised WantReadError on sockets with a timeout) ----
+def test_real_server_chain_fetch(local_tls, monkeypatch):
+    monkeypatch.setenv('ALLOW_PRIVATE_TARGETS', 'true')
+    certs = cb.fetch_served_chain('127.0.0.1', local_tls)
+    assert len(certs) == 1
+    r = cb.run({'hostname': '127.0.0.1', 'port': local_tls})
+    assert r['source'] == 'server' and r['complete'] and r['chain'][0]['role'] == 'leaf'
+
+
+def test_existing_chain_checker_works_against_a_real_server(local_tls, monkeypatch):
+    from app.services.ssl_checker import check_certificate_chain
+    monkeypatch.setenv('ALLOW_PRIVATE_TARGETS', 'true')
+    r = check_certificate_chain('127.0.0.1', local_tls, 5)
+    assert 'error' not in r and r['chain_length'] == 1
+    assert r['chain_valid'] is False and 'self-signed' in r['verification_error']
+    assert r['certificates'][0]['subject']['common_name'] == 'test.example.com'

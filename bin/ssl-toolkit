@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Run the toolkit CLI from a checkout:  bin/ssl-toolkit check example.com --fail-under 14
+# Needs the backend dependencies (pip install -r backend/requirements.txt).
+set -euo pipefail
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$here/../backend"
+exec python3 -m app.cli "$@"
