@@ -94,9 +94,15 @@ export const acmeAPI = {
   issue: (data) => api.post('/acme/issue', data, { timeout: 300000 })
 };
 
+// Certificate Transparency
+export const ctAPI = {
+  lookup: (data) => api.post('/ct/lookup', data, { timeout: 120000 })
+};
+
 // Domain monitoring
 export const monitorAPI = {
   addDomain: (data) => api.post('/monitor/domain/add', data, { timeout: 60000 }),
+  addDomains: (data) => api.post('/monitor/domain/add-bulk', data, { timeout: 300000 }),
   listDomains: () => api.get('/monitor/domain/list'),
   getDomain: (id) => api.get(`/monitor/domain/${id}`),
   removeDomain: (id) => api.delete(`/monitor/domain/${id}`),

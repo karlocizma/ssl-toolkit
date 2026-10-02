@@ -1186,3 +1186,34 @@ def check_mail_autodiscover():
         return jsonify({'error': str(e)}), 400
     except Exception as e:
         return jsonify({'error': f'Autodiscover check failed: {str(e)}'}), 500
+
+
+# Certificate Transparency
+@ssl_bp.route('/ct/lookup', methods=['POST'])
+def ct_lookup():
+    """List every certificate logged in Certificate Transparency for a domain (via crt.sh)"""
+    from app.services import ct_lookup as ct
+    data = request.get_json(silent=True) or {}
+    if not data.get('domain'):
+        return jsonify({'error': 'domain is required'}), 400
+    try:
+        issuers = data.get('expected_issuers') or []
+        if not isinstance(issuers, list):
+            raise ValueError('expected_issuers must be a list')
+        result = ct.lookup(data['domain'], bool(data.get('include_expired', True)), issuers)
+        return jsonify({'success': True, 'result': result})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except ct.CTLookupError as e:
+        return jsonify({'error': str(e)}), 502
+
+
+@ssl_bp.route('/monitor/domain/add-bulk', methods=['POST'])
+@require_monitor_access
+def add_domains_to_monitor():
+    from app.services import domain_monitor
+    data = request.get_json(silent=True) or {}
+    try:
+        return jsonify(domain_monitor.add_domains(data.get('hostnames'), data.get('port', 443), data.get('tags')))
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400

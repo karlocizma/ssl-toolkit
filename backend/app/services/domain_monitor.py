@@ -56,24 +56,8 @@ def _public_view(entry: Dict, include_history: bool = False) -> Dict:
     return view
 
 
-def add_domain(hostname: str, port=443, label: Optional[str] = None, tags: Optional[List[str]] = None) -> Dict:
-    hostname = (hostname or '').strip().lower().rstrip('.')
-    if not _HOSTNAME_RE.match(hostname):
-        return {'success': False, 'message': 'Invalid hostname'}
-    try:
-        port = validate_port(port)
-        resolve_public(hostname, port)  # reject internal targets up front
-    except UnsafeTargetError as e:
-        return {'success': False, 'message': str(e)}
-    except OSError as e:
-        return {'success': False, 'message': f'DNS resolution error: {e}'}
-
-    data = _load()
-    for existing in data['domains']:
-        if existing['hostname'] == hostname and existing['port'] == port:
-            return {'success': False, 'message': 'Domain already being monitored', 'domain_id': existing['id']}
-
-    entry = {
+def _new_entry(hostname: str, port: int, label: Optional[str] = None, tags: Optional[List[str]] = None) -> Dict:
+    return {
         'id': f'dom_{uuid.uuid4().hex[:12]}',
         'hostname': hostname,
         'port': port,
@@ -92,6 +76,80 @@ def add_domain(hostname: str, port=443, label: Optional[str] = None, tags: Optio
         'history': [],
         'notified': [],
     }
+
+
+MAX_BULK = 50
+
+
+def _validate_host(hostname: str, port: int) -> Optional[str]:
+    """Return an error message, or None when the host may be monitored."""
+    if not _HOSTNAME_RE.match(hostname):
+        return 'Invalid hostname'
+    try:
+        resolve_public(hostname, port)
+    except UnsafeTargetError as e:
+        return str(e)
+    except OSError as e:
+        return f'DNS resolution error: {e}'
+    return None
+
+
+def add_domains(hostnames: List[str], port=443, tags: Optional[List[str]] = None) -> Dict:
+    """Add many hosts at once (e.g. from a CT lookup); checks run in parallel and are saved together."""
+    from concurrent.futures import ThreadPoolExecutor
+    port = validate_port(port)
+    cleaned = []
+    for h in hostnames or []:
+        h = str(h).strip().lower().rstrip('.')
+        if h and h not in cleaned:
+            cleaned.append(h)
+    if not cleaned:
+        raise ValueError('hostnames must be a non-empty list')
+    if len(cleaned) > MAX_BULK:
+        raise ValueError(f'At most {MAX_BULK} hosts can be added at once')
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        errors = list(pool.map(lambda h: _validate_host(h, port), cleaned))
+    data = _load()
+    existing = {(d['hostname'], d['port']) for d in data['domains']}
+    results, new_entries = [], []
+    for host, err in zip(cleaned, errors):
+        if err:
+            results.append({'hostname': host, 'status': 'invalid', 'message': err})
+        elif (host, port) in existing:
+            results.append({'hostname': host, 'status': 'exists', 'message': 'Already being monitored'})
+        else:
+            entry = _new_entry(host, port, None, tags)
+            new_entries.append(entry)
+            results.append({'hostname': host, 'status': 'added', 'domain_id': entry['id']})
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(_check_entry, new_entries))
+    if new_entries:
+        # Re-read before saving so concurrent adds/removes made during the checks are kept.
+        data = _load()
+        data['domains'].extend(new_entries)
+        _save(data)
+    return {'success': True, 'added': len(new_entries), 'results': results}
+
+
+def add_domain(hostname: str, port=443, label: Optional[str] = None, tags: Optional[List[str]] = None) -> Dict:
+    hostname = (hostname or '').strip().lower().rstrip('.')
+    if not _HOSTNAME_RE.match(hostname):
+        return {'success': False, 'message': 'Invalid hostname'}
+    try:
+        port = validate_port(port)
+        resolve_public(hostname, port)  # reject internal targets up front
+    except UnsafeTargetError as e:
+        return {'success': False, 'message': str(e)}
+    except OSError as e:
+        return {'success': False, 'message': f'DNS resolution error: {e}'}
+
+    data = _load()
+    for existing in data['domains']:
+        if existing['hostname'] == hostname and existing['port'] == port:
+            return {'success': False, 'message': 'Domain already being monitored', 'domain_id': existing['id']}
+
+    entry = _new_entry(hostname, port, label, tags)
     data['domains'].append(entry)
     _save(data)
     check_domain(entry['id'])
