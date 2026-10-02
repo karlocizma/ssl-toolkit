@@ -37,6 +37,7 @@ import {
   Password as PasswordIcon,
   Dns as DnsIcon,
   Lock as LockIcon,
+  TravelExplore as TravelExploreIcon,
   AlternateEmail as AlternateEmailIcon,
   AccountBalance as AccountBalanceIcon,
   Http as HttpIcon,
@@ -93,6 +94,7 @@ const menuGroups = [
     items: [
       { textKey: 'nav.passwordToolkit', icon: <PasswordIcon />, path: '/password-toolkit' },
       { textKey: 'nav.dnsDiagnostics', icon: <DnsIcon />, path: '/dns-diagnostics' },
+      { textKey: 'nav.ctLookup', icon: <TravelExploreIcon />, path: '/ct-lookup' },
       { textKey: 'nav.tlsScanner', icon: <LockIcon />, path: '/tls-scanner' },
       { textKey: 'nav.securityHeaders', icon: <HttpIcon />, path: '/security-headers' },
       { textKey: 'nav.domainMonitor', icon: <VisibilityIcon />, path: '/domain-monitor' },

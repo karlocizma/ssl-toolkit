@@ -29,6 +29,7 @@
     "securityHeaders": "Security Headers",
     "domainMonitor": "Domain Monitor",
     "autodiscover": "Autodiscover Check",
+    "ctLookup": "CT Lookup",
     "jwtDecoder": "JWT Decoder",
     "group": {
       "sslTls": "SSL / TLS",
@@ -159,6 +160,11 @@
       "title": "Autodiscover Check",
       "description": "Test Outlook Autodiscover, Thunderbird autoconfig and SRV records",
       "features": ["Outlook sequence", "Thunderbird autoconfig", "RFC 6186 SRV", "Step-by-step report"]
+    },
+    "ctLookup": {
+      "title": "CT Lookup",
+      "description": "Find every certificate issued for a domain via Certificate Transparency",
+      "features": ["All issued certificates", "Subdomain discovery", "Unexpected CA alerts", "Add hosts to monitor"]
     },
     "jwtDecoder": {
       "title": "JWT Decoder",

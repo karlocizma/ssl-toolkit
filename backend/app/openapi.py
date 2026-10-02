@@ -22,6 +22,12 @@ REQUEST_BODIES = {
     '/check/autodiscover': {'properties': {
         'domain': {**_STR, 'example': 'example.com'},
         'email': {**_STR, 'description': 'Optional mailbox to test with (defaults to test@<domain>)'}}},
+    '/ct/lookup': {'required': ['domain'], 'properties': {
+        'domain': {**_STR, 'example': 'example.com'}, 'include_expired': {'type': 'boolean', 'default': True},
+        'expected_issuers': {'type': 'array', 'items': _STR, 'description': "Flag certificates from other CAs, e.g. [\"Let's Encrypt\"]"}}},
+    '/monitor/domain/add-bulk': {'required': ['hostnames'], 'properties': {
+        'hostnames': {'type': 'array', 'items': _STR}, 'port': {'type': 'integer', 'default': 443},
+        'tags': {'type': 'array', 'items': _STR}}},
     '/check/headers': {'properties': {'url': {'type': 'string', 'example': 'https://example.com'}}},
     '/certificate/decode': {'required': ['certificate'], 'properties': {'certificate': {**_STR, 'description': 'PEM certificate'}}},
     '/csr/decode': {'required': ['csr'], 'properties': {'csr': {**_STR, 'description': 'PEM CSR'}}},
@@ -61,7 +67,7 @@ TAGS = [
     ('certificate', 'Certificates'), ('csr', 'CSR'), ('key', 'Keys'), ('convert', 'Conversion'),
     ('check', 'Checks'), ('monitor', 'Monitoring'), ('batch', 'Batch'), ('admin', 'Admin'),
     ('dmarc', 'Email security'), ('spf', 'Email security'), ('dkim', 'Email security'),
-    ('email', 'Email security'), ('dns', 'DNS'), ('upload', 'Uploads'), ('ssl-config', 'Config'), ('ca', 'Private CA'), ('acme', 'ACME'),
+    ('email', 'Email security'), ('dns', 'DNS'), ('upload', 'Uploads'), ('ssl-config', 'Config'), ('ca', 'Private CA'), ('acme', 'ACME'), ('ct', 'Certificate Transparency'),
 ]
 
 
