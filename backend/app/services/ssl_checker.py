@@ -141,6 +141,7 @@ def check_certificate_chain(hostname, port=443, timeout=10):
     try:
         context = SSL.Context(SSL.TLS_CLIENT_METHOD)
         context.set_min_proto_version(SSL.TLS1_2_VERSION)
+        context.set_options(SSL.OP_NO_SSLv2 | SSL.OP_NO_SSLv3 | SSL.OP_NO_TLSv1 | SSL.OP_NO_TLSv1_1)  # no TLS < 1.2 (the TLS scanner covers legacy protocols)
         context.set_verify(SSL.VERIFY_NONE, lambda *args: True)
 
         sock = safe_create_connection((hostname, port), timeout=timeout)
