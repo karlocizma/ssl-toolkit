@@ -112,7 +112,8 @@ def get_certificate_info(cert_data):
         
         # Calculate fingerprints
         cert_der = cert.public_bytes(serialization.Encoding.DER)
-        sha1_fingerprint = hashlib.sha1(cert_der).hexdigest().upper()
+        # SHA-1 is shown only because it is the legacy certificate identifier many tools still display
+        sha1_fingerprint = cert.fingerprint(hashes.SHA1()).hex().upper()  # lgtm[py/weak-sensitive-data-hashing]
         sha256_fingerprint = hashlib.sha256(cert_der).hexdigest().upper()
         
         # Format fingerprints with colons

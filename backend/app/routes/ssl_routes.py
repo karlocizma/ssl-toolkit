@@ -27,6 +27,12 @@ from app.services.sysadmin_tools import (
 
 ssl_bp = Blueprint('ssl', __name__)
 
+
+def _internal_error(exc, message):
+    """Log the exception server-side and return a generic 500 (no internals in the response)."""
+    current_app.logger.error('%s', message, exc_info=exc)
+    return jsonify({'error': message}), 500
+
 _MAX_TEXT_BYTES = 65_536  # 64 KB ceiling for any PEM / key / header string field
 
 
@@ -134,7 +140,7 @@ def decode_certificate():
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
-        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+        return _internal_error(e, 'Unexpected error')
 
 @ssl_bp.route('/certificate/fingerprint', methods=['POST'])
 def get_certificate_fingerprint():
@@ -515,7 +521,7 @@ def dmarc_generate():
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
-        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+        return _internal_error(e, 'Unexpected error')
 
 
 @ssl_bp.route('/dmarc/validate', methods=['POST'])
@@ -539,7 +545,7 @@ def spf_generate():
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
-        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+        return _internal_error(e, 'Unexpected error')
 
 
 @ssl_bp.route('/spf/validate', methods=['POST'])
@@ -565,7 +571,7 @@ def analyze_headers():
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
-        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+        return _internal_error(e, 'Unexpected error')
 
 
 # Password utility
@@ -579,7 +585,7 @@ def password_generate():
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
-        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+        return _internal_error(e, 'Unexpected error')
 
 
 # DNS diagnostics
@@ -593,7 +599,7 @@ def dns_lookup():
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
-        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+        return _internal_error(e, 'Unexpected error')
 
 
 # Certificate Monitoring Routes
@@ -972,7 +978,7 @@ def dkim_generate():
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
-        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+        return _internal_error(e, 'Unexpected error')
 
 
 @ssl_bp.route('/dkim/validate', methods=['POST'])
@@ -984,7 +990,7 @@ def dkim_validate():
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
-        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+        return _internal_error(e, 'Unexpected error')
 
 
 @ssl_bp.route('/certificate/self-signed', methods=['POST'])
@@ -996,7 +1002,7 @@ def generate_self_signed():
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
-        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+        return _internal_error(e, 'Unexpected error')
 
 
 @ssl_bp.route('/ssl-config/generate', methods=['POST'])
@@ -1008,7 +1014,7 @@ def ssl_config_generate():
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
-        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+        return _internal_error(e, 'Unexpected error')
 
 
 
@@ -1094,7 +1100,7 @@ def check_tls_configuration():
     except (UnsafeTargetError, ValueError) as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
-        return jsonify({'error': f'Scan failed: {str(e)}'}), 500
+        return _internal_error(e, 'Scan failed')
 
 
 @ssl_bp.route('/check/headers', methods=['POST'])
@@ -1123,7 +1129,7 @@ def private_ca_create():
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
-        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+        return _internal_error(e, 'Unexpected error')
 
 
 @ssl_bp.route('/ca/issue', methods=['POST'])
@@ -1137,7 +1143,7 @@ def private_ca_issue():
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
-        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+        return _internal_error(e, 'Unexpected error')
 
 
 # ACME (Let's Encrypt & compatible CAs) — stateless, nothing is stored server-side
@@ -1185,7 +1191,7 @@ def check_mail_autodiscover():
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
-        return jsonify({'error': f'Autodiscover check failed: {str(e)}'}), 500
+        return _internal_error(e, 'Autodiscover check failed')
 
 
 # Email deliverability

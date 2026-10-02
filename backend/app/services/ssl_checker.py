@@ -16,6 +16,7 @@ def check_ssl_certificate(hostname, port=443, timeout=10):
     """Check SSL certificate for a given hostname and port"""
     try:
         context = ssl.create_default_context()
+        context.minimum_version = ssl.TLSVersion.TLSv1_2  # legacy protocols are covered by the TLS scanner
         context.check_hostname = True
         context.verify_mode = ssl.CERT_REQUIRED
 
@@ -139,6 +140,7 @@ def check_certificate_chain(hostname, port=443, timeout=10):
     """Check the complete certificate chain"""
     try:
         context = SSL.Context(SSL.TLS_CLIENT_METHOD)
+        context.set_min_proto_version(SSL.TLS1_2_VERSION)
         context.set_verify(SSL.VERIFY_NONE, lambda *args: True)
 
         sock = safe_create_connection((hostname, port), timeout=timeout)
@@ -260,6 +262,7 @@ def _verify_chain(cert_chain: List[crypto.X509]) -> Tuple[bool, Optional[str]]:
 def _fetch_single_certificate(hostname: str, port: int, timeout: int):
     try:
         context = ssl.create_default_context()
+        context.minimum_version = ssl.TLSVersion.TLSv1_2  # legacy protocols are covered by the TLS scanner
         context.check_hostname = False
         context.verify_mode = ssl.CERT_NONE
 

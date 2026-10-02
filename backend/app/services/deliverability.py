@@ -13,7 +13,8 @@ import zipfile
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Optional
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
+from defusedxml.common import DefusedXmlException
 
 import dns.exception
 import dns.resolver
@@ -313,7 +314,7 @@ def parse_dmarc_report(xml_text: str) -> Dict:
         raise ValueError('Report XML must not contain a DTD or entity declarations')
     try:
         root = ET.fromstring(xml_text)
-    except ET.ParseError:
+    except (ET.ParseError, DefusedXmlException):
         raise ValueError('The report is not valid XML')
     if root.tag != 'feedback':
         raise ValueError('Not a DMARC aggregate report (no <feedback> root element)')
