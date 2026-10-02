@@ -157,3 +157,57 @@ class TestCsrSubjectAlternativeNames:
     def test_invalid_san_raises(self, bad):
         with pytest.raises(ValueError, match='Invalid subject alternative name'):
             self._sans(['ok.example.com', bad])
+
+
+class TestIpAddressSans:
+    """Regression: an IP SAN's .value is an ipaddress object, which crashed hostname validation and made
+    the certificate decoder's JSON response fail."""
+
+    @staticmethod
+    def _cert(sans):
+        from datetime import datetime, timedelta, timezone
+        from cryptography.hazmat.primitives import hashes
+        from cryptography.x509.oid import NameOID
+        key = ec.generate_private_key(ec.SECP256R1())
+        name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, 'host.internal')])
+        now = datetime.now(timezone.utc)
+        cert = (x509.CertificateBuilder().subject_name(name).issuer_name(name).public_key(key.public_key())
+                .serial_number(1).not_valid_before(now).not_valid_after(now + timedelta(days=30))
+                .add_extension(x509.SubjectAlternativeName(sans), critical=False).sign(key, hashes.SHA256()))
+        return cert.public_bytes(serialization.Encoding.PEM).decode()
+
+    def test_all_san_types_become_text(self):
+        import ipaddress
+        from app.utils.ssl_utils import get_certificate_info
+        pem = self._cert([x509.DNSName('host.internal'), x509.IPAddress(ipaddress.ip_address('10.1.2.3')),
+                          x509.IPAddress(ipaddress.ip_address('2001:db8::1')), x509.RFC822Name('ops@example.com'),
+                          x509.UniformResourceIdentifier('https://host.internal/')])
+        sans = get_certificate_info(pem)['subject_alternative_names']
+        assert sans == ['host.internal', '10.1.2.3', '2001:db8::1', 'ops@example.com', 'https://host.internal/']
+        assert all(isinstance(s, str) for s in sans)
+
+    def test_decode_route_returns_json_for_ip_sans(self, client):
+        import ipaddress
+        pem = self._cert([x509.IPAddress(ipaddress.ip_address('192.0.2.7'))])
+        resp = client.post('/api/certificate/decode', json={'certificate': pem})
+        assert resp.status_code == 200
+        assert resp.get_json()['certificate_info']['subject_alternative_names'] == ['192.0.2.7']
+
+    def test_csr_with_ip_san_decodes(self):
+        from app.utils.ssl_utils import generate_csr, get_csr_info
+        key = ec.generate_private_key(ec.SECP256R1())
+        csr = generate_csr({'common_name': 'x.internal'}, key, ['x.internal', '10.0.0.9'])
+        pem = csr.public_bytes(serialization.Encoding.PEM).decode()
+        assert get_csr_info(pem)['subject_alternative_names'] == ['x.internal', '10.0.0.9']
+
+    @pytest.mark.parametrize('host,sans,expected', [
+        ('10.1.2.3', ['10.1.2.3'], True),
+        ('10.1.2.4', ['10.1.2.3'], False),
+        ('::1', ['0:0:0:0:0:0:0:1'], True),       # same address, different spelling
+        ('10.1.2.3', ['*.example.com'], False),   # wildcards never match an IP
+        ('www.example.com', ['*.example.com'], True),
+        ('example.com', ['10.1.2.3'], False),
+    ])
+    def test_hostname_validity(self, host, sans, expected):
+        from app.services.ssl_checker import check_hostname_validity
+        assert check_hostname_validity(host, {'subject': {}, 'subject_alternative_names': sans}) is expected
