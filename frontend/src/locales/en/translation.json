@@ -31,6 +31,7 @@
     "autodiscover": "Autodiscover Check",
     "emailDeliverability": "Email Deliverability",
     "ctLookup": "CT Lookup",
+    "chainBuilder": "Chain Builder",
     "jwtDecoder": "JWT Decoder",
     "group": {
       "sslTls": "SSL / TLS",
@@ -171,6 +172,11 @@
       "title": "CT Lookup",
       "description": "Find every certificate issued for a domain via Certificate Transparency",
       "features": ["All issued certificates", "Subdomain discovery", "Unexpected CA alerts", "Add hosts to monitor"]
+    },
+    "chainBuilder": {
+      "title": "Chain Builder",
+      "description": "Build a correct fullchain.pem and fetch missing intermediates",
+      "features": ["Fetches intermediates (AIA)", "Fixes wrong order", "Checks the trust store", "Repairs a server's chain"]
     },
     "jwtDecoder": {
       "title": "JWT Decoder",

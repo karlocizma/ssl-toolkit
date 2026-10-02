@@ -39,6 +39,10 @@ REQUEST_BODIES = {
         'tags': {'type': 'array', 'items': _STR}}},
     '/monitor/domain/import': {'required': ['csv'], 'properties': {
         'csv': {**_STR, 'description': 'One host per line: hostname[,port[,label[,tags]]]'}}},
+    '/chain/build': {'properties': {
+        'certificate': {**_STR, 'description': 'Leaf certificate or a (possibly incomplete or mis-ordered) PEM bundle'},
+        'hostname': {**_STR, 'description': 'Alternatively: fetch and repair the chain a server presents'},
+        'port': {'type': 'integer', 'default': 443}, 'include_root': {'type': 'boolean', 'default': False}}},
     '/check/headers': {'properties': {'url': {'type': 'string', 'example': 'https://example.com'}}},
     '/certificate/decode': {'required': ['certificate'], 'properties': {'certificate': {**_STR, 'description': 'PEM certificate'}}},
     '/csr/decode': {'required': ['csr'], 'properties': {'csr': {**_STR, 'description': 'PEM CSR'}}},

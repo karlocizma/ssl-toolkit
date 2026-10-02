@@ -31,6 +31,7 @@
     "autodiscover": "Autodiscover-Prüfung",
     "emailDeliverability": "E-Mail-Zustellbarkeit",
     "ctLookup": "CT-Suche",
+    "chainBuilder": "Ketten-Builder",
     "jwtDecoder": "JWT-Decoder",
     "group": {
       "sslTls": "SSL / TLS",
@@ -171,6 +172,11 @@
       "title": "CT-Suche",
       "description": "Alle ausgestellten Zertifikate einer Domain über Certificate Transparency finden",
       "features": ["Alle Zertifikate", "Subdomain-Erkennung", "Warnung bei unerwarteter CA", "Hosts zur Überwachung hinzufügen"]
+    },
+    "chainBuilder": {
+      "title": "Ketten-Builder",
+      "description": "Korrekte fullchain.pem erstellen und fehlende Zwischenzertifikate laden",
+      "features": ["Lädt Zwischenzertifikate (AIA)", "Korrigiert die Reihenfolge", "Prüft den Trust Store", "Repariert die Kette eines Servers"]
     },
     "jwtDecoder": {
       "title": "JWT-Decoder",

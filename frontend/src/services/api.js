@@ -94,6 +94,11 @@ export const acmeAPI = {
   issue: (data) => api.post('/acme/issue', data, { timeout: 300000 })
 };
 
+// Chain builder
+export const chainAPI = {
+  build: (data) => api.post('/chain/build', data, { timeout: 90000 })
+};
+
 // Email deliverability
 export const deliverabilityAPI = {
   overview: (data) => api.post('/email/deliverability', data, { timeout: 90000 }),
