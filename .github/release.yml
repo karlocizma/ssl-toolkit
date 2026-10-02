@@ -1,0 +1,17 @@
+changelog:
+  exclude:
+    labels: [skip-changelog]
+    authors: [dependabot]
+  categories:
+    - title: New features
+      labels: [enhancement, feature]
+    - title: Bug fixes
+      labels: [bug]
+    - title: Security
+      labels: [security]
+    - title: Documentation
+      labels: [documentation]
+    - title: Maintenance
+      labels: [dependencies, chore, ci]
+    - title: Other changes
+      labels: ['*']
