@@ -226,6 +226,8 @@ npm run build          # Production build
 
 ### Environment variables
 
+The `# comments` below only explain the values: do not copy them into your `.env` (some tools, such as Podman and Portainer, would treat them as part of the value). Start from `.env.example`, which keeps comments on their own lines.
+
 ```env
 SECRET_KEY=change-this-in-production        # Flask secret key
 FLASK_ENV=production
