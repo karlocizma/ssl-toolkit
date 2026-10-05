@@ -70,6 +70,25 @@ def cmd_tls(args, target: str):
     return ok, lines, r
 
 
+def cmd_mailtls(args, target: str):
+    from app.services.mail_tls import scan_mail, scan_mail_domain
+    if args.port is None and '.' in target and ':' not in target and not args.host:
+        r = scan_mail_domain(target, args.timeout)
+        graded = r['grade']
+        ok = bool(graded) and grade_at_least(graded, args.min_grade)
+        lines = [f"{'OK  ' if ok else 'FAIL'}  {r['domain']}  {len(r['mx'])} MX host(s), worst grade {graded or '-'} (minimum {args.min_grade})"]
+        lines += [f"      {f['severity']}: {f['message']}" for f in r['findings']]
+        return ok, lines, r
+    host, port = split_host(target, args.port or 25)
+    r = scan_mail(host, port, args.protocol, args.mode, args.timeout)
+    if not r.get('reachable'):
+        return False, [f"FAIL  {host}:{port}  {r.get('error')}"], r
+    ok = grade_at_least(r['grade'], args.min_grade)
+    lines = [f"{'OK  ' if ok else 'FAIL'}  {host}:{port}  {r['protocol']}/{r['mode']}  grade {r['grade']} (minimum {args.min_grade})"]
+    lines += [f"      {f['severity']}: {f['message']}" for f in r['findings']]
+    return ok, lines, r
+
+
 def cmd_headers(args, target: str):
     from app.services.security_headers import check_security_headers
     r = check_security_headers(target)
@@ -122,6 +141,7 @@ def cmd_autodiscover(args, target: str):
 COMMANDS: Dict[str, Tuple[Callable, str]] = {
     'check': (cmd_check, 'certificate expiry and hostname match'),
     'tls': (cmd_tls, 'TLS protocol/cipher grade'),
+    'mailtls': (cmd_mailtls, 'mail server STARTTLS/TLS grade (domain = all MX hosts)'),
     'headers': (cmd_headers, 'HTTP security headers score'),
     'email': (cmd_email, 'email authentication score (SPF/DKIM/DMARC/MTA-STS)'),
     'chain': (cmd_chain, 'certificate chain completeness'),
@@ -145,6 +165,13 @@ def build_parser() -> argparse.ArgumentParser:
         if name == 'check':
             p.add_argument('--fail-under', type=int, default=14, metavar='DAYS',
                            help='fail when the certificate expires in fewer days (default 14)')
+        if name == 'mailtls':
+            p.add_argument('--port', type=int, default=None, help='default 25 (domain mode tests every MX on 25)')
+            p.add_argument('--protocol', choices=['smtp', 'imap', 'pop3'], default=None)
+            p.add_argument('--mode', choices=['starttls', 'implicit'], default=None)
+            p.add_argument('--host', action='store_true', help='treat the target as a single host, not a domain')
+            p.add_argument('--timeout', type=int, default=6)
+            p.add_argument('--min-grade', default='B', choices=GRADE_RANK, help='lowest acceptable grade (default B)')
         if name == 'tls':
             p.add_argument('--min-grade', default='B', choices=GRADE_RANK, help='lowest acceptable grade (default B)')
         if name in ('headers', 'email'):

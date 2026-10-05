@@ -36,6 +36,7 @@ import {
   Visibility as VisibilityIcon,
   AccountBalance as AccountBalanceIcon,
   WorkspacePremium as WorkspacePremiumIcon,
+  EnhancedEncryption as EnhancedEncryptionIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -192,6 +193,14 @@ const getTools = (t) => [
     path: '/tls-scanner',
     color: 'primary',
     featuresKeys: ['tools.tlsScanner.features.0', 'tools.tlsScanner.features.1', 'tools.tlsScanner.features.2', 'tools.tlsScanner.features.3']
+  },
+  {
+    titleKey: 'tools.mailTls.title',
+    descriptionKey: 'tools.mailTls.description',
+    icon: <EnhancedEncryptionIcon sx={{ fontSize: 40 }} />,
+    path: '/mail-tls',
+    color: 'secondary',
+    featuresKeys: ['tools.mailTls.features.0', 'tools.mailTls.features.1', 'tools.mailTls.features.2', 'tools.mailTls.features.3']
   },
   {
     titleKey: 'tools.securityHeaders.title',

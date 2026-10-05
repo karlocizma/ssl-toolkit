@@ -25,6 +25,7 @@
     "sslConfigGenerator": "SSL Config Generator",
     "acme": "ACME / Let's Encrypt",
     "privateCA": "Private CA",
+    "mailTls": "Mail Server TLS",
     "tlsScanner": "TLS Scanner",
     "securityHeaders": "Security Headers",
     "domainMonitor": "Domain Monitor",
@@ -132,6 +133,11 @@
       "title": "SSL Config Generator",
       "description": "Generate production-ready TLS configuration snippets for web servers",
       "features": ["Nginx / Apache / HAProxy", "HSTS support", "OCSP stapling", "TLS 1.2 & 1.3"]
+    },
+    "mailTls": {
+      "title": "Mail Server TLS",
+      "description": "Test SMTP, IMAP and POP3 servers for STARTTLS and TLS strength",
+      "features": ["STARTTLS check", "All MX hosts", "Protocols & ciphers", "A–F grade"]
     },
     "tlsScanner": {
       "title": "TLS Scanner",

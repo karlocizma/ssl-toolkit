@@ -39,6 +39,7 @@ import {
   Lock as LockIcon,
   Layers as LayersIcon,
   ForwardToInbox as ForwardToInboxIcon,
+  EnhancedEncryption as EnhancedEncryptionIcon,
   TravelExplore as TravelExploreIcon,
   AlternateEmail as AlternateEmailIcon,
   AccountBalance as AccountBalanceIcon,
@@ -90,6 +91,7 @@ const menuGroups = [
       { textKey: 'nav.emailDeliverability', icon: <ForwardToInboxIcon />, path: '/email-deliverability' },
       { textKey: 'nav.autodiscover', icon: <AlternateEmailIcon />, path: '/autodiscover' },
       { textKey: 'nav.dkimManager', icon: <VpnLockIcon />, path: '/dkim-manager' },
+      { textKey: 'nav.mailTls', icon: <EnhancedEncryptionIcon />, path: '/mail-tls' },
     ],
   },
   {

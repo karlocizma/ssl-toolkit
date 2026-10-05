@@ -1103,6 +1103,27 @@ def check_tls_configuration():
         return _internal_error(e, 'Scan failed')
 
 
+@ssl_bp.route('/check/mail-tls', methods=['POST'])
+def check_mail_server_tls():
+    """STARTTLS / implicit-TLS test of an SMTP, IMAP or POP3 server, or of every MX host of a domain"""
+    from app.services import mail_tls
+    from app.utils.net_safety import UnsafeTargetError
+    data = request.get_json(silent=True) or {}
+    try:
+        if data.get('domain') and not data.get('host'):
+            result = mail_tls.scan_mail_domain(data['domain'], data.get('timeout', 6))
+        elif data.get('host'):
+            result = mail_tls.scan_mail(data['host'], data.get('port', 25), data.get('protocol'),
+                                        data.get('mode'), data.get('timeout', 6), bool(data.get('deep')))
+        else:
+            return jsonify({'error': 'Host or domain is required'}), 400
+        return jsonify({'success': True, 'result': result})
+    except (UnsafeTargetError, ValueError) as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return _internal_error(e, 'Mail server test failed')
+
+
 @ssl_bp.route('/check/headers', methods=['POST'])
 def check_http_security_headers():
     from app.services.security_headers import check_security_headers

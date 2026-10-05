@@ -72,6 +72,7 @@ Sample data from a local demo environment (fictional `acme-corp.example` hosts, 
 | Security Headers | Audit HSTS, CSP, framing, referrer policy and cookie flags with a 0–100 score |
 | Chain Builder | Build a correct, ordered `fullchain.pem`: fetches missing intermediates (AIA), checks the Mozilla trust store, repairs a server's chain |
 | CT Lookup | Every certificate ever logged in Certificate Transparency for a domain, subdomain discovery, unexpected-CA alerts, one-click add to the monitor |
+| Mail Server TLS | STARTTLS / implicit-TLS test of SMTP, IMAP and POP3 servers, or of every MX host of a domain: protocols, ciphers, certificate, A–F grade |
 | Private CA | Create an internal root CA and issue server / client (mTLS) certificates, sign CSRs, export PKCS#12. Nothing is stored |
 | ACME / Let's Encrypt | Issue certificates (manual dns-01/http-01 or automatic via Cloudflare, RFC 2136, acme-dns), wildcards, external account binding, renewal-window check. Nothing is stored |
 | Domain Monitor | Scheduled re-checks of live domains with expiry history, renewal/issuer-change detection, email and webhook alerts, CSV/JSON export and import, Prometheus metrics |
@@ -526,6 +527,10 @@ The domain name you search for is sent to crt.sh (or `CT_API_URL`). crt.sh rate-
 | `POST /api/email/dmarc/report` | `{xml}` or `{file_base64}` (xml, .gz or .zip): per-source pass/fail summary of an aggregate report (5 MB limit) |
 | `POST /api/email/blocklist` | `{target}`: IPv4 address or domain, checked against DNS blocklists. Public resolvers are often refused by Spamhaus; set `RBL_RESOLVERS` |
 
+### Mail server TLS
+
+`POST /api/check/mail-tls` with `{host, port?, protocol?, mode?, deep?}` tests one server (`protocol` smtp/imap/pop3 and `mode` starttls/implicit default from the port: 25/587 SMTP, 465 SMTPS, 143/993 IMAP, 110/995 POP3), or with `{domain}` every MX host on port 25. It checks that STARTTLS is offered, flags authentication advertised before STARTTLS, and reports protocols, negotiated ciphers, certificate validity for the host name and an A–F grade. `deep` enumerates every cipher suite (many connections; mail servers rate-limit, so the default records only the negotiated cipher). Many hosting providers block outbound port 25.
+
 ### Chain builder
 
 `POST /api/chain/build` with `{certificate}` (leaf or a messy PEM bundle) or `{hostname, port?}` returns `fullchain_pem` (root excluded unless `include_root`), `chain_pem`, the ordered chain with each certificate's source, and findings (missing issuer, expired or SHA-1 certificates, wrong order, leaf-only server).
@@ -556,6 +561,8 @@ The checks also run from a terminal or CI pipeline, with exit code `0` = pass, `
 ```bash
 bin/ssl-toolkit check example.com --fail-under 14        # certificate expiry and hostname match
 bin/ssl-toolkit tls example.com --min-grade B            # TLS protocol/cipher grade
+bin/ssl-toolkit mailtls example.com --min-grade B          # all MX hosts, STARTTLS + TLS grade
+bin/ssl-toolkit mailtls mail.example.com:993 --protocol imap --mode implicit
 bin/ssl-toolkit headers https://example.com --min-score 70
 bin/ssl-toolkit email example.com --min-score 70         # SPF/DKIM/DMARC/MTA-STS
 bin/ssl-toolkit chain example.com                        # chain completeness

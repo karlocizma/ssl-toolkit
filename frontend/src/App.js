@@ -24,6 +24,7 @@ import SelfSignedGenerator from './components/SelfSignedGenerator';
 import SSLConfigGenerator from './components/SSLConfigGenerator';
 import JWTDecoder from './components/JWTDecoder';
 import TLSScanner from './components/TLSScanner';
+import MailTLS from './components/MailTLS';
 import SecurityHeaders from './components/SecurityHeaders';
 import DomainMonitor from './components/DomainMonitor';
 import PrivateCA from './components/PrivateCA';
@@ -97,6 +98,7 @@ function App() {
               <Route path="/ct-lookup" element={<CTLookup />} />
               <Route path="/chain-builder" element={<ChainBuilder />} />
               <Route path="/tls-scanner" element={<TLSScanner />} />
+              <Route path="/mail-tls" element={<MailTLS />} />
               <Route path="/security-headers" element={<SecurityHeaders />} />
               <Route path="/domain-monitor" element={<DomainMonitor />} />
             </Routes>
