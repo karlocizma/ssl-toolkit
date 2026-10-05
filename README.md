@@ -250,7 +250,9 @@ ACME_DNS_RESOLVERS=1.1.1.1,8.8.8.8          # resolvers used to confirm dns-01 T
 # Expiry alerts for monitored certificates and domains (all optional)
 ALERT_THRESHOLDS=30,14,7,1                  # days before expiry
 ALERT_CHECK_INTERVAL_HOURS=12               # 0 disables the background scheduler
-ALERT_WEBHOOK_URL=https://hooks.slack.com/...   # Slack, Teams or any JSON webhook
+ALERT_WEBHOOK_URL=https://hooks.slack.com/...   # Slack or any generic JSON webhook
+ALERT_TEAMS_WEBHOOK_URL=https://...logic.azure.com/...   # Microsoft Teams (Workflows webhook or legacy Incoming Webhook)
+APP_URL=https://tools.example.com           # adds an "Open Domain Monitor" button to Teams alerts
 SMTP_HOST=smtp.example.com                  # plus SMTP_PORT, SMTP_USER, SMTP_PASSWORD, ALERT_EMAIL_FROM, ALERT_EMAIL_TO
 ```
 
@@ -268,6 +270,8 @@ cd backend && python -m app.services.autodiscover example.com [user@example.com]
 Interactive API docs (Swagger UI) are served at `/api/docs`; the raw spec is at `/api/openapi.json`.
 
 **SSRF protection:** every outbound check refuses targets that resolve to loopback, private, link-local or otherwise non-public addresses, and does not follow redirects blindly. Set `ALLOW_PRIVATE_TARGETS=true` only on trusted internal deployments.
+
+**Microsoft Teams alerts:** in Teams open the target channel → **⋯ → Workflows** → template **Post to a channel when a webhook request is received**, finish the wizard and copy the URL into `ALERT_TEAMS_WEBHOOK_URL` (legacy Incoming Webhook URLs work too while Microsoft still supports them). Alerts arrive as an Adaptive Card, colour-coded (expired, expiring, certificate changed, recovered), with an "Open Domain Monitor" button when `APP_URL` is set. Send a test card from the Domain Monitor page ("Send test alert", admin token) or with `POST /api/monitor/alerts/test`.
 
 **Persistence:** monitored certificates, monitored domains and API keys (stored only as SHA-256 hashes) live on the `cert-monitor-data` volume. Test alert channels with `POST /api/monitor/alerts/test` (admin token required).
 

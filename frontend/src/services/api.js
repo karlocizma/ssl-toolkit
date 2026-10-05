@@ -125,6 +125,8 @@ export const monitorAPI = {
   removeDomain: (id) => api.delete(`/monitor/domain/${id}`),
   checkDomain: (id) => api.post(`/monitor/domain/${id}/check`, null, { timeout: 60000 }),
   importCsv: (csv) => api.post('/monitor/domain/import', { csv }, { timeout: 300000 }),
+  alertsConfig: () => api.get('/monitor/alerts/config'),
+  alertsTest: () => api.post('/monitor/alerts/test', null, { timeout: 60000 }),
   exportData: (format) => api.get('/monitor/export', { params: { format }, responseType: 'blob' })
 };
 

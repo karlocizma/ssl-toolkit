@@ -11,7 +11,8 @@ jest.mock('../services/api', () => {
       set: jest.fn((v) => { store.token = v; }),
     },
     monitorAPI: { listDomains: jest.fn(), addDomain: jest.fn(), removeDomain: jest.fn(), checkDomain: jest.fn(),
-      getDomain: jest.fn(), importCsv: jest.fn(), exportData: jest.fn() },
+      getDomain: jest.fn(), importCsv: jest.fn(), exportData: jest.fn(),
+      alertsConfig: jest.fn(), alertsTest: jest.fn() },
   };
 });
 
@@ -59,4 +60,31 @@ test('opens the expiry history for a domain', async () => {
   fireEvent.click(await screen.findByLabelText('History for example.com'));
   expect(await screen.findByText(/at least two/)).toBeInTheDocument();
   expect(monitorAPI.getDomain).toHaveBeenCalledWith('d1');
+});
+
+test('shows which alert channels are configured', async () => {
+  monitorAPI.listDomains.mockResolvedValue({ data: { domains: [] } });
+  monitorAPI.alertsConfig.mockResolvedValue({ data: { config: {
+    thresholds: [30, 14, 7, 1], email_configured: false, teams_configured: true, webhook_configured: false } } });
+  render(<DomainMonitor />);
+  fireEvent.click(screen.getByText('Show'));
+  expect(await screen.findByText('Teams')).toBeInTheDocument();
+  expect(screen.getByText(/thresholds: 30, 14, 7, 1 days/)).toBeInTheDocument();
+});
+
+test('sends a test alert and reports the channels used', async () => {
+  monitorAPI.listDomains.mockResolvedValue({ data: { domains: [] } });
+  monitorAPI.alertsTest.mockResolvedValue({ data: { deliveries: [
+    { channel: 'email', sent: false }, { channel: 'teams', sent: true }] } });
+  render(<DomainMonitor />);
+  fireEvent.click(screen.getByText('Send test alert'));
+  expect(await screen.findByText('Test alert sent via teams.')).toBeInTheDocument();
+});
+
+test('explains that the admin token is needed for the test alert', async () => {
+  monitorAPI.listDomains.mockResolvedValue({ data: { domains: [] } });
+  monitorAPI.alertsTest.mockRejectedValue({ response: { status: 403 } });
+  render(<DomainMonitor />);
+  fireEvent.click(screen.getByText('Send test alert'));
+  expect(await screen.findByText('Sending a test alert needs the admin token.')).toBeInTheDocument();
 });
