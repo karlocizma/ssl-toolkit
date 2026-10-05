@@ -26,6 +26,7 @@
     "acme": "ACME / Let's Encrypt",
     "privateCA": "Private CA",
     "domainExpiry": "Domain Expiry",
+    "mtaSts": "MTA-STS & TLS-RPT",
     "mailTls": "Mail Server TLS",
     "tlsScanner": "TLS Scanner",
     "securityHeaders": "Security Headers",
@@ -139,6 +140,11 @@
       "title": "Domain Expiry",
       "description": "Check when a domain registration expires, directly over RDAP",
       "features": ["RDAP lookup", "Registrar & status", "Expiry alerts", "No third-party WHOIS"]
+    },
+    "mtaSts": {
+      "title": "MTA-STS & TLS-RPT",
+      "description": "Check, generate and read MTA-STS policies and TLS-RPT reports",
+      "features": ["Policy check vs. MX", "Policy generator", "TLS-RPT record", "Report reader"]
     },
     "mailTls": {
       "title": "Mail Server TLS",

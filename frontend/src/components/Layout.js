@@ -41,6 +41,7 @@ import {
   ForwardToInbox as ForwardToInboxIcon,
   EnhancedEncryption as EnhancedEncryptionIcon,
   Event as EventIcon,
+  Shield as ShieldIcon,
   TravelExplore as TravelExploreIcon,
   AlternateEmail as AlternateEmailIcon,
   AccountBalance as AccountBalanceIcon,
@@ -93,6 +94,7 @@ const menuGroups = [
       { textKey: 'nav.autodiscover', icon: <AlternateEmailIcon />, path: '/autodiscover' },
       { textKey: 'nav.dkimManager', icon: <VpnLockIcon />, path: '/dkim-manager' },
       { textKey: 'nav.mailTls', icon: <EnhancedEncryptionIcon />, path: '/mail-tls' },
+      { textKey: 'nav.mtaSts', icon: <ShieldIcon />, path: '/mta-sts' },
     ],
   },
   {

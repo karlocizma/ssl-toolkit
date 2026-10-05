@@ -105,6 +105,11 @@ export const chainAPI = {
 // Email deliverability
 export const deliverabilityAPI = {
   overview: (data) => api.post('/email/deliverability', data, { timeout: 90000 }),
+  mtaSts: (data) => api.post('/email/mta-sts', data, { timeout: 120000 }),
+  mtaStsGenerate: (data) => api.post('/email/mta-sts/generate', data),
+  tlsRpt: (data) => api.post('/email/tls-rpt', data),
+  tlsRptGenerate: (data) => api.post('/email/tls-rpt/generate', data),
+  tlsRptReport: (data) => api.post('/email/tls-rpt/report', data),
   spf: (data) => api.post('/email/spf/analyze', data, { timeout: 90000 }),
   dkim: (data) => api.post('/email/dkim/discover', data, { timeout: 90000 }),
   dmarcReport: (data) => api.post('/email/dmarc/report', data),

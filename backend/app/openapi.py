@@ -19,6 +19,19 @@ REQUEST_BODIES = {
     '/check/domain': {'required': ['hostname'], 'properties': {**_HOST, 'timeout': {'type': 'integer', 'default': 10}}},
     '/check/chain': {'required': ['hostname'], 'properties': {**_HOST, 'timeout': {'type': 'integer', 'default': 10}}},
     '/check/tls': {'required': ['hostname'], 'properties': {**_HOST, 'timeout': {'type': 'number', 'default': 5}}},
+    '/email/mta-sts': {'required': ['domain'], 'properties': {
+        'domain': {**_STR, 'example': 'example.com'},
+        'verify_mx': {'type': 'boolean', 'default': False, 'description': 'Also test STARTTLS and certificates of the MX hosts'}}},
+    '/email/mta-sts/generate': {'required': ['domain'], 'properties': {
+        'domain': {**_STR, 'example': 'example.com'}, 'mode': {'type': 'string', 'enum': ['testing', 'enforce', 'none'], 'default': 'testing'},
+        'mx': {'type': 'array', 'items': _STR, 'description': 'Defaults to the domain\'s MX records'},
+        'max_age': {'type': 'integer', 'default': 604800}}},
+    '/email/tls-rpt': {'required': ['domain'], 'properties': {'domain': {**_STR, 'example': 'example.com'}}},
+    '/email/tls-rpt/generate': {'required': ['domain', 'rua'], 'properties': {
+        'domain': {**_STR, 'example': 'example.com'}, 'rua': {'type': 'array', 'items': _STR, 'example': ['tlsrpt@example.com']}}},
+    '/email/tls-rpt/report': {'properties': {
+        'json': {**_STR, 'description': 'Report JSON text'},
+        'file_base64': {**_STR, 'description': 'Base64 of the report (.json or .json.gz)'}}},
     '/check/domain-registration': {'required': ['domain'], 'properties': {
         'domain': {**_STR, 'example': 'example.com', 'description': 'Registered domain (sub-domains are reduced to it)'}}},
     '/check/mail-tls': {'properties': {

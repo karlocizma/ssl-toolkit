@@ -26,6 +26,7 @@
     "acme": "ACME / Let's Encrypt",
     "privateCA": "Private CA",
     "domainExpiry": "Domain-Ablauf",
+    "mtaSts": "MTA-STS & TLS-RPT",
     "mailTls": "Mailserver-TLS",
     "tlsScanner": "TLS-Scanner",
     "securityHeaders": "Sicherheits-Header",
@@ -139,6 +140,11 @@
       "title": "Domain-Ablauf",
       "description": "Ablauf der Domain-Registrierung direkt per RDAP prüfen",
       "features": ["RDAP-Abfrage", "Registrar & Status", "Ablauf-Warnungen", "Kein Dritt-WHOIS"]
+    },
+    "mtaSts": {
+      "title": "MTA-STS & TLS-RPT",
+      "description": "MTA-STS-Richtlinien und TLS-RPT-Berichte prüfen, erzeugen und lesen",
+      "features": ["Richtlinie gegen MX prüfen", "Richtlinien-Generator", "TLS-RPT-Eintrag", "Berichts-Leser"]
     },
     "mailTls": {
       "title": "Mailserver-TLS",

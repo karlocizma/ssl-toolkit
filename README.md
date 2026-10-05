@@ -87,6 +87,7 @@ Sample data from a local demo environment (fictional `acme-corp.example` hosts, 
 | Email Header Analyzer | Parse email headers, trace hops, and check authentication results |
 | DKIM Manager | Generate RSA DKIM key pairs and validate existing DKIM records |
 | Email Deliverability | Overall score (MX, SPF, DKIM, DMARC, MTA-STS, TLS-RPT), SPF DNS-lookup counter, DKIM selector discovery, DMARC aggregate report parser, DNS blocklist checks |
+| MTA-STS & TLS-RPT | Check an MTA-STS policy against the real MX hosts (and optionally their TLS), generate the policy file and DNS records, validate TLS-RPT and read TLS-RPT failure reports |
 | Autodiscover Check | Outlook Autodiscover, Thunderbird autoconfig and RFC 6186 SRV lookups with a step-by-step report |
 
 ### Network & Security Tools
@@ -541,6 +542,18 @@ The domain name you search for is sent to crt.sh (or `CT_API_URL`). crt.sh rate-
 
 `POST /api/check/mail-tls` with `{host, port?, protocol?, mode?, deep?}` tests one server (`protocol` smtp/imap/pop3 and `mode` starttls/implicit default from the port: 25/587 SMTP, 465 SMTPS, 143/993 IMAP, 110/995 POP3), or with `{domain}` every MX host on port 25. It checks that STARTTLS is offered, flags authentication advertised before STARTTLS, and reports protocols, negotiated ciphers, certificate validity for the host name and an A–F grade. `deep` enumerates every cipher suite (many connections; mail servers rate-limit, so the default records only the negotiated cipher). Many hosting providers block outbound port 25.
 
+### MTA-STS and TLS-RPT
+
+| Endpoint | Description |
+|----------|-------------|
+| `POST /api/email/mta-sts` | `{domain, verify_mx?}`: record (single, valid id), policy fetched over HTTPS (valid certificate, no redirect, `text/plain`), `version`/`mode`/`mx`/`max_age`, every MX host matched against the policy (a host the policy does not cover is an error in `enforce` mode: senders will refuse delivery). `verify_mx` also tests STARTTLS and the certificate of each MX |
+| `POST /api/email/mta-sts/generate` | `{domain, mode?, mx?, max_age?}`: the policy file, its URL, and the TXT record with a fresh id; MX hosts default to the domain's MX records |
+| `POST /api/email/tls-rpt` | `{domain}`: validates the `_smtp._tls` record and its `rua` destinations (`mailto:` or `https:`) |
+| `POST /api/email/tls-rpt/generate` | `{domain, rua[]}`: the TXT record |
+| `POST /api/email/tls-rpt/report` | `{json}` or `{file_base64}` (.json or .json.gz): totals, success rate and failures by type with a plain-language explanation |
+
+Start in `testing` mode, watch the TLS-RPT reports, then switch to `enforce`.
+
 ### Chain builder
 
 `POST /api/chain/build` with `{certificate}` (leaf or a messy PEM bundle) or `{hostname, port?}` returns `fullchain_pem` (root excluded unless `include_root`), `chain_pem`, the ordered chain with each certificate's source, and findings (missing issuer, expired or SHA-1 certificates, wrong order, leaf-only server).
@@ -572,6 +585,7 @@ The checks also run from a terminal or CI pipeline, with exit code `0` = pass, `
 bin/ssl-toolkit check example.com --fail-under 14        # certificate expiry and hostname match
 bin/ssl-toolkit tls example.com --min-grade B            # TLS protocol/cipher grade
 bin/ssl-toolkit expiry example.com --fail-under 30         # domain registration (RDAP)
+bin/ssl-toolkit mtasts example.com --require-enforce       # MTA-STS policy and TLS-RPT record
 bin/ssl-toolkit mailtls example.com --min-grade B          # all MX hosts, STARTTLS + TLS grade
 bin/ssl-toolkit mailtls mail.example.com:993 --protocol imap --mode implicit
 bin/ssl-toolkit headers https://example.com --min-score 70
