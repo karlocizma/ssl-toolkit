@@ -162,7 +162,7 @@ def build_spec(app) -> dict:
             paths.setdefault(oa_path, {})[method.lower()] = op
     return {
         'openapi': '3.0.3',
-        'info': {'title': 'SSL Toolkit API', 'version': '1.1.0',
+        'info': {'title': 'SSL Toolkit API', 'version': '1.1.1',
                  'description': 'Certificate, TLS, DNS and email-security tooling. '
                                 'Send X-API-Key to rate-limit per key instead of per IP.'},
         'servers': [{'url': API_PREFIX}],
