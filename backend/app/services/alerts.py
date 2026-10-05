@@ -3,7 +3,10 @@
 Configuration (environment):
   ALERT_THRESHOLDS              days before expiry to alert at (default "30,14,7,1")
   ALERT_CHECK_INTERVAL_HOURS    scheduler period (default 12; 0 disables the scheduler)
-  ALERT_WEBHOOK_URL             Slack / Teams / generic webhook (receives {"text", "events"})
+  ALERT_WEBHOOK_URL             Slack or any generic JSON webhook (receives {"text", "events"})
+  ALERT_TEAMS_WEBHOOK_URL       Microsoft Teams: a Workflows "When a Teams webhook request is received"
+                                URL or a legacy Incoming Webhook URL (receives an Adaptive Card)
+  APP_URL                       public URL of this app; adds an "Open Domain Monitor" button to Teams cards
   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_STARTTLS (default true),
   ALERT_EMAIL_FROM, ALERT_EMAIL_TO (comma separated)
 """
@@ -40,6 +43,7 @@ def get_config() -> Dict:
         'email_configured': bool(os.environ.get('SMTP_HOST') and os.environ.get('ALERT_EMAIL_TO')),
         'email_recipients': [r.strip() for r in os.environ.get('ALERT_EMAIL_TO', '').split(',') if r.strip()],
         'webhook_configured': bool(os.environ.get('ALERT_WEBHOOK_URL')),
+        'teams_configured': bool(os.environ.get('ALERT_TEAMS_WEBHOOK_URL')),
     }
 
 
@@ -168,11 +172,51 @@ def send_webhook(text: str, events: List[Dict]) -> Dict:
         return {'channel': 'webhook', 'sent': False, 'reason': str(e)}
 
 
+_TEAMS_COLORS = {'expired': 'Attention', 'unreachable': 'Attention', 'expiring': 'Warning',
+                 'changed': 'Accent', 'recovered': 'Good', 'test': 'Default'}
+TEAMS_MAX_EVENTS = 20  # keeps the card well below Teams' payload limit
+
+
+def build_teams_card(events: List[Dict], title: str = 'SSL Toolkit alerts') -> Dict:
+    """Teams message with an Adaptive Card (works with Workflows webhooks and legacy connectors)."""
+    body: List[Dict] = [{'type': 'TextBlock', 'text': title, 'weight': 'Bolder', 'size': 'Medium', 'wrap': True}]
+    for e in events[:TEAMS_MAX_EVENTS]:
+        body.append({'type': 'TextBlock', 'wrap': True, 'spacing': 'Small',
+                     'color': _TEAMS_COLORS.get(e.get('kind'), 'Default'),
+                     'text': f"**{str(e.get('kind', 'alert')).upper()}** {e.get('detail', '')}"})
+    if len(events) > TEAMS_MAX_EVENTS:
+        body.append({'type': 'TextBlock', 'wrap': True, 'isSubtle': True,
+                     'text': f'… and {len(events) - TEAMS_MAX_EVENTS} more'})
+    content: Dict = {'$schema': 'http://adaptivecards.io/schemas/adaptive-card.json', 'type': 'AdaptiveCard',
+                     'version': '1.4', 'body': body, 'msteams': {'width': 'Full'}}
+    app_url = os.environ.get('APP_URL', '').strip().rstrip('/')
+    if app_url.startswith(('http://', 'https://')):
+        content['actions'] = [{'type': 'Action.OpenUrl', 'title': 'Open Domain Monitor', 'url': app_url + '/domain-monitor'}]
+    return {'type': 'message', 'attachments': [{'contentType': 'application/vnd.microsoft.card.adaptive',
+                                                'contentUrl': None, 'content': content}]}
+
+
+def send_teams(events: List[Dict], title: str = 'SSL Toolkit alerts') -> Dict:
+    url = os.environ.get('ALERT_TEAMS_WEBHOOK_URL')
+    if not url:
+        return {'channel': 'teams', 'sent': False, 'reason': 'not configured'}
+    if not url.startswith('https://'):
+        return {'channel': 'teams', 'sent': False, 'reason': 'ALERT_TEAMS_WEBHOOK_URL must be an https URL'}
+    try:
+        # URL comes from trusted operator config, not user input.
+        resp = requests.post(url, json=build_teams_card(events, title), timeout=10)
+        resp.raise_for_status()
+        return {'channel': 'teams', 'sent': True}
+    except Exception as e:
+        logger.error('Teams alert failed: %s', type(e).__name__)
+        return {'channel': 'teams', 'sent': False, 'reason': f'{type(e).__name__}: {str(e)[:150]}'.replace(url, '<webhook>')}
+
+
 def dispatch(events: List[Dict], subject: str = 'SSL Toolkit: expiry alerts') -> List[Dict]:
     if not events:
         return []
     text = format_message(events)
-    return [send_email(subject, text), send_webhook(text, events)]
+    return [send_email(subject, text), send_webhook(text, events), send_teams(events, subject.replace('SSL Toolkit: ', 'SSL Toolkit '))]
 
 
 def run_checks() -> Dict:

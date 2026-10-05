@@ -38,6 +38,8 @@ function DomainMonitor() {
   const [histories, setHistories] = useState({});
   const [importText, setImportText] = useState('');
   const [notice, setNotice] = useState('');
+  const [channels, setChannels] = useState(null);
+  const [alertMessage, setAlertMessage] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -82,6 +84,30 @@ function DomainMonitor() {
     }
   };
 
+  const loadChannels = async () => {
+    setAlertMessage('');
+    try {
+      const { data } = await monitorAPI.alertsConfig();
+      setChannels(data.config);
+    } catch (err) {
+      setChannels(null);
+      setAlertMessage(err.response?.status === 401 || err.response?.status === 403
+        ? 'Alert settings need the admin token.' : (err.response?.data?.message || 'Could not load the alert settings.'));
+    }
+  };
+
+  const sendTestAlert = async () => {
+    setAlertMessage('');
+    try {
+      const { data } = await monitorAPI.alertsTest();
+      const sent = data.deliveries.filter((x) => x.sent).map((x) => x.channel);
+      setAlertMessage(sent.length ? `Test alert sent via ${sent.join(', ')}.` : 'No channel is configured, nothing was sent.');
+    } catch (err) {
+      setAlertMessage(err.response?.status === 401 || err.response?.status === 403
+        ? 'Sending a test alert needs the admin token.' : 'Could not send the test alert.');
+    }
+  };
+
   const exportAs = (format) => run(async () => {
     const { data } = await monitorAPI.exportData(format);
     saveBlob(data, `monitor-export.${format}`);
@@ -120,7 +146,7 @@ function DomainMonitor() {
         Domain Monitor
       </Typography>
       <Typography variant="body1" color="text.secondary" paragraph>
-        Domains are re-checked automatically. Expiry warnings and certificate changes (renewals, issuer changes) are sent through the configured email or webhook channels.
+        Domains are re-checked automatically. Expiry warnings and certificate changes (renewals, issuer changes) are sent through the configured email, Microsoft Teams or webhook channels.
       </Typography>
 
       <Paper sx={{ p: 3, mb: 3 }}>
@@ -146,6 +172,25 @@ function DomainMonitor() {
           </Grid>
         </Grid>
         {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+      </Paper>
+
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, mr: 1 }}>Alert channels</Typography>
+          <Button size="small" variant="outlined" onClick={loadChannels}>Show</Button>
+          <Button size="small" variant="outlined" onClick={sendTestAlert}>Send test alert</Button>
+          {channels && (
+            <>
+              <Chip size="small" label="Email" color={channels.email_configured ? 'success' : 'default'} />
+              <Chip size="small" label="Teams" color={channels.teams_configured ? 'success' : 'default'} />
+              <Chip size="small" label="Webhook" color={channels.webhook_configured ? 'success' : 'default'} />
+              <Typography variant="caption" color="text.secondary">
+                thresholds: {channels.thresholds.join(', ')} days
+              </Typography>
+            </>
+          )}
+        </Stack>
+        {alertMessage && <Alert severity="info" sx={{ mt: 2 }}>{alertMessage}</Alert>}
       </Paper>
 
       <Paper sx={{ p: 3, mb: 3 }}>

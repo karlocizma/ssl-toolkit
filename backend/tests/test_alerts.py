@@ -109,3 +109,48 @@ def test_domain_routes(client, monkeypatch):
     assert client.post('/api/monitor/domain/add', json={'hostname': '10.0.0.1'}).status_code == 400
     assert client.get('/api/monitor/domain/list').get_json()['count'] == 0
     assert client.get('/api/monitor/domain/nope').status_code == 404
+
+
+def test_teams_card_structure_colors_and_truncation(monkeypatch):
+    monkeypatch.setenv('APP_URL', 'https://tools.example.com/')
+    events = [{'kind': 'expired', 'detail': 'a.example: certificate EXPIRED 2 day(s) ago'},
+              {'kind': 'expiring', 'detail': 'b.example: certificate expires in 7 day(s)'}] + \
+             [{'kind': 'recovered', 'detail': f'h{i}'} for i in range(25)]
+    card = alerts.build_teams_card(events)
+    content = card['attachments'][0]['content']
+    assert card['type'] == 'message' and content['type'] == 'AdaptiveCard'
+    assert content['body'][1]['color'] == 'Attention' and content['body'][2]['color'] == 'Warning'
+    assert content['body'][-1]['text'] == '… and 7 more' and len(content['body']) == 1 + 20 + 1
+    assert content['actions'][0]['url'] == 'https://tools.example.com/domain-monitor'
+    monkeypatch.setenv('APP_URL', 'javascript:alert(1)')
+    assert 'actions' not in alerts.build_teams_card(events)['attachments'][0]['content']
+
+
+def test_send_teams(monkeypatch):
+    assert alerts.send_teams([{'kind': 'test', 'detail': 'x'}])['reason'] == 'not configured'
+    monkeypatch.setenv('ALERT_TEAMS_WEBHOOK_URL', 'http://insecure.example/hook')
+    assert 'https' in alerts.send_teams([])['reason']
+    url = 'https://prod-1.westeurope.logic.azure.com/workflows/secret-token'
+    monkeypatch.setenv('ALERT_TEAMS_WEBHOOK_URL', url)
+    posted = []
+
+    class R:
+        def __init__(self, ok): self.ok = ok
+        def raise_for_status(self):
+            if not self.ok:
+                raise alerts.requests.HTTPError(f'400 Client Error for url: {url}')
+    monkeypatch.setattr(alerts.requests, 'post', lambda u, json=None, timeout=None: posted.append((u, json)) or R(True))
+    assert alerts.send_teams([{'kind': 'test', 'detail': 'x'}]) == {'channel': 'teams', 'sent': True}
+    assert posted[0][0] == url and posted[0][1]['attachments'][0]['contentType'].endswith('adaptive')
+    monkeypatch.setattr(alerts.requests, 'post', lambda u, json=None, timeout=None: R(False))
+    failed = alerts.send_teams([{'kind': 'test', 'detail': 'x'}])
+    assert failed['sent'] is False and 'secret-token' not in failed['reason']
+
+
+def test_dispatch_includes_teams_and_config(monkeypatch):
+    assert alerts.get_config()['teams_configured'] is False
+    monkeypatch.setenv('ALERT_TEAMS_WEBHOOK_URL', 'https://x.example/hook')
+    assert alerts.get_config()['teams_configured'] is True
+    monkeypatch.setattr(alerts, 'send_teams', lambda events, title='': {'channel': 'teams', 'sent': True})
+    deliveries = alerts.dispatch([{'kind': 'test', 'detail': 'x'}])
+    assert [d['channel'] for d in deliveries] == ['email', 'webhook', 'teams']
