@@ -4,7 +4,7 @@ import EmailDeliverability from './EmailDeliverability';
 import { deliverabilityAPI } from '../services/api';
 
 jest.mock('../services/api', () => ({
-  deliverabilityAPI: { overview: jest.fn(), spf: jest.fn(), dkim: jest.fn(), dmarcReport: jest.fn(), blocklist: jest.fn() },
+  deliverabilityAPI: { overview: jest.fn(), spf: jest.fn(), spfFlatten: jest.fn(), dkim: jest.fn(), dmarcReport: jest.fn(), blocklist: jest.fn() },
 }));
 
 test('overview shows the grade, per-check scores and findings', async () => {
@@ -43,4 +43,25 @@ test('shows the API error', async () => {
   fireEvent.change(screen.getByLabelText('IPv4 address or domain'), { target: { value: '10.0.0.1' } });
   fireEvent.click(screen.getByText('Check blocklists'));
   expect(await screen.findByText('Only public IP addresses can be checked')).toBeInTheDocument();
+});
+
+test('flattens an SPF record and shows the records in publishing order', async () => {
+  deliverabilityAPI.spfFlatten.mockResolvedValue({ data: { result: {
+    domain: 'example.com', original_lookups: 14, lookups_after: 2, network_count: 120,
+    warnings: ['"exists:%{i}.x" cannot be flattened and was kept as is'], notes: ['Providers change their sending addresses.'],
+    records: [
+      { name: 'example.com', value: 'v=spf1 include:_spf1.example.com ~all', length: 38 },
+      { name: '_spf1.example.com', value: 'v=spf1 ip4:192.0.2.0/24 ?all', length: 28 },
+    ] } } });
+  render(<EmailDeliverability />);
+  fireEvent.click(screen.getByText('SPF flatten'));
+  fireEvent.change(screen.getByLabelText('Domain'), { target: { value: 'example.com' } });
+  fireEvent.change(screen.getByLabelText(/Keep these includes/), { target: { value: 'other.org, third.net' } });
+  fireEvent.click(screen.getByText('Flatten SPF'));
+  expect(await screen.findByText('14 lookups before')).toBeInTheDocument();
+  expect(screen.getByText('2 lookups after')).toBeInTheDocument();
+  expect(screen.getByText(/cannot be flattened/)).toBeInTheDocument();
+  const records = screen.getAllByText(/^v=spf1/).map((el) => el.textContent);
+  expect(records[0]).toContain('ip4:192.0.2.0/24'); // helper record first
+  expect(deliverabilityAPI.spfFlatten).toHaveBeenCalledWith({ domain: 'example.com', keep: ['other.org', 'third.net'] });
 });

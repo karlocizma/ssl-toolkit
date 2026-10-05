@@ -22,7 +22,13 @@ REQUEST_BODIES = {
     '/email/dmarc/reports': {'required': ['files'], 'properties': {
         'files': {'type': 'array', 'maxItems': 100, 'description': 'Reports to merge (at most 100)', 'items': {'type': 'object', 'properties': {
             'name': _STR, 'xml': _STR, 'file_base64': {**_STR, 'description': 'xml, .gz or .zip, base64 encoded'}}}},
-        'lookup_ptr': {'type': 'boolean', 'default': True, 'description': 'Reverse-DNS the biggest sending IPs'}}},
+        'lookup_ptr': {'type': 'boolean', 'default': True, 'description': 'Reverse-DNS the biggest sending IPs'},
+        'ignore_ips': {'type': 'array', 'items': _STR, 'description': 'Sources that are not yours (spoofers): excluded from the policy advice'},
+        'current_records': {'type': 'object', 'description': 'Your current DMARC TXT record per domain, so the proposed record keeps its other tags'}}},
+    '/email/spf/flatten': {'required': ['domain'], 'properties': {
+        'domain': {**_STR, 'example': 'example.com'},
+        'keep': {'type': 'array', 'items': _STR, 'description': 'Include domains to leave as include: (not flattened)'},
+        'max_record_length': {'type': 'integer', 'default': 450, 'description': 'Longest TXT record to publish before splitting into _spfN helper records'}}},
     '/email/mta-sts': {'required': ['domain'], 'properties': {
         'domain': {**_STR, 'example': 'example.com'},
         'verify_mx': {'type': 'boolean', 'default': False, 'description': 'Also test STARTTLS and certificates of the MX hosts'}}},

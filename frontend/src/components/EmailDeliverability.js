@@ -111,6 +111,40 @@ function Overview() {
   );
 }
 
+function SpfFlatten() {
+  return (
+    <Box>
+      <Typography variant="body2" color="text.secondary" paragraph>
+        SPF allows at most 10 DNS lookups. Flattening replaces include, a and mx by the IP ranges behind them, so the record needs none
+        (or only a few helper records). Providers change their addresses, so a flattened record is a snapshot that must be regenerated regularly.
+        Nothing is published for you.
+      </Typography>
+      <Tool label="Domain" placeholder="example.com" button="Flatten SPF" extra="Keep these includes (comma separated, optional)"
+        call={(v, keep) => deliverabilityAPI.spfFlatten({ domain: v, keep: keep.split(/[\s,]+/).filter(Boolean) })}>
+        {(r) => (
+          <Stack spacing={2} sx={{ mt: 2 }}>
+            <Stack direction="row" spacing={1} flexWrap="wrap">
+              <Chip label={`${r.original_lookups ?? '?'} lookups before`} color="warning" />
+              <Chip label={`${r.lookups_after} lookups after`} color="success" />
+              <Chip variant="outlined" label={`${r.network_count} address ranges`} />
+              <Chip variant="outlined" label={`${r.records.length} record(s)`} />
+            </Stack>
+            {r.warnings.map((w, i) => <Alert key={i} severity="warning">{w}</Alert>)}
+            {[...r.records].reverse().map((rec) => (
+              <Box key={rec.name}>
+                <Typography variant="caption" color="text.secondary">TXT record at {rec.name} ({rec.length} characters)</Typography>
+                <Box component="pre" sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 1, overflow: 'auto', fontSize: 12, m: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{rec.value}</Box>
+              </Box>
+            ))}
+            <Typography variant="caption" color="text.secondary">Publish in the order shown: helper records first, the main record last.</Typography>
+            {r.notes.map((n, i) => <Typography key={i} variant="caption" color="text.secondary" sx={{ display: 'block' }}>{n}</Typography>)}
+          </Stack>
+        )}
+      </Tool>
+    </Box>
+  );
+}
+
 function Spf() {
   return (
     <Tool label="Domain" placeholder="example.com" button="Analyze SPF" call={(v) => deliverabilityAPI.spf({ domain: v })}>
@@ -256,14 +290,15 @@ function EmailDeliverability() {
       </Typography>
       <Paper sx={{ p: 3 }}>
         <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" sx={{ mb: 2 }}>
-          <Tab label="Overview" /><Tab label="SPF" /><Tab label="DKIM" /><Tab label="DMARC report" /><Tab label="DMARC reports" /><Tab label="Blocklists" />
+          <Tab label="Overview" /><Tab label="SPF" /><Tab label="SPF flatten" /><Tab label="DKIM" /><Tab label="DMARC report" /><Tab label="DMARC reports" /><Tab label="Blocklists" />
         </Tabs>
         {tab === 0 && <Overview />}
         {tab === 1 && <Spf />}
-        {tab === 2 && <Dkim />}
-        {tab === 3 && <DmarcReport />}
-        {tab === 4 && <DmarcReports />}
-        {tab === 5 && <Blocklists />}
+        {tab === 2 && <SpfFlatten />}
+        {tab === 3 && <Dkim />}
+        {tab === 4 && <DmarcReport />}
+        {tab === 5 && <DmarcReports />}
+        {tab === 6 && <Blocklists />}
       </Paper>
     </Box>
   );
