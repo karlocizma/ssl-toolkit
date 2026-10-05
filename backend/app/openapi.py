@@ -19,6 +19,8 @@ REQUEST_BODIES = {
     '/check/domain': {'required': ['hostname'], 'properties': {**_HOST, 'timeout': {'type': 'integer', 'default': 10}}},
     '/check/chain': {'required': ['hostname'], 'properties': {**_HOST, 'timeout': {'type': 'integer', 'default': 10}}},
     '/check/tls': {'required': ['hostname'], 'properties': {**_HOST, 'timeout': {'type': 'number', 'default': 5}}},
+    '/check/domain-registration': {'required': ['domain'], 'properties': {
+        'domain': {**_STR, 'example': 'example.com', 'description': 'Registered domain (sub-domains are reduced to it)'}}},
     '/check/mail-tls': {'properties': {
         'host': {**_STR, 'example': 'mail.example.com', 'description': 'Mail server (use this or domain)'},
         'domain': {**_STR, 'example': 'example.com', 'description': 'Test every MX host of the domain on port 25'},

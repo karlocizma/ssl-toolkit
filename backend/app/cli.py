@@ -89,6 +89,19 @@ def cmd_mailtls(args, target: str):
     return ok, lines, r
 
 
+def cmd_expiry(args, target: str):
+    from app.services.domain_registration import lookup
+    r = lookup(target)
+    days = r['days_until_expiry']
+    if days is None:
+        return None, [f"ERROR {r['domain']}  the registry does not publish an expiry date over RDAP"], r
+    ok = days >= args.fail_under
+    lines = [f"{'OK  ' if ok else 'FAIL'}  {r['domain']}  registration expires in {days} day(s) (threshold {args.fail_under})"
+             + (f", registrar {r['registrar']}" if r['registrar'] else '')]
+    lines += [f"      {f['severity']}: {f['message']}" for f in r['findings'] if f['severity'] != 'info']
+    return ok, lines, r
+
+
 def cmd_headers(args, target: str):
     from app.services.security_headers import check_security_headers
     r = check_security_headers(target)
@@ -142,6 +155,7 @@ COMMANDS: Dict[str, Tuple[Callable, str]] = {
     'check': (cmd_check, 'certificate expiry and hostname match'),
     'tls': (cmd_tls, 'TLS protocol/cipher grade'),
     'mailtls': (cmd_mailtls, 'mail server STARTTLS/TLS grade (domain = all MX hosts)'),
+    'expiry': (cmd_expiry, 'domain registration expiry (RDAP)'),
     'headers': (cmd_headers, 'HTTP security headers score'),
     'email': (cmd_email, 'email authentication score (SPF/DKIM/DMARC/MTA-STS)'),
     'chain': (cmd_chain, 'certificate chain completeness'),
@@ -162,6 +176,9 @@ def build_parser() -> argparse.ArgumentParser:
         if name in ('check', 'tls', 'chain'):
             p.add_argument('--port', type=int, default=443)
             p.add_argument('--timeout', type=int, default=10 if name != 'tls' else 5)
+        if name == 'expiry':
+            p.add_argument('--fail-under', type=int, default=30, metavar='DAYS',
+                           help='fail when the registration expires in fewer days (default 30)')
         if name == 'check':
             p.add_argument('--fail-under', type=int, default=14, metavar='DAYS',
                            help='fail when the certificate expires in fewer days (default 14)')

@@ -179,6 +179,12 @@ function DomainMonitor() {
                       : 'Not checked yet'}
                   {d.last_check ? ` · checked ${new Date(d.last_check).toLocaleString()}` : ''}
                 </Typography>
+                {d.registration?.expires && (
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                    Domain {d.registration.domain} registered until {new Date(d.registration.expires).toLocaleDateString()}
+                    {d.registration.registrar ? ` (${d.registration.registrar})` : ''}
+                  </Typography>
+                )}
                 {d.changes?.length > 0 && (
                   <Typography variant="caption" color="text.secondary">
                     Last certificate change: {new Date(d.changes[d.changes.length - 1].detected_at).toLocaleString()}
