@@ -4,6 +4,7 @@ import {
 } from '@mui/material';
 import { Shield as ShieldIcon } from '@mui/icons-material';
 import { deliverabilityAPI } from '../services/api';
+import ResultActions from './ResultActions';
 
 const severityOf = (s) => (s === 'error' || s === 'critical' ? 'error' : s === 'warning' ? 'warning' : 'info');
 const statusColor = { ok: 'success', warning: 'warning', error: 'error', missing: 'default' };
@@ -58,6 +59,7 @@ function CheckTab() {
         {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
       </Paper>
 
+      {(sts || rpt) && <ResultActions tool="mta-sts" title={`MTA-STS & TLS-RPT: ${domain}`} result={{ mta_sts: sts, tls_rpt: rpt }} />}
       {sts && (
         <Paper sx={{ p: 3, mb: 2 }}>
           <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">

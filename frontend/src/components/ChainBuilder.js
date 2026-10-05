@@ -4,6 +4,7 @@ import {
 } from '@mui/material';
 import { Layers as LayersIcon } from '@mui/icons-material';
 import { chainAPI } from '../services/api';
+import ResultActions from './ResultActions';
 
 const mono = { sx: { '& textarea': { fontFamily: 'monospace', fontSize: 12 } } };
 const roleColor = { leaf: 'primary', intermediate: 'info', root: 'default' };
@@ -88,6 +89,7 @@ function ChainBuilder() {
         {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
       </Paper>
 
+<ResultActions tool="chain-builder" title={`Chain: ${hostname || 'certificate'}`} result={result} />
       {result && (
         <Stack spacing={2}>
           <Paper sx={{ p: 3 }}>

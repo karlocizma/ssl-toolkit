@@ -4,6 +4,7 @@ import {
 } from '@mui/material';
 import { Event as EventIcon } from '@mui/icons-material';
 import { sslCheckAPI } from '../services/api';
+import ResultActions from './ResultActions';
 
 const severityOf = (s) => (s === 'critical' ? 'error' : s === 'warning' ? 'warning' : 'info');
 
@@ -73,6 +74,7 @@ function DomainExpiry() {
         {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
       </Paper>
 
+<ResultActions tool="domain-expiry" title={`Domain expiry: ${domain}`} result={result} />
       {result && (
         <Paper sx={{ p: 3 }}>
           <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>

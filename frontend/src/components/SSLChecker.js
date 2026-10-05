@@ -22,6 +22,7 @@ import {
 } from '@mui/icons-material';
 import { sslCheckAPI } from '../services/api';
 import moment from 'moment';
+import ResultActions from './ResultActions';
 
 function SSLChecker() {
   const [hostname, setHostname] = useState('');
@@ -149,6 +150,7 @@ function SSLChecker() {
             </Alert>
           )}
 
+<ResultActions tool="ssl-checker" title={`SSL check: ${hostname}:${port}`} result={result} />
           {result && (
             <Paper sx={{ p: 3 }}>
               <Typography variant="h6" gutterBottom>

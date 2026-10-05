@@ -29,6 +29,8 @@ import DomainExpiry from './components/DomainExpiry';
 import MailTransport from './components/MailTransport';
 import AuditLog from './components/AuditLog';
 import StatusPage from './components/StatusPage';
+import SharedReport from './components/SharedReport';
+import SharedResults from './components/SharedResults';
 import SecurityHeaders from './components/SecurityHeaders';
 import DomainMonitor from './components/DomainMonitor';
 import PrivateCA from './components/PrivateCA';
@@ -77,6 +79,7 @@ function App() {
           <Routes>
             {/* The public status page has no navigation and needs no login */}
             <Route path="/status" element={<StatusPage />} />
+            <Route path="/shared/:token" element={<SharedReport />} />
             <Route
               path="*"
               element={(
@@ -111,6 +114,7 @@ function App() {
                       <Route path="/mail-tls" element={<MailTLS />} />
                       <Route path="/domain-expiry" element={<DomainExpiry />} />
                       <Route path="/mta-sts" element={<MailTransport />} />
+                      <Route path="/shares" element={<SharedResults />} />
                       <Route path="/audit-log" element={<AuditLog />} />
                       <Route path="/security-headers" element={<SecurityHeaders />} />
                       <Route path="/domain-monitor" element={<DomainMonitor />} />

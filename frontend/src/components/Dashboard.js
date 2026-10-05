@@ -40,6 +40,7 @@ import {
   Event as EventIcon,
   Shield as ShieldIcon,
   History as HistoryIcon,
+  Share as ShareIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -204,6 +205,14 @@ const getTools = (t) => [
     path: '/domain-expiry',
     color: 'warning',
     featuresKeys: ['tools.domainExpiry.features.0', 'tools.domainExpiry.features.1', 'tools.domainExpiry.features.2', 'tools.domainExpiry.features.3']
+  },
+  {
+    titleKey: 'tools.shares.title',
+    descriptionKey: 'tools.shares.description',
+    icon: <ShareIcon sx={{ fontSize: 40 }} />,
+    path: '/shares',
+    color: 'info',
+    featuresKeys: ['tools.shares.features.0', 'tools.shares.features.1', 'tools.shares.features.2', 'tools.shares.features.3']
   },
   {
     titleKey: 'tools.auditLog.title',

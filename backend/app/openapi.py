@@ -25,6 +25,10 @@ REQUEST_BODIES = {
         'lookup_ptr': {'type': 'boolean', 'default': True, 'description': 'Reverse-DNS the biggest sending IPs'},
         'ignore_ips': {'type': 'array', 'items': _STR, 'description': 'Sources that are not yours (spoofers): excluded from the policy advice'},
         'current_records': {'type': 'object', 'description': 'Your current DMARC TXT record per domain, so the proposed record keeps its other tags'}}},
+    '/share': {'required': ['title', 'tool', 'result'], 'properties': {
+        'title': _STR, 'tool': {**_STR, 'example': 'ssl-checker', 'description': 'A read-only check tool'},
+        'result': {'type': 'object', 'description': 'The result to snapshot (max 256 KB, no key material)'},
+        'ttl_hours': {'type': 'number', 'default': 24, 'minimum': 1, 'maximum': 720}}},
     '/email/spf/flatten': {'required': ['domain'], 'properties': {
         'domain': {**_STR, 'example': 'example.com'},
         'keep': {'type': 'array', 'items': _STR, 'description': 'Include domains to leave as include: (not flattened)'},

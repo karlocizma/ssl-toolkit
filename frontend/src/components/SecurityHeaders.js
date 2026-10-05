@@ -4,6 +4,7 @@ import {
 } from '@mui/material';
 import { Http as HttpIcon } from '@mui/icons-material';
 import { sslCheckAPI } from '../services/api';
+import ResultActions from './ResultActions';
 
 const statusColor = { pass: 'success', warn: 'warning', fail: 'error' };
 const gradeColor = (grade) => (grade.startsWith('A') ? 'success' : grade === 'B' ? 'info' : grade === 'C' ? 'warning' : 'error');
@@ -58,6 +59,7 @@ function SecurityHeaders() {
         {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
       </Paper>
 
+<ResultActions tool="security-headers" title={`Security headers: ${url}`} result={result} />
       {result && (
         <Stack spacing={2}>
           <Paper sx={{ p: 3 }}>
