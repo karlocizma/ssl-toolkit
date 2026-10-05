@@ -534,7 +534,7 @@ The domain name you search for is sent to crt.sh (or `CT_API_URL`). crt.sh rate-
 **In the web UI** (menu: Email Security → Email Deliverability, or press Ctrl+K and type e.g. `flatten` or `advisor`) the page has these tabs:
 
 - **SPF flatten**: enter a domain; you get the flattened SPF record (plus `_spf1..N` helper records when it does not fit into one). Publish the helper records first, then the main record, and regenerate regularly because providers change their addresses. Nothing is published for you.
-- **DMARC reports + advisor**: add the aggregate report files you receive at your `rua` address (`.xml`, `.gz` or `.zip`, up to 100 at once; several files can be selected together). You get totals, a trend per day, every sending source and findings, and per domain the **ramp advisor**: whether it is safe to move to the next policy step, what blocks it, and the record to publish. Mark sources that are not yours (spoofers) as ignored to exclude them from the numbers. Nothing is stored.
+- **DMARC reports + advisor**: click "Add report files" and select the aggregate reports you receive at your `rua` address (`.xml`, `.gz` or `.zip`, up to 100 at once). You get totals, a trend per day, every sending source and findings, and per domain the **ramp advisor**: whether it is safe to move to the next policy step, what blocks it, and the record to publish. Use "Not mine, ignore" on sources that are not yours (spoofers) to exclude them from the numbers, and paste your current DMARC record into "Your current record" so the proposed record keeps its other tags. Nothing is stored.
 - **DMARC single report**: the same for one file or pasted XML.
 
 | Endpoint | Description |
