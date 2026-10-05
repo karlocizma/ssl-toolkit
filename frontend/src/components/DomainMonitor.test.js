@@ -12,7 +12,7 @@ jest.mock('../services/api', () => {
     },
     monitorAPI: { listDomains: jest.fn(), addDomain: jest.fn(), removeDomain: jest.fn(), checkDomain: jest.fn(),
       getDomain: jest.fn(), importCsv: jest.fn(), exportData: jest.fn(),
-      alertsConfig: jest.fn(), alertsTest: jest.fn() },
+      alertsConfig: jest.fn(), alertsTest: jest.fn(), setPublic: jest.fn() },
   };
 });
 
@@ -87,4 +87,17 @@ test('explains that the admin token is needed for the test alert', async () => {
   render(<DomainMonitor />);
   fireEvent.click(screen.getByText('Send test alert'));
   expect(await screen.findByText('Sending a test alert needs the admin token.')).toBeInTheDocument();
+});
+
+test('publishes a host on the status page with the Public checkbox', async () => {
+  const domain = { id: 'd1', hostname: 'example.com', port: 443, status: 'ok', days_until_expiry: 50, issuer: 'R3',
+    not_after: '2030-01-01T00:00:00+00:00', last_check: null, changes: [], public: false };
+  monitorAPI.listDomains.mockResolvedValue({ data: { domains: [domain] } });
+  monitorAPI.setPublic.mockResolvedValue({ data: { success: true } });
+  render(<DomainMonitor />);
+  const box = await screen.findByRole('checkbox', { name: /certificate expiry on the public status page/ });
+  expect(box).not.toBeChecked();
+  fireEvent.click(box);
+  await waitFor(() => expect(monitorAPI.setPublic).toHaveBeenCalledWith('d1', { public: true }));
+  expect(screen.getByRole('link', { name: 'public status page' })).toHaveAttribute('href', '/status');
 });

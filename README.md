@@ -241,6 +241,7 @@ CORS_ORIGINS=                               # comma-separated origins; empty = C
 
 # Integrations (all optional)
 CT_API_URL=https://crt.sh/                  # Certificate Transparency search service
+STATUS_PAGE_TITLE=Certificate status          # heading of the public status page (STATUS_PAGE_ENABLED=false turns it off)
 AUDIT_LOG_MAX_BYTES=5242880                 # rotate the audit log at this size (AUDIT_LOG_KEEP=5 rotated files are kept)
 RDAP_CACHE_SECONDS=21600                    # cache domain registration lookups; 0 disables
 CT_CACHE_SECONDS=900                        # cache CT results per domain (crt.sh rate-limits by IP); 0 disables
@@ -556,6 +557,18 @@ The domain name you search for is sent to crt.sh (or `CT_API_URL`). crt.sh rate-
 | `POST /api/email/tls-rpt/report` | `{json}` or `{file_base64}` (.json or .json.gz): totals, success rate and failures by type with a plain-language explanation |
 
 Start in `testing` mode, watch the TLS-RPT reports, then switch to `enforce`.
+
+### Public status page
+
+Tick **Public** on a host in the Domain Monitor to publish its certificate expiry at `/status` (no login, no navigation, refreshes every minute): a display name (the host's label, or `name` set through the API), valid / expires soon (30 days) / expires very soon (7 days) / expired / not reachable, the expiry date and, if known, when the domain registration expires. Nothing else leaves the monitor: no serials, fingerprints, issuers, tags, internal ids or error details, and unpublished hosts are not even counted. The page is built from the data the monitor already collected; a visitor never triggers a connection to any host.
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/status` | Public JSON: `{title, overall: ok\|attention\|problem, counts, hosts[]}`, worst first, cacheable for 60 s |
+| `GET /api/status/badge/<public id>.svg` | Expiry badge for one published host (`certificate: 74 days`), for READMEs and dashboards. The public id is stable across hide/show |
+| `PATCH /api/monitor/domain/<id>/public` | `{public: bool, name?}`: publish or hide a host (monitor access token; audit-logged as `monitor.domain.publish`) |
+
+`STATUS_PAGE_TITLE` sets the heading; `STATUS_PAGE_ENABLED=false` switches the page, its API and the badges off entirely.
 
 ### Audit log
 

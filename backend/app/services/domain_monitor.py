@@ -77,6 +77,9 @@ def _new_entry(hostname: str, port: int, label: Optional[str] = None, tags: Opti
         'notified': [],
         'registration': None,
         'registration_notified': [],
+        'public': False,
+        'public_id': None,
+        'public_name': None,
     }
 
 
@@ -167,6 +170,22 @@ def add_domain(hostname: str, port=443, label: Optional[str] = None, tags: Optio
     _save(data)
     check_domain(entry['id'])
     return {'success': True, 'message': 'Domain added to monitoring', 'domain_id': entry['id']}
+
+
+def set_public(domain_id: str, public: bool, name: Optional[str] = None) -> Dict:
+    """Show or hide a host on the public status page. The public id stays the same across toggles, so badge URLs keep working."""
+    import secrets
+    data = _load()
+    for entry in data['domains']:
+        if entry['id'] == domain_id:
+            entry['public'] = bool(public)
+            if public and not entry.get('public_id'):
+                entry['public_id'] = 'pub_' + secrets.token_urlsafe(9)
+            if name is not None:
+                entry['public_name'] = str(name).strip()[:100] or None
+            _save(data)
+            return {'success': True, 'domain': _public_view(entry)}
+    return {'success': False, 'message': 'Domain not found'}
 
 
 def remove_domain(domain_id: str) -> Dict:

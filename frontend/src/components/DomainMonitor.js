@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Alert, Box, Button, Chip, Collapse, Grid, IconButton, Paper, Stack, TextField, Tooltip, Typography,
+  Alert, Box, Button, Checkbox, Chip, Collapse, FormControlLabel, Grid, IconButton, Paper, Stack, TextField, Tooltip, Typography,
 } from '@mui/material';
 import {
   Delete as DeleteIcon, Refresh as RefreshIcon, Visibility as VisibilityIcon, Timeline as TimelineIcon,
@@ -108,6 +108,8 @@ function DomainMonitor() {
     }
   };
 
+  const togglePublic = (d) => run(() => monitorAPI.setPublic(d.id, { public: !d.public }));
+
   const exportAs = (format) => run(async () => {
     const { data } = await monitorAPI.exportData(format);
     saveBlob(data, `monitor-export.${format}`);
@@ -146,6 +148,7 @@ function DomainMonitor() {
         Domain Monitor
       </Typography>
       <Typography variant="body1" color="text.secondary" paragraph>
+        Tick &quot;Public&quot; on a host to show its certificate expiry on the <a href="/status">public status page</a> (nothing else about it is shown).
         Domains are re-checked automatically. Expiry warnings and certificate changes (renewals, issuer changes) are sent through the configured email, Microsoft Teams or webhook channels.
       </Typography>
 
@@ -238,6 +241,10 @@ function DomainMonitor() {
               </Box>
               <Stack direction="row" alignItems="center" spacing={1}>
                 {statusChip(d)}
+                <Tooltip title="Show this host's certificate expiry on the public status page">
+                  <FormControlLabel sx={{ mr: 0 }} control={<Checkbox size="small" checked={!!d.public} disabled={busy} onChange={() => togglePublic(d)} />}
+                    label={<Typography variant="caption">Public</Typography>} />
+                </Tooltip>
                 <Tooltip title="Expiry history">
                   <IconButton aria-label={`History for ${d.hostname}`} onClick={() => toggleHistory(d.id)}><TimelineIcon /></IconButton>
                 </Tooltip>

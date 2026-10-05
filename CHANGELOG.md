@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ## [Phase 10] — in progress
 
 ### Added
+- **Public status page for certificates** (`/status`, `GET /api/status`, expiry badges): hosts are published one by one from the Domain Monitor and only expiry and a coarse status are shown
 - **Audit log** (`/api/admin/audit`, UI "Audit Log"): monitor, API-key and alert changes and refused logins, hash-chained so edits and removals are detected, filterable and exportable; fix: the Domain Monitor's alert panel now sends the admin token as a bearer token
 - **SPF flattening** (`POST /api/email/spf/flatten`, Email Deliverability → "SPF flatten") and **DMARC policy ramp advisor** (`advice` in `/api/email/dmarc/reports`, shown on the "DMARC reports" tab)
 - **DMARC reports in** (`POST /api/email/dmarc/reports`, Email Deliverability → "DMARC reports"): merge up to 100 aggregate reports into totals, a per-day trend, reporters and a per-source view with reverse DNS and findings; nothing is stored
