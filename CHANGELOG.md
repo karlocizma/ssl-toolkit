@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [Phase 10] — in progress
+## [1.1.0] — 2026-10-05 (Phase 10)
 
 ### Added
 - **Shareable and exportable results** (`/api/share`, UI "Shared Results", `/shared/<token>`): every check result can be exported as JSON or a self-contained HTML report, and shared as an expiring read-only link (1 hour to 30 days, revocable); only the link's hash is stored, key material is refused, shares and revocations are audited
