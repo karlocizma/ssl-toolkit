@@ -19,6 +19,10 @@ REQUEST_BODIES = {
     '/check/domain': {'required': ['hostname'], 'properties': {**_HOST, 'timeout': {'type': 'integer', 'default': 10}}},
     '/check/chain': {'required': ['hostname'], 'properties': {**_HOST, 'timeout': {'type': 'integer', 'default': 10}}},
     '/check/tls': {'required': ['hostname'], 'properties': {**_HOST, 'timeout': {'type': 'number', 'default': 5}}},
+    '/email/dmarc/reports': {'required': ['files'], 'properties': {
+        'files': {'type': 'array', 'maxItems': 100, 'description': 'Reports to merge (at most 100)', 'items': {'type': 'object', 'properties': {
+            'name': _STR, 'xml': _STR, 'file_base64': {**_STR, 'description': 'xml, .gz or .zip, base64 encoded'}}}},
+        'lookup_ptr': {'type': 'boolean', 'default': True, 'description': 'Reverse-DNS the biggest sending IPs'}}},
     '/email/mta-sts': {'required': ['domain'], 'properties': {
         'domain': {**_STR, 'example': 'example.com'},
         'verify_mx': {'type': 'boolean', 'default': False, 'description': 'Also test STARTTLS and certificates of the MX hosts'}}},

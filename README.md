@@ -531,6 +531,7 @@ The domain name you search for is sent to crt.sh (or `CT_API_URL`). crt.sh rate-
 | `POST /api/email/deliverability` | `{domain}`: score and grade over MX, SPF, DKIM, DMARC, MTA-STS and TLS-RPT |
 | `POST /api/email/spf/analyze` | `{domain}`: recursive SPF evaluation with the DNS-lookup count (limit 10), void lookups, loops, `+all`/`?all`/`ptr` findings |
 | `POST /api/email/dkim/discover` | `{domain, selectors?[]}`: probes ~40 common selectors, reports key size and weak/revoked/test-mode keys |
+| `POST /api/email/dmarc/reports` | `{files: [{name?, xml \| file_base64}], lookup_ptr?}`: up to 100 aggregate reports merged into one view: totals and pass rate, trend per day, reporting providers, every sending source (pass rate, DKIM/SPF alignment, reverse DNS of the biggest senders, authenticated / partial / failing) and findings for unauthorised or unstable senders. Duplicates are skipped and unreadable files reported. Nothing is stored |
 | `POST /api/email/dmarc/report` | `{xml}` or `{file_base64}` (xml, .gz or .zip): per-source pass/fail summary of an aggregate report (5 MB limit) |
 | `POST /api/email/blocklist` | `{target}`: IPv4 address or domain, checked against DNS blocklists. Public resolvers are often refused by Spamhaus; set `RBL_RESOLVERS` |
 
