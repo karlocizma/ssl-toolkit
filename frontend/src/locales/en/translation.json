@@ -28,6 +28,8 @@
     "domainExpiry": "Domain Expiry",
     "auditLog": "Audit Log",
     "shares": "Shared Results",
+    "search": "Search tools (Ctrl+K)",
+    "searchNone": "No tool matches",
     "mtaSts": "MTA-STS & TLS-RPT",
     "mailTls": "Mail Server TLS",
     "tlsScanner": "TLS Scanner",
@@ -195,8 +197,8 @@
     },
     "emailDeliverability": {
       "title": "Email Deliverability",
-      "description": "Score SPF, DKIM, DMARC and MTA-STS, parse DMARC reports and check blocklists",
-      "features": ["SPF lookup counter", "DKIM selector discovery", "DMARC report parser", "Blocklist (RBL) check"]
+      "description": "Score SPF, DKIM and DMARC, flatten SPF, analyse DMARC reports with a policy advisor, check blocklists",
+      "features": ["SPF lookup counter and flattening", "DKIM selector discovery", "DMARC reports and policy advisor", "Blocklist (RBL) check"]
     },
     "ctLookup": {
       "title": "CT Lookup",

@@ -45,7 +45,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
-const getTools = (t) => [
+export const getTools = (t) => [
   {
     titleKey: 'tools.certificateDecoder.title',
     descriptionKey: 'tools.certificateDecoder.description',

@@ -28,6 +28,8 @@
     "domainExpiry": "Domain-Ablauf",
     "auditLog": "Audit-Protokoll",
     "shares": "Geteilte Ergebnisse",
+    "search": "Werkzeuge suchen (Strg+K)",
+    "searchNone": "Kein Werkzeug gefunden",
     "mtaSts": "MTA-STS & TLS-RPT",
     "mailTls": "Mailserver-TLS",
     "tlsScanner": "TLS-Scanner",
@@ -195,8 +197,8 @@
     },
     "emailDeliverability": {
       "title": "E-Mail-Zustellbarkeit",
-      "description": "SPF, DKIM, DMARC und MTA-STS bewerten, DMARC-Berichte auswerten und Blocklisten prüfen",
-      "features": ["SPF-Lookup-Zähler", "DKIM-Selector-Suche", "DMARC-Berichtsanalyse", "Blocklisten-Prüfung (RBL)"]
+      "description": "SPF, DKIM und DMARC bewerten, SPF flatten, DMARC-Berichte mit Richtlinien-Berater auswerten, Blocklisten prüfen",
+      "features": ["SPF-Lookups und Flattening", "DKIM-Selector-Suche", "DMARC-Berichte und Richtlinien-Berater", "Blocklisten-Prüfung (RBL)"]
     },
     "ctLookup": {
       "title": "CT-Suche",

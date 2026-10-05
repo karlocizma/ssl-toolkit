@@ -6,7 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **Tool search** in the top bar (and Ctrl/Cmd+K): finds a tool by its name, description or typical terms (for example `flatten`, `advisor`, `starttls`, `rdap`), in English and German
 ### Changed
+- Email Deliverability: the DMARC tabs are now called "DMARC single report" and "DMARC reports + advisor", the page text and dashboard card mention SPF flattening and the policy advisor, and the README explains how to use them in the UI
 - The access token field (Domain Monitor, Audit Log) can now remember the token on this device ("Remember on this device", off by default). Without it the token is still kept for the current tab only. The monitored domains themselves were never affected: they live on the server.
 
 ---
