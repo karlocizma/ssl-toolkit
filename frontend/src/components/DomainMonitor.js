@@ -5,7 +5,8 @@ import {
 import {
   Delete as DeleteIcon, Refresh as RefreshIcon, Visibility as VisibilityIcon, Timeline as TimelineIcon,
 } from '@mui/icons-material';
-import { accessToken, monitorAPI } from '../services/api';
+import { monitorAPI } from '../services/api';
+import TokenField from './TokenField';
 import ExpiryHistoryChart from './ExpiryHistoryChart';
 
 const saveBlob = (blob, filename) => {
@@ -33,7 +34,6 @@ function DomainMonitor() {
   const [port, setPort] = useState(443);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [token, setToken] = useState(accessToken.get());
   const [openHistory, setOpenHistory] = useState({});
   const [histories, setHistories] = useState({});
   const [importText, setImportText] = useState('');
@@ -52,8 +52,7 @@ function DomainMonitor() {
 
   useEffect(() => { load(); }, [load]);
 
-  const saveToken = () => {
-    accessToken.set(token.trim());
+  const useToken = () => {
     setError('');
     load();
   };
@@ -153,15 +152,8 @@ function DomainMonitor() {
       </Typography>
 
       <Paper sx={{ p: 3, mb: 3 }}>
-        <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
-          <Grid item xs={12} md={9}>
-            <TextField label="Access token (API key or admin token)" type="password" fullWidth value={token}
-              onChange={(e) => setToken(e.target.value)} helperText="Required unless the server sets MONITOR_PUBLIC=true. Kept for this browser tab only." />
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <Button variant="outlined" fullWidth onClick={saveToken}>Use token</Button>
-          </Grid>
-        </Grid>
+        <TokenField label="Access token (API key or admin token)" onUse={useToken}
+          helperText="Required unless the server sets MONITOR_PUBLIC=true. Kept for this browser tab unless you tick the box below." />
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} md={6}>
             <TextField label="Hostname" fullWidth value={hostname} placeholder="example.com"

@@ -23,3 +23,34 @@ test('other requests and requests without a token carry no credentials', () => {
   expect(run('/admin/audit')).toEqual({});
   expect(needsAdminBearer('/monitor/domain/list')).toBe(false);
 });
+
+describe('accessToken storage', () => {
+  beforeEach(() => { sessionStorage.clear(); localStorage.clear(); });
+
+  test('is kept for the tab only by default', () => {
+    accessToken.set('tok');
+    expect(sessionStorage.length).toBe(1);
+    expect(localStorage.length).toBe(0);
+    expect(accessToken.get()).toBe('tok');
+    expect(accessToken.isRemembered()).toBe(false);
+  });
+
+  test('"remember" keeps it across tabs (localStorage) and survives a new session', () => {
+    accessToken.set('tok', true);
+    expect(localStorage.length).toBe(1);
+    sessionStorage.clear();  // a new tab starts with empty sessionStorage
+    expect(accessToken.get()).toBe('tok');
+    expect(accessToken.isRemembered()).toBe(true);
+  });
+
+  test('switching modes or clearing never leaves a stale copy', () => {
+    accessToken.set('tok', true);
+    accessToken.set('tok2', false);
+    expect(localStorage.length).toBe(0);
+    expect(accessToken.get()).toBe('tok2');
+    accessToken.set('tok3', true);
+    accessToken.set('');
+    expect(sessionStorage.length + localStorage.length).toBe(0);
+    expect(accessToken.get()).toBe('');
+  });
+});

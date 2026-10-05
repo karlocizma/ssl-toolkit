@@ -4,7 +4,8 @@ import {
   TextField, Typography,
 } from '@mui/material';
 import { History as HistoryIcon } from '@mui/icons-material';
-import { accessToken, auditAPI } from '../services/api';
+import { auditAPI } from '../services/api';
+import TokenField from './TokenField';
 
 const ACTION_GROUPS = [
   { value: '', label: 'All actions' },
@@ -30,7 +31,6 @@ const saveBlob = (blob, filename) => {
 const actorText = (actor) => (actor.id ? `${actor.type}: ${actor.id}` : actor.type);
 
 function AuditLog() {
-  const [token, setToken] = useState(accessToken.get());
   const [action, setAction] = useState('');
   const [result, setResult] = useState('');
   const [query, setQuery] = useState('');
@@ -66,7 +66,6 @@ function AuditLog() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const useToken = () => { accessToken.set(token.trim()); load(0); };
 
   const verify = async () => {
     setError('');
@@ -98,15 +97,8 @@ function AuditLog() {
       </Typography>
 
       <Paper sx={{ p: 3, mb: 3 }}>
-        <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
-          <Grid item xs={12} md={9}>
-            <TextField label="Admin token" type="password" fullWidth value={token} onChange={(e) => setToken(e.target.value)}
-              helperText="The ADMIN_TOKEN of the server. Kept for this browser tab only." />
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <Button variant="outlined" fullWidth onClick={useToken}>Use token</Button>
-          </Grid>
-        </Grid>
+        <TokenField label="Admin token" onUse={() => load(0)}
+          helperText="The ADMIN_TOKEN of the server. Kept for this browser tab unless you tick the box below." />
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} md={3}>
             <TextField select label="Action" fullWidth value={action} onChange={(e) => setAction(e.target.value)}>

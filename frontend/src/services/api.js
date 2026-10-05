@@ -7,18 +7,22 @@ const api = axios.create({
   timeout: 30000,
 });
 
-// The monitor needs an API key or the admin token (sent as X-Access-Token). Kept in
-// sessionStorage so it disappears when the tab closes.
+// The monitor needs an API key or the admin token (sent as X-Access-Token). By default it is kept in
+// sessionStorage and disappears when the tab closes; "remember on this device" keeps it in
+// localStorage instead (readable by any script on this site, so only on a device you trust).
 const TOKEN_KEY = 'ssl-toolkit-access-token';
+const readFrom = (store) => {
+  try { return store.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; }
+};
 export const accessToken = {
-  get: () => {
-    try { return sessionStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; }
-  },
-  set: (value) => {
-    try {
-      if (value) sessionStorage.setItem(TOKEN_KEY, value);
-      else sessionStorage.removeItem(TOKEN_KEY);
-    } catch (e) { /* storage unavailable: token just won't persist */ }
+  get: () => readFrom(sessionStorage) || readFrom(localStorage),
+  isRemembered: () => !!readFrom(localStorage),
+  set: (value, remember = false) => {
+    for (const store of [sessionStorage, localStorage]) {  // never leave a stale copy behind
+      try { store.removeItem(TOKEN_KEY); } catch (e) { /* storage unavailable */ }
+    }
+    if (!value) return;
+    try { (remember ? localStorage : sessionStorage).setItem(TOKEN_KEY, value); } catch (e) { /* token just won't persist */ }
   }
 };
 

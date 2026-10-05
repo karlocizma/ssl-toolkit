@@ -473,6 +473,9 @@ All endpoints are prefixed with `/api`. POST requests must set `Content-Type: ap
 
 ### Certificate Monitoring
 
+> **Using the web UI with `ADMIN_TOKEN` set:** the server only needs the token in `.env` (recreate the containers after changing it). In the browser, paste it into the access token field on the Domain Monitor or Audit Log page and press "Use token". It is kept for the current tab; tick "Remember on this device" to keep it across tabs and restarts (only on a computer you trust). Your monitored domains are stored on the server and are not affected either way.
+
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `POST` | `/api/monitor/certificate/add` | Add certificate to monitoring |

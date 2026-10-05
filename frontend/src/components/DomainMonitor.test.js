@@ -8,6 +8,7 @@ jest.mock('../services/api', () => {
   return {
     accessToken: {
       get: jest.fn(() => store.token || ''),
+      isRemembered: jest.fn(() => false),
       set: jest.fn((v) => { store.token = v; }),
     },
     monitorAPI: { listDomains: jest.fn(), addDomain: jest.fn(), removeDomain: jest.fn(), checkDomain: jest.fn(),
@@ -36,7 +37,7 @@ test('shows the server message when authentication is required and stores the to
 
   fireEvent.change(screen.getByLabelText(/Access token/), { target: { value: 'secret' } });
   fireEvent.click(screen.getByText('Use token'));
-  await waitFor(() => expect(accessToken.set).toHaveBeenCalledWith('secret'));
+  await waitFor(() => expect(accessToken.set).toHaveBeenCalledWith('secret', false));
   await waitFor(() => expect(screen.queryByText('Authentication required')).not.toBeInTheDocument());
 });
 
