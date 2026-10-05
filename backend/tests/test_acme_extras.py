@@ -135,7 +135,7 @@ def pebble_eab(pebble, tmp_path_factory):  # noqa: F811  (reuses the DNS/challen
         'externalAccountMacKeys': {EAB_KID: EAB_KEY}}}))
     wait_ports_free(14001, 15001)
     proc = subprocess.Popen([PEBBLE, '-config', str(d / 'cfg.json'), '-dnsserver', '127.0.0.1:8053'],
-                            env=dict(os.environ, PEBBLE_VA_NOSLEEP='1'),
+                            env=dict(os.environ, PEBBLE_VA_NOSLEEP='1', PEBBLE_WFE_NONCEREJECT='0'),
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     for _ in range(50):
         try:
