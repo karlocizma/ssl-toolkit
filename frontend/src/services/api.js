@@ -22,13 +22,22 @@ export const accessToken = {
   }
 };
 
-api.interceptors.request.use((config) => {
+// Admin-only endpoints (API keys, alert settings, audit log) want the admin token as a bearer token;
+// an API key sent there is simply refused with 401.
+export const needsAdminBearer = (url) => !!url && (url.startsWith('/admin/') || url.startsWith('/monitor/alerts/'));
+
+export const addAuthHeaders = (config) => {
   const token = accessToken.get();
   if (token && config.url && config.url.startsWith('/monitor/')) {
     config.headers['X-Access-Token'] = token;
   }
+  if (token && needsAdminBearer(config.url)) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
-});
+};
+
+api.interceptors.request.use(addAuthHeaders);
 
 // Certificate operations
 export const certificateAPI = {
@@ -135,6 +144,13 @@ export const monitorAPI = {
   alertsConfig: () => api.get('/monitor/alerts/config'),
   alertsTest: () => api.post('/monitor/alerts/test', null, { timeout: 60000 }),
   exportData: (format) => api.get('/monitor/export', { params: { format }, responseType: 'blob' })
+};
+
+// Audit log (admin token)
+export const auditAPI = {
+  list: (params) => api.get('/admin/audit', { params }),
+  verify: () => api.get('/admin/audit/verify'),
+  exportData: (format, params) => api.get('/admin/audit/export', { params: { ...params, format }, responseType: 'blob' })
 };
 
 // Sysadmin helpers

@@ -39,6 +39,7 @@ import {
   EnhancedEncryption as EnhancedEncryptionIcon,
   Event as EventIcon,
   Shield as ShieldIcon,
+  History as HistoryIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -203,6 +204,14 @@ const getTools = (t) => [
     path: '/domain-expiry',
     color: 'warning',
     featuresKeys: ['tools.domainExpiry.features.0', 'tools.domainExpiry.features.1', 'tools.domainExpiry.features.2', 'tools.domainExpiry.features.3']
+  },
+  {
+    titleKey: 'tools.auditLog.title',
+    descriptionKey: 'tools.auditLog.description',
+    icon: <HistoryIcon sx={{ fontSize: 40 }} />,
+    path: '/audit-log',
+    color: 'error',
+    featuresKeys: ['tools.auditLog.features.0', 'tools.auditLog.features.1', 'tools.auditLog.features.2', 'tools.auditLog.features.3']
   },
   {
     titleKey: 'tools.mtaSts.title',

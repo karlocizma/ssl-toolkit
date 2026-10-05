@@ -51,6 +51,9 @@ def create_app():
     from app.openapi import register_docs
     register_docs(app)
 
+    from app import audit_hooks
+    app.after_request(audit_hooks.after_request)
+
     # Background expiry checks/alerts; one worker is elected via a file lock.
     if not os.environ.get('PYTEST_CURRENT_TEST') and not os.environ.get('DISABLE_SCHEDULER'):
         from app.services.alerts import start_scheduler

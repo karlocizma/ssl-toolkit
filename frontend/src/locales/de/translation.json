@@ -26,6 +26,7 @@
     "acme": "ACME / Let's Encrypt",
     "privateCA": "Private CA",
     "domainExpiry": "Domain-Ablauf",
+    "auditLog": "Audit-Protokoll",
     "mtaSts": "MTA-STS & TLS-RPT",
     "mailTls": "Mailserver-TLS",
     "tlsScanner": "TLS-Scanner",
@@ -140,6 +141,11 @@
       "title": "Domain-Ablauf",
       "description": "Ablauf der Domain-Registrierung direkt per RDAP prüfen",
       "features": ["RDAP-Abfrage", "Registrar & Status", "Ablauf-Warnungen", "Kein Dritt-WHOIS"]
+    },
+    "auditLog": {
+      "title": "Audit-Protokoll",
+      "description": "Wer was geändert hat und wem der Zugriff verweigert wurde: manipulationssicher und exportierbar",
+      "features": ["Admin-Aktionen", "Abgewiesene Logins", "Hash-Kette", "CSV-/JSON-Export"]
     },
     "mtaSts": {
       "title": "MTA-STS & TLS-RPT",
