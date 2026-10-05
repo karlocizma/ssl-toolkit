@@ -4,7 +4,7 @@ import AuditLog from './AuditLog';
 import { accessToken, auditAPI } from '../services/api';
 
 jest.mock('../services/api', () => ({
-  accessToken: { get: jest.fn(() => ''), set: jest.fn() },
+  accessToken: { get: jest.fn(() => ''), isRemembered: jest.fn(() => false), set: jest.fn() },
   auditAPI: { list: jest.fn(), verify: jest.fn(), exportData: jest.fn() },
 }));
 
@@ -44,7 +44,7 @@ test('asks for the admin token when access is refused and stores the token', asy
   expect(await screen.findByText(/needs the admin token/)).toBeInTheDocument();
   fireEvent.change(screen.getByLabelText(/Admin token/), { target: { value: 'secret' } });
   fireEvent.click(screen.getByText('Use token'));
-  await waitFor(() => expect(accessToken.set).toHaveBeenCalledWith('secret'));
+  await waitFor(() => expect(accessToken.set).toHaveBeenCalledWith('secret', false));
   await waitFor(() => expect(screen.queryByText(/needs the admin token/)).not.toBeInTheDocument());
 });
 

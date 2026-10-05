@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [Unreleased]
+
+### Changed
+- The access token field (Domain Monitor, Audit Log) can now remember the token on this device ("Remember on this device", off by default). Without it the token is still kept for the current tab only. The monitored domains themselves were never affected: they live on the server.
+
+---
+
 ## [1.1.0] — 2026-10-05 (Phase 10)
 
 ### Added
