@@ -1101,6 +1101,41 @@ def check_monitored_domain_now(domain_id):
     return jsonify(result), (200 if result['success'] else 404)
 
 
+@ssl_bp.route('/monitor/domain/<domain_id>/public', methods=['PATCH'])
+@require_monitor_access
+def set_domain_public(domain_id):
+    """Show or hide a monitored host on the public status page: {public: bool, name?: str}"""
+    from app.services import domain_monitor
+    data = request.get_json(silent=True) or {}
+    if not isinstance(data.get('public'), bool):
+        return jsonify({'error': 'public must be true or false'}), 400
+    result = domain_monitor.set_public(domain_id, data['public'], data.get('name'))
+    return jsonify(result), (200 if result['success'] else 404)
+
+
+@ssl_bp.route('/status', methods=['GET'])
+def public_status():
+    """Public status of the certificates that were published from the Domain Monitor (no login)"""
+    from app.services import status_page
+    if not status_page.enabled():
+        return jsonify({'error': 'The status page is disabled'}), 404
+    response = jsonify({'success': True, **status_page.build()})
+    response.headers['Cache-Control'] = 'public, max-age=60'
+    return response
+
+
+@ssl_bp.route('/status/badge/<public_id>.svg', methods=['GET'])
+def public_status_badge(public_id):
+    """Expiry badge (SVG) for one published host, for README files and dashboards"""
+    from app.services import status_page
+    svg = status_page.badge_svg(public_id) if status_page.enabled() else None
+    if svg is None:
+        return jsonify({'error': 'Not found'}), 404
+    return current_app.response_class(svg, mimetype='image/svg+xml', headers={
+        'Cache-Control': 'public, max-age=300', 'X-Content-Type-Options': 'nosniff',
+        'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'"})
+
+
 @ssl_bp.route('/monitor/alerts/config', methods=['GET'])
 @require_admin_token
 def alerts_config():

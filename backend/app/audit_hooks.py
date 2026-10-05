@@ -30,6 +30,7 @@ RULES: Dict[Tuple[str, str], Tuple[str, Extractor, Extractor]] = {
     ('POST', '/monitor/domain/import'): ('monitor.domain.import', lambda b, a, r: None, lambda b, a, r: {'added': r.get('added')}),
     ('DELETE', '/monitor/domain/<domain_id>'): ('monitor.domain.remove', lambda b, a, r: a.get('domain_id'), lambda b, a, r: {}),
     ('POST', '/monitor/domain/<domain_id>/check'): ('monitor.domain.check', lambda b, a, r: a.get('domain_id'), lambda b, a, r: {}),
+    ('PATCH', '/monitor/domain/<domain_id>/public'): ('monitor.domain.publish', lambda b, a, r: a.get('domain_id'), _body_fields('public', 'name')),
     ('POST', '/monitor/certificate/add'): ('monitor.certificate.add', lambda b, a, r: r.get('certificate_id'), _body_fields('label', 'tags')),
     ('DELETE', '/monitor/certificate/remove/<certificate_id>'): ('monitor.certificate.remove', lambda b, a, r: a.get('certificate_id'), lambda b, a, r: {}),
     ('PATCH', '/monitor/certificate/<certificate_id>'): ('monitor.certificate.update', lambda b, a, r: a.get('certificate_id'),
