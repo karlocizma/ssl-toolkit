@@ -113,6 +113,7 @@ export const deliverabilityAPI = {
   spf: (data) => api.post('/email/spf/analyze', data, { timeout: 90000 }),
   dkim: (data) => api.post('/email/dkim/discover', data, { timeout: 90000 }),
   dmarcReport: (data) => api.post('/email/dmarc/report', data),
+  dmarcReports: (data) => api.post('/email/dmarc/reports', data, { timeout: 180000 }),
   blocklist: (data) => api.post('/email/blocklist', data, { timeout: 90000 })
 };
 

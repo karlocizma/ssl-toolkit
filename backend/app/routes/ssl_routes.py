@@ -1311,6 +1311,25 @@ def email_tls_rpt_report():
         return jsonify({'error': str(e)}), 400
 
 
+@ssl_bp.route('/email/dmarc/reports', methods=['POST'])
+def email_dmarc_reports():
+    """Merge many DMARC aggregate reports: sources, trend over time, reporters and findings"""
+    from app.services import dmarc_reports
+
+    data = request.get_json(silent=True) or {}
+    try:
+        files = data.get('files')
+        if isinstance(files, list):
+            total = sum(len(f.get('file_base64') or '') + len(f.get('xml') or '') for f in files if isinstance(f, dict))
+            if total > 24_000_000:
+                raise ValueError('The reports are too large (about 16 MB combined at most)')
+        return jsonify({'success': True, 'result': dmarc_reports.analyze_dmarc_reports(files, data.get('lookup_ptr', True) is not False)})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return _internal_error(e, 'DMARC report analysis failed')
+
+
 @ssl_bp.route('/email/spf/analyze', methods=['POST'])
 def email_spf_analyze():
     """Evaluate an SPF policy recursively and count DNS lookups against the limit of 10"""

@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import { ForwardToInbox as ForwardToInboxIcon } from '@mui/icons-material';
 import { deliverabilityAPI } from '../services/api';
+import DmarcReports from './DmarcReports';
 
 const sev = (s) => (s === 'error' ? 'error' : s === 'warning' ? 'warning' : 'info');
 const gradeColor = (g) => (g.startsWith('A') ? 'success' : g === 'B' ? 'info' : g === 'C' ? 'warning' : 'error');
@@ -255,13 +256,14 @@ function EmailDeliverability() {
       </Typography>
       <Paper sx={{ p: 3 }}>
         <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" sx={{ mb: 2 }}>
-          <Tab label="Overview" /><Tab label="SPF" /><Tab label="DKIM" /><Tab label="DMARC report" /><Tab label="Blocklists" />
+          <Tab label="Overview" /><Tab label="SPF" /><Tab label="DKIM" /><Tab label="DMARC report" /><Tab label="DMARC reports" /><Tab label="Blocklists" />
         </Tabs>
         {tab === 0 && <Overview />}
         {tab === 1 && <Spf />}
         {tab === 2 && <Dkim />}
         {tab === 3 && <DmarcReport />}
-        {tab === 4 && <Blocklists />}
+        {tab === 4 && <DmarcReports />}
+        {tab === 5 && <Blocklists />}
       </Paper>
     </Box>
   );
