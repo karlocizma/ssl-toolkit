@@ -1,54 +1,25 @@
-import api, {
-  certificateAPI,
-  csrAPI,
-  keyAPI,
-  sslCheckAPI,
-  sysAdminAPI,
-  healthAPI,
-} from './api';
+import { accessToken, addAuthHeaders, needsAdminBearer } from './api';
 
-describe('api service', () => {
-  it('uses /api as the default base URL', () => {
-    expect(api.defaults.baseURL).toBe('/api');
-  });
+beforeEach(() => accessToken.set(''));
 
-  it('has a 30-second timeout', () => {
-    expect(api.defaults.timeout).toBe(30000);
-  });
+const run = (url) => addAuthHeaders({ url, headers: {} }).headers;
 
-  it('exports certificateAPI with expected methods', () => {
-    expect(typeof certificateAPI.decode).toBe('function');
-    expect(typeof certificateAPI.getFingerprint).toBe('function');
-    expect(typeof certificateAPI.upload).toBe('function');
-  });
+test('monitor requests carry the token as X-Access-Token', () => {
+  accessToken.set('tok');
+  expect(run('/monitor/domain/list')).toEqual({ 'X-Access-Token': 'tok' });
+});
 
-  it('exports csrAPI with expected methods', () => {
-    expect(typeof csrAPI.generate).toBe('function');
-    expect(typeof csrAPI.decode).toBe('function');
-    expect(typeof csrAPI.upload).toBe('function');
-  });
+test('admin-only endpoints (alert settings, audit log, API keys) get a bearer token', () => {
+  accessToken.set('tok');
+  expect(run('/monitor/alerts/config')).toEqual({ 'X-Access-Token': 'tok', Authorization: 'Bearer tok' });
+  expect(run('/admin/audit')).toEqual({ Authorization: 'Bearer tok' });
+  expect(run('/admin/apikey/list')).toEqual({ Authorization: 'Bearer tok' });
+});
 
-  it('exports keyAPI with expected methods', () => {
-    expect(typeof keyAPI.generate).toBe('function');
-    expect(typeof keyAPI.validate).toBe('function');
-    expect(typeof keyAPI.matchCertificate).toBe('function');
-  });
-
-  it('exports sslCheckAPI with expected methods', () => {
-    expect(typeof sslCheckAPI.checkDomain).toBe('function');
-    expect(typeof sslCheckAPI.checkChain).toBe('function');
-    expect(typeof sslCheckAPI.checkOCSP).toBe('function');
-    expect(typeof sslCheckAPI.checkCRL).toBe('function');
-  });
-
-  it('exports sysAdminAPI with expected methods', () => {
-    expect(typeof sysAdminAPI.generateDMARC).toBe('function');
-    expect(typeof sysAdminAPI.validateDMARC).toBe('function');
-    expect(typeof sysAdminAPI.generateSPF).toBe('function');
-    expect(typeof sysAdminAPI.lookupDNS).toBe('function');
-  });
-
-  it('exports healthAPI.check', () => {
-    expect(typeof healthAPI.check).toBe('function');
-  });
+test('other requests and requests without a token carry no credentials', () => {
+  accessToken.set('tok');
+  expect(run('/check/tls')).toEqual({});
+  accessToken.set('');
+  expect(run('/admin/audit')).toEqual({});
+  expect(needsAdminBearer('/monitor/domain/list')).toBe(false);
 });

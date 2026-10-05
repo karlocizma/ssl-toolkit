@@ -943,6 +943,45 @@ def delete_existing_api_key():
         return jsonify({'error': str(e)}), 400
 
 
+def _audit_filters():
+    a = request.args
+    return {k: a.get(k) for k in ('action', 'actor', 'result', 'since', 'until') if a.get(k)} | \
+        ({'search': a['q']} if a.get('q') else {})
+
+
+@ssl_bp.route('/admin/audit', methods=['GET'])
+@require_admin_token
+def audit_entries():
+    """Audit log entries, newest first (filters: action prefix, actor, result, since, until, q)"""
+    from app.services import audit_log
+    try:
+        limit, offset = int(request.args.get('limit', 100)), int(request.args.get('offset', 0))
+    except ValueError:
+        return jsonify({'error': 'limit and offset must be numbers'}), 400
+    return jsonify({'success': True, **audit_log.query(limit=limit, offset=offset, **_audit_filters())})
+
+
+@ssl_bp.route('/admin/audit/verify', methods=['GET'])
+@require_admin_token
+def audit_verify():
+    """Check the audit log's hash chain for removed or modified entries"""
+    from app.services import audit_log
+    return jsonify({'success': True, **audit_log.verify()})
+
+
+@ssl_bp.route('/admin/audit/export', methods=['GET'])
+@require_admin_token
+def audit_export():
+    """Download the (filtered) audit log as JSON or CSV"""
+    from app.services import audit_log
+    fmt = request.args.get('format', 'json')
+    if fmt not in ('json', 'csv'):
+        return jsonify({'error': 'format must be json or csv'}), 400
+    body = audit_log.export(fmt, **_audit_filters())
+    mime = 'text/csv' if fmt == 'csv' else 'application/json'
+    return current_app.response_class(body, mimetype=mime, headers={'Content-Disposition': f'attachment; filename=audit-log.{fmt}'})
+
+
 @ssl_bp.route('/admin/apikey/validate', methods=['POST'])
 @require_admin_token
 def validate_existing_api_key():

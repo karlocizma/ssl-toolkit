@@ -5,7 +5,7 @@ import json
 import os
 import secrets
 from datetime import datetime
-from typing import Dict
+from typing import Dict, Optional
 
 # Persisted on the same volume as the certificate monitor data.
 API_KEYS_FILE = os.environ.get('API_KEYS_FILE', '/app/data/api_keys.json')
@@ -103,6 +103,20 @@ def generate_api_key(name: str, rate_limit: str = "200 per hour", description: s
             'success': False,
             'message': f'Failed to generate API key: {str(e)}'
         }
+
+
+def identify_api_key(api_key: str) -> Optional[str]:
+    """Name of an active key, without touching its usage counters (used to label audit entries)."""
+    try:
+        entry = _find(_load_api_keys(), api_key)
+    except Exception:
+        return None
+    return entry['name'] if entry and entry.get('active') else None
+
+
+def key_preview(api_key: str) -> str:
+    """The same short prefix that is stored for display; never the whole key."""
+    return str(api_key)[:15] + '...'
 
 
 def validate_api_key(api_key: str) -> Dict:

@@ -241,6 +241,7 @@ CORS_ORIGINS=                               # comma-separated origins; empty = C
 
 # Integrations (all optional)
 CT_API_URL=https://crt.sh/                  # Certificate Transparency search service
+AUDIT_LOG_MAX_BYTES=5242880                 # rotate the audit log at this size (AUDIT_LOG_KEEP=5 rotated files are kept)
 RDAP_CACHE_SECONDS=21600                    # cache domain registration lookups; 0 disables
 CT_CACHE_SECONDS=900                        # cache CT results per domain (crt.sh rate-limits by IP); 0 disables
 RBL_RESOLVERS=                              # your own DNS resolver for blocklist checks (public resolvers are often refused)
@@ -555,6 +556,18 @@ The domain name you search for is sent to crt.sh (or `CT_API_URL`). crt.sh rate-
 | `POST /api/email/tls-rpt/report` | `{json}` or `{file_base64}` (.json or .json.gz): totals, success rate and failures by type with a plain-language explanation |
 
 Start in `testing` mode, watch the TLS-RPT reports, then switch to `enforce`.
+
+### Audit log
+
+Every state-changing action on the monitor, the API keys and the alert settings is recorded, together with refused logins (`auth.denied`): time, action, who (`admin`, an API key by name, or `anonymous`), source IP (`X-Real-IP` as set by the bundled nginx), target and a few allow-listed details, and whether it succeeded, failed or was denied. Tokens, API keys, certificates and private keys are never logged (a key is shown only as its stored 15-character prefix).
+
+| Endpoint (admin token) | Description |
+|------------------------|-------------|
+| `GET /api/admin/audit` | Newest first; filters `action` (prefix, e.g. `monitor.`), `actor`, `result`, `since`, `until`, `q`; `limit` (max 500) and `offset` |
+| `GET /api/admin/audit/verify` | Checks the hash chain: reports the first removed or modified entry |
+| `GET /api/admin/audit/export?format=csv\|json` | Download the filtered log (CSV cells that start with `=`, `+`, `-` or `@` are neutralised for spreadsheets) |
+
+The log is a JSON Lines file (`AUDIT_LOG_FILE`, default `/app/data/audit.log` on the data volume), rotated at `AUDIT_LOG_MAX_BYTES` (5 MB) keeping `AUDIT_LOG_KEEP` (5) files, with the chain continuing across rotations. Each entry holds the hash of the previous one, so deleting or editing a line is detected; that is tamper-evidence, not protection against someone who can rewrite the whole file, so ship it to a log server if that matters. The UI page "Audit Log" shows, filters, verifies and exports it.
 
 ### Chain builder
 
