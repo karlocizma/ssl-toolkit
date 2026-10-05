@@ -4,6 +4,7 @@ import {
 } from '@mui/material';
 import { Lock as LockIcon } from '@mui/icons-material';
 import { sslCheckAPI } from '../services/api';
+import ResultActions from './ResultActions';
 
 const gradeColor = (grade) => {
   if (grade === 'A' || grade === 'A-') return 'success';
@@ -67,6 +68,7 @@ function TLSScanner() {
         {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
       </Paper>
 
+<ResultActions tool="tls-scanner" title={`TLS scan: ${hostname}:${port}`} result={result} />
       {result && !result.reachable && <Alert severity="warning">{result.error}</Alert>}
 
       {result && result.reachable && (

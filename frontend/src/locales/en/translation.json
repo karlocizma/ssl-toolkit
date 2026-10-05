@@ -27,6 +27,7 @@
     "privateCA": "Private CA",
     "domainExpiry": "Domain Expiry",
     "auditLog": "Audit Log",
+    "shares": "Shared Results",
     "mtaSts": "MTA-STS & TLS-RPT",
     "mailTls": "Mail Server TLS",
     "tlsScanner": "TLS Scanner",
@@ -141,6 +142,11 @@
       "title": "Domain Expiry",
       "description": "Check when a domain registration expires, directly over RDAP",
       "features": ["RDAP lookup", "Registrar & status", "Expiry alerts", "No third-party WHOIS"]
+    },
+    "shares": {
+      "title": "Shared Results",
+      "description": "Share results as expiring read-only links, export them as JSON or HTML",
+      "features": ["Expiring links", "Revoke anytime", "JSON export", "HTML report"]
     },
     "auditLog": {
       "title": "Audit Log",

@@ -31,6 +31,8 @@ RULES: Dict[Tuple[str, str], Tuple[str, Extractor, Extractor]] = {
     ('DELETE', '/monitor/domain/<domain_id>'): ('monitor.domain.remove', lambda b, a, r: a.get('domain_id'), lambda b, a, r: {}),
     ('POST', '/monitor/domain/<domain_id>/check'): ('monitor.domain.check', lambda b, a, r: a.get('domain_id'), lambda b, a, r: {}),
     ('PATCH', '/monitor/domain/<domain_id>/public'): ('monitor.domain.publish', lambda b, a, r: a.get('domain_id'), _body_fields('public', 'name')),
+    ('POST', '/share'): ('share.create', lambda b, a, r: (r.get('share') or {}).get('id'), lambda b, a, r: {'tool': b.get('tool'), 'title': b.get('title'), 'ttl_hours': b.get('ttl_hours')}),
+    ('DELETE', '/share/<share_id>'): ('share.revoke', lambda b, a, r: a.get('share_id'), lambda b, a, r: {}),
     ('POST', '/monitor/certificate/add'): ('monitor.certificate.add', lambda b, a, r: r.get('certificate_id'), _body_fields('label', 'tags')),
     ('DELETE', '/monitor/certificate/remove/<certificate_id>'): ('monitor.certificate.remove', lambda b, a, r: a.get('certificate_id'), lambda b, a, r: {}),
     ('PATCH', '/monitor/certificate/<certificate_id>'): ('monitor.certificate.update', lambda b, a, r: a.get('certificate_id'),
@@ -43,7 +45,7 @@ RULES: Dict[Tuple[str, str], Tuple[str, Extractor, Extractor]] = {
     ('DELETE', '/admin/apikey/delete'): ('apikey.delete', _key_target, lambda b, a, r: {}),
     ('GET', '/admin/audit/export'): ('audit.export', lambda b, a, r: None, lambda b, a, r: {'format': request.args.get('format', 'json')}),
 }
-PROTECTED_PREFIXES = ('/monitor/', '/admin/')
+PROTECTED_PREFIXES = ('/monitor/', '/admin/', '/share')
 
 
 def client_ip() -> str:

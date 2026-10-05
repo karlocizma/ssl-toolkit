@@ -28,7 +28,7 @@ export const needsAdminBearer = (url) => !!url && (url.startsWith('/admin/') || 
 
 export const addAuthHeaders = (config) => {
   const token = accessToken.get();
-  if (token && config.url && config.url.startsWith('/monitor/')) {
+  if (token && config.url && (config.url.startsWith('/monitor/') || config.url.startsWith('/share'))) {
     config.headers['X-Access-Token'] = token;
   }
   if (token && needsAdminBearer(config.url)) {
@@ -150,6 +150,14 @@ export const monitorAPI = {
 // Public status page (no login)
 export const statusAPI = {
   get: () => api.get('/status')
+};
+
+// Shareable results: create/list/revoke need the access token, reading a link does not
+export const shareAPI = {
+  create: (data) => api.post('/share', data),
+  list: () => api.get('/share'),
+  revoke: (id) => api.delete(`/share/${encodeURIComponent(id)}`),
+  get: (token) => api.get(`/share/${encodeURIComponent(token)}`)
 };
 
 // Audit log (admin token)

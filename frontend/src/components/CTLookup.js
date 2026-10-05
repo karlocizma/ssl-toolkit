@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import { TravelExplore as TravelExploreIcon } from '@mui/icons-material';
 import { ctAPI, monitorAPI } from '../services/api';
+import ResultActions from './ResultActions';
 
 const fmt = (iso) => (iso ? new Date(iso.endsWith('Z') || iso.includes('+') ? iso : `${iso}Z`).toLocaleDateString() : '');
 
@@ -91,6 +92,7 @@ function CTLookup() {
         {notice && <Alert severity="success" sx={{ mt: 2 }}>{notice}</Alert>}
       </Paper>
 
+<ResultActions tool="ct-lookup" title={`CT lookup: ${domain}`} result={result} />
       {result && (
         <Stack spacing={2}>
           <Paper sx={{ p: 3 }}>

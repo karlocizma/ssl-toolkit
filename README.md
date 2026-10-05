@@ -570,6 +570,15 @@ Tick **Public** on a host in the Domain Monitor to publish its certificate expir
 
 `STATUS_PAGE_TITLE` sets the heading; `STATUS_PAGE_ENABLED=false` switches the page, its API and the badges off entirely.
 
+### Shareable and exportable results
+
+Below the result of the SSL checker, TLS scanner, mail TLS test, security headers, domain expiry, CT lookup, chain builder, email deliverability overview and MTA-STS check there are two actions:
+
+- **Export**: download the result as JSON or as a self-contained HTML report (print it to PDF from the browser). This happens in the browser; nothing is sent anywhere.
+- **Share link**: creates `https://<your host>/shared/<token>`, a read-only snapshot that anyone with the link can open without logging in. Links expire after 1 hour to 30 days (default 24 hours), can be revoked under **Shared Results**, are not indexed or cached, and are not sent as a referrer. The link is shown once; only its SHA-256 is stored. Results containing key material are refused, at most 256 KB per snapshot and 200 active snapshots. Creating, listing and revoking needs the access token (as for the Domain Monitor); creation and revocation are written to the audit log, never the link itself.
+
+Stored in `SHARE_FILE` (default `/app/data/shares.json`, on the data volume).
+
 ### Audit log
 
 Every state-changing action on the monitor, the API keys and the alert settings is recorded, together with refused logins (`auth.denied`): time, action, who (`admin`, an API key by name, or `anonymous`), source IP (`X-Real-IP` as set by the bundled nginx), target and a few allow-listed details, and whether it succeeded, failed or was denied. Tokens, API keys, certificates and private keys are never logged (a key is shown only as its stored 15-character prefix).

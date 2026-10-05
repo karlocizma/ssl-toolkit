@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import { EnhancedEncryption as EnhancedEncryptionIcon } from '@mui/icons-material';
 import { sslCheckAPI } from '../services/api';
+import ResultActions from './ResultActions';
 
 const gradeColor = (grade) => {
   if (grade === 'A' || grade === 'A-') return 'success';
@@ -148,6 +149,7 @@ function MailTLS() {
         {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
       </Paper>
 
+<ResultActions tool="mail-tls" title={`Mail TLS: ${target}`} result={result} />
       {result && result.mx && (
         <Paper sx={{ p: 3, mb: 2 }}>
           <Stack direction="row" spacing={2} alignItems="center">

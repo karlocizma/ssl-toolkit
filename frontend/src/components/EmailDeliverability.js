@@ -6,6 +6,7 @@ import {
 import { ForwardToInbox as ForwardToInboxIcon } from '@mui/icons-material';
 import { deliverabilityAPI } from '../services/api';
 import DmarcReports from './DmarcReports';
+import ResultActions from './ResultActions';
 
 const sev = (s) => (s === 'error' ? 'error' : s === 'warning' ? 'warning' : 'info');
 const gradeColor = (g) => (g.startsWith('A') ? 'success' : g === 'B' ? 'info' : g === 'C' ? 'warning' : 'error');
@@ -20,7 +21,7 @@ function Findings({ items }) {
 }
 
 // Shared "enter a value, call the API, show the result" shell.
-function Tool({ label, placeholder, button, call, children, extra }) {
+function Tool({ label, placeholder, button, call, children, extra, shareTool }) {
   const [value, setValue] = useState('');
   const [extraValue, setExtraValue] = useState('');
   const [result, setResult] = useState(null);
@@ -62,6 +63,7 @@ function Tool({ label, placeholder, button, call, children, extra }) {
         </Grid>
       </Grid>
       {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+      {shareTool && <ResultActions tool={shareTool} title={`Email deliverability: ${value.trim()}`} result={result} />}
       {result && children(result)}
     </Box>
   );
@@ -85,7 +87,7 @@ function SpfNode({ node, depth = 0 }) {
 
 function Overview() {
   return (
-    <Tool label="Domain" placeholder="example.com" button="Check domain" call={(v) => deliverabilityAPI.overview({ domain: v })}>
+    <Tool label="Domain" placeholder="example.com" button="Check domain" shareTool="email-deliverability" call={(v) => deliverabilityAPI.overview({ domain: v })}>
       {(r) => (
         <Stack spacing={2} sx={{ mt: 2 }}>
           <Stack direction="row" spacing={2} alignItems="center">

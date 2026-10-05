@@ -27,6 +27,7 @@
     "privateCA": "Private CA",
     "domainExpiry": "Domain-Ablauf",
     "auditLog": "Audit-Protokoll",
+    "shares": "Geteilte Ergebnisse",
     "mtaSts": "MTA-STS & TLS-RPT",
     "mailTls": "Mailserver-TLS",
     "tlsScanner": "TLS-Scanner",
@@ -141,6 +142,11 @@
       "title": "Domain-Ablauf",
       "description": "Ablauf der Domain-Registrierung direkt per RDAP prüfen",
       "features": ["RDAP-Abfrage", "Registrar & Status", "Ablauf-Warnungen", "Kein Dritt-WHOIS"]
+    },
+    "shares": {
+      "title": "Geteilte Ergebnisse",
+      "description": "Ergebnisse als ablaufende Nur-Lese-Links teilen, als JSON oder HTML exportieren",
+      "features": ["Ablaufende Links", "Jederzeit widerrufbar", "JSON-Export", "HTML-Bericht"]
     },
     "auditLog": {
       "title": "Audit-Protokoll",

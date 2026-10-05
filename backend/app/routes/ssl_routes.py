@@ -1113,6 +1113,54 @@ def set_domain_public(domain_id):
     return jsonify(result), (200 if result['success'] else 404)
 
 
+@ssl_bp.route('/share', methods=['POST'])
+@require_monitor_access
+def create_share():
+    """Share a tool result as an expiring read-only link: {title, tool, result, ttl_hours?}"""
+    from app.audit_hooks import actor
+    from app.services import share_store
+    data = request.get_json(silent=True) or {}
+    try:
+        _check_input_size(data, 'title')
+        share = share_store.create(data.get('title'), data.get('tool'), data.get('result'),
+                                   data.get('ttl_hours', share_store.DEFAULT_TTL_HOURS), actor())
+        return jsonify({'success': True, 'share': share}), 201
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+
+
+@ssl_bp.route('/share', methods=['GET'])
+@require_monitor_access
+def list_shares():
+    """Active shared results (without their links, which are only shown when created)"""
+    from app.services import share_store
+    return jsonify({'success': True, 'shares': share_store.list_shares()})
+
+
+@ssl_bp.route('/share/<share_id>', methods=['DELETE'])
+@require_monitor_access
+def revoke_share(share_id):
+    """Revoke a shared result by its id"""
+    from app.services import share_store
+    if not share_store.revoke(share_id):
+        return jsonify({'error': 'Shared result not found'}), 404
+    return jsonify({'success': True})
+
+
+@ssl_bp.route('/share/<token>', methods=['GET'])
+def view_share(token):
+    """Read a shared result by its link token (no login; unknown and expired links look the same)"""
+    from app.services import share_store
+    snapshot = share_store.get(token)
+    if snapshot is None:
+        return jsonify({'error': 'This link does not exist or has expired'}), 404
+    response = jsonify({'success': True, **snapshot})
+    response.headers['Cache-Control'] = 'no-store'
+    response.headers['X-Robots-Tag'] = 'noindex, nofollow'
+    response.headers['Referrer-Policy'] = 'no-referrer'
+    return response
+
+
 @ssl_bp.route('/status', methods=['GET'])
 def public_status():
     """Public status of the certificates that were published from the Domain Monitor (no login)"""
