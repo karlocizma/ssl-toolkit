@@ -1314,7 +1314,7 @@ def email_tls_rpt_report():
 @ssl_bp.route('/email/dmarc/reports', methods=['POST'])
 def email_dmarc_reports():
     """Merge many DMARC aggregate reports: sources, trend over time, reporters and findings"""
-    from app.services import dmarc_reports
+    from app.services import dmarc_advisor, dmarc_reports
 
     data = request.get_json(silent=True) or {}
     try:
@@ -1323,7 +1323,13 @@ def email_dmarc_reports():
             total = sum(len(f.get('file_base64') or '') + len(f.get('xml') or '') for f in files if isinstance(f, dict))
             if total > 24_000_000:
                 raise ValueError('The reports are too large (about 16 MB combined at most)')
-        return jsonify({'success': True, 'result': dmarc_reports.analyze_dmarc_reports(files, data.get('lookup_ptr', True) is not False)})
+        result = dmarc_reports.analyze_dmarc_reports(files, data.get('lookup_ptr', True) is not False)
+        ignore = data.get('ignore_ips') or []
+        records = data.get('current_records') or {}
+        if not isinstance(ignore, list) or not isinstance(records, dict):
+            raise ValueError('ignore_ips must be a list and current_records an object of domain: record')
+        result['advice'] = dmarc_advisor.advise(result, ignore, records)
+        return jsonify({'success': True, 'result': result})
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
@@ -1334,6 +1340,26 @@ def email_dmarc_reports():
 def email_spf_analyze():
     """Evaluate an SPF policy recursively and count DNS lookups against the limit of 10"""
     return _deliverability('analyze_spf', 'domain')
+
+
+@ssl_bp.route('/email/spf/flatten', methods=['POST'])
+def email_spf_flatten():
+    """Generate a flattened SPF record (include/a/mx replaced by IP ranges) that stays under the 10-lookup limit"""
+    from app.services import spf_flatten
+
+    data = request.get_json(silent=True) or {}
+    if not data.get('domain'):
+        return jsonify({'error': 'domain is required'}), 400
+    try:
+        keep = data.get('keep') or []
+        if not isinstance(keep, list):
+            raise ValueError('keep must be a list of include domains')
+        return jsonify({'success': True, 'result': spf_flatten.flatten_spf(
+            data['domain'], data.get('max_record_length') or spf_flatten.DEFAULT_RECORD_LENGTH, keep)})
+    except (ValueError, TypeError) as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return _internal_error(e, 'SPF flattening failed')
 
 
 @ssl_bp.route('/email/dkim/discover', methods=['POST'])

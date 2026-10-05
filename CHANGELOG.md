@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ## [Phase 10] — in progress
 
 ### Added
+- **SPF flattening** (`POST /api/email/spf/flatten`, Email Deliverability → "SPF flatten") and **DMARC policy ramp advisor** (`advice` in `/api/email/dmarc/reports`, shown on the "DMARC reports" tab)
 - **DMARC reports in** (`POST /api/email/dmarc/reports`, Email Deliverability → "DMARC reports"): merge up to 100 aggregate reports into totals, a per-day trend, reporters and a per-source view with reverse DNS and findings; nothing is stored
 - **MTA-STS and TLS-RPT** (`/api/email/mta-sts`, `/api/email/tls-rpt`, `ssl-toolkit mtasts`): policy check against the real MX hosts, policy and record generators, TLS-RPT report reader, UI page with check / generate / read-a-report tabs
 - **Microsoft Teams alert channel** (`ALERT_TEAMS_WEBHOOK_URL`): colour-coded Adaptive Card alerts through a Workflows webhook, optional "Open Domain Monitor" button (`APP_URL`); alert channels and a test button on the Domain Monitor page

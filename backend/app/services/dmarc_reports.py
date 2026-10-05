@@ -100,6 +100,7 @@ def analyze_dmarc_reports(items: List[Dict], lookup_ptr: bool = True) -> Dict:
     daily: Dict[str, Dict] = defaultdict(lambda: {'total': 0, 'pass': 0})
     reporters: Dict[str, Dict] = defaultdict(lambda: {'reports': 0, 'messages': 0})
     policies: Dict[str, Dict] = {}
+    by_domain: Dict[str, Dict] = defaultdict(lambda: {'total': 0, 'pass': 0, 'days': set(), 'sources': defaultdict(lambda: {'count': 0, 'pass': 0})})
     begins, ends = [], []
     totals = Counter()
 
@@ -115,6 +116,14 @@ def analyze_dmarc_reports(items: List[Dict], lookup_ptr: bool = True) -> Dict:
             if stamp and str(stamp).isdigit():
                 bucket.append(int(stamp))
         pdom = (r['policy'] or {}).get('domain')
+        dom = by_domain[pdom or 'unknown']
+        dom['total'] += r['total_messages']
+        dom['pass'] += r['passed_messages']
+        if day:
+            dom['days'].add(day)
+        for s in r['sources']:
+            dom['sources'][s['source_ip']]['count'] += s['count']
+            dom['sources'][s['source_ip']]['pass'] += s['pass_count']
         if pdom and (pdom not in policies or int(r['date_begin'] or 0) >= policies[pdom]['_at']):
             policies[pdom] = {**r['policy'], '_at': int(r['date_begin'] or 0)}
         for s in r['sources']:
@@ -168,6 +177,10 @@ def analyze_dmarc_reports(items: List[Dict], lookup_ptr: bool = True) -> Dict:
         'daily': [{'date': d, **v, 'pass_rate': round(100 * v['pass'] / v['total'], 1) if v['total'] else None}
                   for d, v in sorted(daily.items())],
         'reporters': sorted(({'name': k, **v} for k, v in reporters.items()), key=lambda x: -x['messages']),
+        'by_domain': {d: {'total_messages': v['total'], 'passed_messages': v['pass'], 'days': sorted(v['days']),
+                          'sources': [{'source_ip': ip, 'count': s['count'], 'pass_count': s['pass'],
+                                       'fail_count': s['count'] - s['pass']} for ip, s in v['sources'].items()]}
+                      for d, v in by_domain.items()},
         'sources': merged, 'findings': findings,
     }
 

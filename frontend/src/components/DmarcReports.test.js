@@ -51,3 +51,32 @@ test('shows the server error', async () => {
   fireEvent.click(screen.getByText('Analyze'));
   expect(await screen.findByText(/None of the files is a readable/)).toBeInTheDocument();
 });
+
+const advice = {
+  domains: [{
+    domain: 'example.com', verdict: 'not_ready', current: { p: 'none', pct: 100 },
+    summary: 'Not ready for p=quarantine; pct=10: 1 thing(s) to resolve',
+    data: { messages: 340, pass_rate: 88.24, days: 14 }, next: { p: 'quarantine', pct: 10, required_pass_rate: 98 },
+    blockers: ['198.51.100.9 fails 40 of 40 message(s) (11.76% of all mail): fix its SPF/DKIM if it is a legitimate sender, or add it to the ignore list if it is not yours'],
+    failing_sources: [{ source_ip: '198.51.100.9', ptr: 'spoof.example.net', messages: 40, failed: 40, share: 11.76 }],
+    preview_record: { name: '_dmarc.example.com', value: 'v=DMARC1; p=quarantine; pct=10; rua=mailto:dmarc-reports@example.com' },
+    next_record: null, notes: ['Keep each step for one to two weeks'],
+  }],
+  ignored: [],
+};
+
+test('shows the policy advice and re-runs the analysis when a source is ignored', async () => {
+  deliverabilityAPI.dmarcReports.mockResolvedValue({ data: { result: { ...result, advice } } });
+  render(<DmarcReports />);
+  pick([new File(['<feedback/>'], 'a.xml')]);
+  expect(await screen.findByText('1 file(s) selected')).toBeInTheDocument();
+  fireEvent.click(screen.getByText('Analyze'));
+  expect(await screen.findByText('Policy advice for example.com')).toBeInTheDocument();
+  expect(screen.getByText('Not ready')).toBeInTheDocument();
+  expect(screen.getByText(/Preview of the next step/)).toBeInTheDocument();
+  expect(screen.getByText(/p=quarantine; pct=10; rua=/)).toBeInTheDocument();
+  fireEvent.click(screen.getByText('Not mine, ignore'));
+  await waitFor(() => expect(deliverabilityAPI.dmarcReports).toHaveBeenCalledTimes(2));
+  expect(deliverabilityAPI.dmarcReports.mock.calls[1][0].ignore_ips).toEqual(['198.51.100.9']);
+  expect(await screen.findByText('Ignored as not yours:')).toBeInTheDocument();
+});

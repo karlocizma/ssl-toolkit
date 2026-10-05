@@ -111,6 +111,7 @@ export const deliverabilityAPI = {
   tlsRptGenerate: (data) => api.post('/email/tls-rpt/generate', data),
   tlsRptReport: (data) => api.post('/email/tls-rpt/report', data),
   spf: (data) => api.post('/email/spf/analyze', data, { timeout: 90000 }),
+  spfFlatten: (data) => api.post('/email/spf/flatten', data, { timeout: 120000 }),
   dkim: (data) => api.post('/email/dkim/discover', data, { timeout: 90000 }),
   dmarcReport: (data) => api.post('/email/dmarc/report', data),
   dmarcReports: (data) => api.post('/email/dmarc/reports', data, { timeout: 180000 }),
