@@ -38,6 +38,7 @@ import {
   WorkspacePremium as WorkspacePremiumIcon,
   EnhancedEncryption as EnhancedEncryptionIcon,
   Event as EventIcon,
+  Shield as ShieldIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -202,6 +203,14 @@ const getTools = (t) => [
     path: '/domain-expiry',
     color: 'warning',
     featuresKeys: ['tools.domainExpiry.features.0', 'tools.domainExpiry.features.1', 'tools.domainExpiry.features.2', 'tools.domainExpiry.features.3']
+  },
+  {
+    titleKey: 'tools.mtaSts.title',
+    descriptionKey: 'tools.mtaSts.description',
+    icon: <ShieldIcon sx={{ fontSize: 40 }} />,
+    path: '/mta-sts',
+    color: 'secondary',
+    featuresKeys: ['tools.mtaSts.features.0', 'tools.mtaSts.features.1', 'tools.mtaSts.features.2', 'tools.mtaSts.features.3']
   },
   {
     titleKey: 'tools.mailTls.title',

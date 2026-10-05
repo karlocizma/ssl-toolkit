@@ -1251,6 +1251,66 @@ def email_deliverability():
     return _deliverability('check_deliverability', 'domain')
 
 
+def _transport(fn_name, *keys, **extra):
+    from app.services import mail_transport
+
+    data = request.get_json(silent=True) or {}
+    try:
+        _check_input_size(data, 'json', 'file_base64')
+        args = [data.get(k) for k in keys]
+        return jsonify({'success': True, 'result': getattr(mail_transport, fn_name)(*args, **{k: v(data) for k, v in extra.items()})})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return _internal_error(e, 'Mail transport security check failed')
+
+
+@ssl_bp.route('/email/mta-sts', methods=['POST'])
+def email_mta_sts():
+    """Check a domain's MTA-STS record and policy against its MX hosts (verify_mx also tests their TLS)"""
+    return _transport('check_mta_sts', 'domain', verify_mx=lambda d: bool(d.get('verify_mx')))
+
+
+@ssl_bp.route('/email/mta-sts/generate', methods=['POST'])
+def email_mta_sts_generate():
+    """Generate an MTA-STS policy file and the matching DNS record"""
+    from app.services import mail_transport
+
+    data = request.get_json(silent=True) or {}
+    try:
+        return jsonify({'success': True, 'result': mail_transport.generate_mta_sts(
+            data.get('domain'), data.get('mode') or 'testing', data.get('mx') or None, data.get('max_age') or 604800)})
+    except (ValueError, TypeError) as e:
+        return jsonify({'error': str(e)}), 400
+
+
+@ssl_bp.route('/email/tls-rpt', methods=['POST'])
+def email_tls_rpt():
+    """Check a domain's TLS-RPT record"""
+    return _transport('check_tls_rpt', 'domain')
+
+
+@ssl_bp.route('/email/tls-rpt/generate', methods=['POST'])
+def email_tls_rpt_generate():
+    """Generate a TLS-RPT DNS record for one or more report destinations"""
+    return _transport('generate_tls_rpt', 'domain', 'rua')
+
+
+@ssl_bp.route('/email/tls-rpt/report', methods=['POST'])
+def email_tls_rpt_report():
+    """Summarise a TLS-RPT aggregate report (JSON, gzip or base64)"""
+    from app.services import mail_transport
+
+    data = request.get_json(silent=True) or {}
+    try:
+        _check_input_size(data, 'json')
+        if isinstance(data.get('file_base64'), str) and len(data['file_base64']) > 8_000_000:
+            raise ValueError('file_base64 exceeds the maximum allowed size')
+        return jsonify({'success': True, 'result': mail_transport.parse_tls_rpt_report(data)})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+
+
 @ssl_bp.route('/email/spf/analyze', methods=['POST'])
 def email_spf_analyze():
     """Evaluate an SPF policy recursively and count DNS lookups against the limit of 10"""

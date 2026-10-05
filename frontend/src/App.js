@@ -26,6 +26,7 @@ import JWTDecoder from './components/JWTDecoder';
 import TLSScanner from './components/TLSScanner';
 import MailTLS from './components/MailTLS';
 import DomainExpiry from './components/DomainExpiry';
+import MailTransport from './components/MailTransport';
 import SecurityHeaders from './components/SecurityHeaders';
 import DomainMonitor from './components/DomainMonitor';
 import PrivateCA from './components/PrivateCA';
@@ -101,6 +102,7 @@ function App() {
               <Route path="/tls-scanner" element={<TLSScanner />} />
               <Route path="/mail-tls" element={<MailTLS />} />
               <Route path="/domain-expiry" element={<DomainExpiry />} />
+              <Route path="/mta-sts" element={<MailTransport />} />
               <Route path="/security-headers" element={<SecurityHeaders />} />
               <Route path="/domain-monitor" element={<DomainMonitor />} />
             </Routes>

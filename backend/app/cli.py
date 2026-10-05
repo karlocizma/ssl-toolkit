@@ -102,6 +102,20 @@ def cmd_expiry(args, target: str):
     return ok, lines, r
 
 
+def cmd_mtasts(args, target: str):
+    from app.services.mail_transport import check_mta_sts, check_tls_rpt
+    sts = check_mta_sts(target, verify_mx=args.verify_mx)
+    rpt = check_tls_rpt(target)
+    policy = sts['policy'] or {}
+    ok = sts['status'] == 'ok' and (policy.get('mode') == 'enforce' or not args.require_enforce)
+    if args.require_enforce and policy.get('mode') != 'enforce':
+        ok = False
+    lines = [f"{'OK  ' if ok else 'FAIL'}  {sts['domain']}  MTA-STS {policy.get('mode') or sts['status']}, "
+             f"TLS-RPT {'configured' if rpt['status'] == 'ok' else rpt['status']}"]
+    lines += [f"      {f['severity']}: {f['message']}" for f in sts['findings'] + rpt['findings'] if f['severity'] != 'info']
+    return ok, lines, {'mta_sts': sts, 'tls_rpt': rpt}
+
+
 def cmd_headers(args, target: str):
     from app.services.security_headers import check_security_headers
     r = check_security_headers(target)
@@ -156,6 +170,7 @@ COMMANDS: Dict[str, Tuple[Callable, str]] = {
     'tls': (cmd_tls, 'TLS protocol/cipher grade'),
     'mailtls': (cmd_mailtls, 'mail server STARTTLS/TLS grade (domain = all MX hosts)'),
     'expiry': (cmd_expiry, 'domain registration expiry (RDAP)'),
+    'mtasts': (cmd_mtasts, 'MTA-STS policy and TLS-RPT record'),
     'headers': (cmd_headers, 'HTTP security headers score'),
     'email': (cmd_email, 'email authentication score (SPF/DKIM/DMARC/MTA-STS)'),
     'chain': (cmd_chain, 'certificate chain completeness'),
@@ -176,6 +191,9 @@ def build_parser() -> argparse.ArgumentParser:
         if name in ('check', 'tls', 'chain'):
             p.add_argument('--port', type=int, default=443)
             p.add_argument('--timeout', type=int, default=10 if name != 'tls' else 5)
+        if name == 'mtasts':
+            p.add_argument('--require-enforce', action='store_true', help='fail unless the policy mode is enforce')
+            p.add_argument('--verify-mx', action='store_true', help='also test STARTTLS and certificates of the MX hosts')
         if name == 'expiry':
             p.add_argument('--fail-under', type=int, default=30, metavar='DAYS',
                            help='fail when the registration expires in fewer days (default 30)')
