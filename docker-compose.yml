@@ -29,6 +29,7 @@ services:
       # Expiry alerts (all optional; see backend/app/services/alerts.py)
       - CT_API_URL=${CT_API_URL:-https://crt.sh/}
       - CT_CACHE_SECONDS=${CT_CACHE_SECONDS:-900}
+      - RDAP_CACHE_SECONDS=${RDAP_CACHE_SECONDS:-21600}
       - RBL_RESOLVERS=${RBL_RESOLVERS:-}
       - RBL_LISTS=${RBL_LISTS:-}
       - ACME_DNS_RESOLVERS=${ACME_DNS_RESOLVERS:-1.1.1.1,8.8.8.8}

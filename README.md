@@ -72,6 +72,7 @@ Sample data from a local demo environment (fictional `acme-corp.example` hosts, 
 | Security Headers | Audit HSTS, CSP, framing, referrer policy and cookie flags with a 0–100 score |
 | Chain Builder | Build a correct, ordered `fullchain.pem`: fetches missing intermediates (AIA), checks the Mozilla trust store, repairs a server's chain |
 | CT Lookup | Every certificate ever logged in Certificate Transparency for a domain, subdomain discovery, unexpected-CA alerts, one-click add to the monitor |
+| Domain Expiry | When a domain registration expires, registrar, status and name servers, straight from the registry over RDAP; monitored hosts are checked automatically and use the same expiry alerts |
 | Mail Server TLS | STARTTLS / implicit-TLS test of SMTP, IMAP and POP3 servers, or of every MX host of a domain: protocols, ciphers, certificate, A–F grade |
 | Private CA | Create an internal root CA and issue server / client (mTLS) certificates, sign CSRs, export PKCS#12. Nothing is stored |
 | ACME / Let's Encrypt | Issue certificates (manual dns-01/http-01 or automatic via Cloudflare, RFC 2136, acme-dns), wildcards, external account binding, renewal-window check. Nothing is stored |
@@ -239,6 +240,7 @@ CORS_ORIGINS=                               # comma-separated origins; empty = C
 
 # Integrations (all optional)
 CT_API_URL=https://crt.sh/                  # Certificate Transparency search service
+RDAP_CACHE_SECONDS=21600                    # cache domain registration lookups; 0 disables
 CT_CACHE_SECONDS=900                        # cache CT results per domain (crt.sh rate-limits by IP); 0 disables
 RBL_RESOLVERS=                              # your own DNS resolver for blocklist checks (public resolvers are often refused)
 RBL_LISTS=                                  # comma-separated DNSBL zones to replace the defaults
@@ -527,6 +529,10 @@ The domain name you search for is sent to crt.sh (or `CT_API_URL`). crt.sh rate-
 | `POST /api/email/dmarc/report` | `{xml}` or `{file_base64}` (xml, .gz or .zip): per-source pass/fail summary of an aggregate report (5 MB limit) |
 | `POST /api/email/blocklist` | `{target}`: IPv4 address or domain, checked against DNS blocklists. Public resolvers are often refused by Spamhaus; set `RBL_RESOLVERS` |
 
+### Domain registration expiry
+
+`POST /api/check/domain-registration` with `{domain}` queries the registry over RDAP (the server comes from the IANA bootstrap list; sub-domains are reduced to the registered domain) and returns expiry date and days left, registrar, status flags (hold, redemption, pending delete), name servers and DNSSEC. Hosts in the Domain Monitor are looked up about once a day, shown on their card, and raise the usual expiry alerts at `ALERT_THRESHOLDS` (one alert per registered domain, however many hosts share it). Some registries (for example `.de`) do not publish an expiry date over RDAP; the result says so. Results are cached for `RDAP_CACHE_SECONDS` (default 6 hours).
+
 ### Mail server TLS
 
 `POST /api/check/mail-tls` with `{host, port?, protocol?, mode?, deep?}` tests one server (`protocol` smtp/imap/pop3 and `mode` starttls/implicit default from the port: 25/587 SMTP, 465 SMTPS, 143/993 IMAP, 110/995 POP3), or with `{domain}` every MX host on port 25. It checks that STARTTLS is offered, flags authentication advertised before STARTTLS, and reports protocols, negotiated ciphers, certificate validity for the host name and an A–F grade. `deep` enumerates every cipher suite (many connections; mail servers rate-limit, so the default records only the negotiated cipher). Many hosting providers block outbound port 25.
@@ -561,6 +567,7 @@ The checks also run from a terminal or CI pipeline, with exit code `0` = pass, `
 ```bash
 bin/ssl-toolkit check example.com --fail-under 14        # certificate expiry and hostname match
 bin/ssl-toolkit tls example.com --min-grade B            # TLS protocol/cipher grade
+bin/ssl-toolkit expiry example.com --fail-under 30         # domain registration (RDAP)
 bin/ssl-toolkit mailtls example.com --min-grade B          # all MX hosts, STARTTLS + TLS grade
 bin/ssl-toolkit mailtls mail.example.com:993 --protocol imap --mode implicit
 bin/ssl-toolkit headers https://example.com --min-score 70

@@ -50,7 +50,7 @@ def _now() -> str:
 
 
 def _public_view(entry: Dict, include_history: bool = False) -> Dict:
-    view = {k: v for k, v in entry.items() if k not in ('history', 'notified')}
+    view = {k: v for k, v in entry.items() if k not in ('history', 'notified', 'registration_notified')}
     if include_history:
         view['history'] = entry.get('history', [])
     return view
@@ -75,6 +75,8 @@ def _new_entry(hostname: str, port: int, label: Optional[str] = None, tags: Opti
         'changes': [],
         'history': [],
         'notified': [],
+        'registration': None,
+        'registration_notified': [],
     }
 
 
@@ -248,19 +250,50 @@ def check_domain(domain_id: str) -> Dict:
     data = _load()
     for entry in data['domains']:
         if entry['id'] == domain_id:
-            events = _check_entry(entry)
+            events = _check_entry(entry, force_registration=True)
             _save(data)
             return {'success': True, 'domain': _public_view(entry), 'events': events}
     return {'success': False, 'message': 'Domain not found'}
 
 
-def _check_entry(entry: Dict) -> List[Dict]:
+REGISTRATION_REFRESH_HOURS = 20  # registration dates change rarely and RDAP servers rate-limit
+
+
+def refresh_registration(entry: Dict, force: bool = False) -> None:
+    """Update entry['registration'] from RDAP (at most about once a day unless forced)."""
+    from app.services import domain_registration as dr
+    reg = entry.get('registration') or {}
+    checked = reg.get('checked_at')
+    if not force and checked:
+        age = (datetime.now(timezone.utc) - datetime.fromisoformat(checked)).total_seconds() / 3600
+        if age < REGISTRATION_REFRESH_HOURS:
+            return
+    try:
+        info = dr.lookup(entry['hostname'])
+    except ValueError:
+        entry['registration'] = None  # an IP address or a name RDAP cannot cover
+        return
+    except Exception as e:  # never let RDAP trouble break a certificate check; keep the last known data
+        reg['checked_at'] = _now()
+        reg['error'] = str(e)[:200]
+        entry['registration'] = reg
+        return
+    entry['registration'] = {
+        'domain': info['domain'], 'registrar': info['registrar'], 'expires': info['expires'],
+        'days_until_expiry': info['days_until_expiry'], 'status': info['status'],
+        'checked_at': _now(), 'error': None,
+    }
+
+
+def _check_entry(entry: Dict, force_registration: bool = False) -> List[Dict]:
     try:
         cert_info = _fetch_single_certificate(entry['hostname'], entry['port'], 10)
         error = None if cert_info else 'Unable to retrieve certificate'
     except Exception as e:  # defensive: never let one domain break a scheduled run
         cert_info, error = None, str(e)
-    return apply_check_result(entry, cert_info, error)
+    events = apply_check_result(entry, cert_info, error)
+    refresh_registration(entry, force=force_registration)
+    return events
 
 
 def check_all_domains() -> List[Dict]:
@@ -279,6 +312,14 @@ def check_all_domains() -> List[Dict]:
 
 def all_entries() -> List[Dict]:
     return _load()['domains']
+
+
+def mark_registration_notified(domain_id: str, thresholds: List[int]) -> None:
+    data = _load()
+    for entry in data['domains']:
+        if entry['id'] == domain_id:
+            entry['registration_notified'] = sorted(set(entry.get('registration_notified', [])) | set(thresholds))
+    _save(data)
 
 
 def mark_notified(domain_id: str, thresholds: List[int]) -> None:

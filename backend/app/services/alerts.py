@@ -76,6 +76,8 @@ def collect_expiry_events() -> List[Dict]:
                        'detail': _expiry_detail(entry['hostname'], days)})
         domain_monitor.mark_notified(entry['id'], [t for t in thresholds + [0] if t >= threshold])
 
+    events.extend(_collect_registration_events(thresholds))
+
     cert_data = cert_monitor._load_monitored_certificates()
     dirty = False
     for cert in cert_data['certificates']:
@@ -95,6 +97,29 @@ def collect_expiry_events() -> List[Dict]:
     return events
 
 
+def _collect_registration_events(thresholds: List[int]) -> List[Dict]:
+    """Domain registration (RDAP) expiry; one alert per registered domain even if many hosts share it."""
+    events, emitted = [], set()
+    for entry in domain_monitor.all_entries():
+        reg = entry.get('registration') or {}
+        if not reg.get('expires'):
+            continue
+        days = _days_left(reg['expires'])
+        threshold = applicable_threshold(days, thresholds)
+        if threshold is None or threshold in entry.get('registration_notified', []):
+            continue
+        if reg['domain'] not in emitted:
+            emitted.add(reg['domain'])
+            detail = (f"{reg['domain']}: domain registration EXPIRED {-days} day(s) ago" if days < 0
+                      else f"{reg['domain']}: domain registration expires in {days} day(s)"
+                      + (f" (registrar {reg['registrar']})" if reg.get('registrar') else ''))
+            events.append({'kind': 'expired' if days < 0 else 'expiring', 'source': 'registration',
+                           'domain_id': entry['id'], 'hostname': reg['domain'], 'days_left': days,
+                           'not_after': reg['expires'], 'detail': detail})
+        domain_monitor.mark_registration_notified(entry['id'], [t for t in thresholds + [0] if t >= threshold])
+    return events
+
+
 def _expiry_detail(name: str, days: int) -> str:
     if days < 0:
         return f'{name}: certificate EXPIRED {-days} day(s) ago'
@@ -102,7 +127,7 @@ def _expiry_detail(name: str, days: int) -> str:
 
 
 def format_message(events: List[Dict]) -> str:
-    lines = ['SSL Toolkit certificate alerts:', '']
+    lines = ['SSL Toolkit alerts:', '']
     lines += [f"- [{e['kind']}] {e['detail']}" for e in events]
     return '\n'.join(lines)
 
@@ -143,7 +168,7 @@ def send_webhook(text: str, events: List[Dict]) -> Dict:
         return {'channel': 'webhook', 'sent': False, 'reason': str(e)}
 
 
-def dispatch(events: List[Dict], subject: str = 'SSL Toolkit: certificate alerts') -> List[Dict]:
+def dispatch(events: List[Dict], subject: str = 'SSL Toolkit: expiry alerts') -> List[Dict]:
     if not events:
         return []
     text = format_message(events)

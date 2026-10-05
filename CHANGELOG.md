@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ## [Phase 10] — in progress
 
 ### Added
+- **Domain registration expiry** (`POST /api/check/domain-registration`, `ssl-toolkit expiry`): RDAP lookup straight at the registry (IANA bootstrap), registrar, status flags, name servers; monitored hosts are checked daily and raise expiry alerts, one per registered domain
 - **Mail server TLS test** (`POST /api/check/mail-tls`, `ssl-toolkit mailtls`): STARTTLS and implicit-TLS checks for SMTP, IMAP and POP3, per MX host for a domain, with protocol/cipher grading and certificate validation
 
 ---

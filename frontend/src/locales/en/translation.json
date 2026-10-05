@@ -25,6 +25,7 @@
     "sslConfigGenerator": "SSL Config Generator",
     "acme": "ACME / Let's Encrypt",
     "privateCA": "Private CA",
+    "domainExpiry": "Domain Expiry",
     "mailTls": "Mail Server TLS",
     "tlsScanner": "TLS Scanner",
     "securityHeaders": "Security Headers",
@@ -133,6 +134,11 @@
       "title": "SSL Config Generator",
       "description": "Generate production-ready TLS configuration snippets for web servers",
       "features": ["Nginx / Apache / HAProxy", "HSTS support", "OCSP stapling", "TLS 1.2 & 1.3"]
+    },
+    "domainExpiry": {
+      "title": "Domain Expiry",
+      "description": "Check when a domain registration expires, directly over RDAP",
+      "features": ["RDAP lookup", "Registrar & status", "Expiry alerts", "No third-party WHOIS"]
     },
     "mailTls": {
       "title": "Mail Server TLS",

@@ -1103,6 +1103,24 @@ def check_tls_configuration():
         return _internal_error(e, 'Scan failed')
 
 
+@ssl_bp.route('/check/domain-registration', methods=['POST'])
+def check_domain_registration():
+    """Domain registration expiry, registrar and status via RDAP"""
+    from app.services import domain_registration
+    from app.utils.net_safety import UnsafeTargetError
+    data = request.get_json(silent=True) or {}
+    if not data.get('domain'):
+        return jsonify({'error': 'Domain is required'}), 400
+    try:
+        return jsonify({'success': True, 'result': domain_registration.lookup(data['domain'])})
+    except (ValueError, UnsafeTargetError) as e:
+        return jsonify({'error': str(e)}), 400
+    except domain_registration.RDAPError as e:
+        return jsonify({'error': str(e)}), 502
+    except Exception as e:
+        return _internal_error(e, 'Domain registration lookup failed')
+
+
 @ssl_bp.route('/check/mail-tls', methods=['POST'])
 def check_mail_server_tls():
     """STARTTLS / implicit-TLS test of an SMTP, IMAP or POP3 server, or of every MX host of a domain"""

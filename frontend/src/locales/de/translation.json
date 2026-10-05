@@ -25,6 +25,7 @@
     "sslConfigGenerator": "SSL-Konfigurations-Generator",
     "acme": "ACME / Let's Encrypt",
     "privateCA": "Private CA",
+    "domainExpiry": "Domain-Ablauf",
     "mailTls": "Mailserver-TLS",
     "tlsScanner": "TLS-Scanner",
     "securityHeaders": "Sicherheits-Header",
@@ -133,6 +134,11 @@
       "title": "SSL-Konfigurations-Generator",
       "description": "Produktionsreife TLS-Konfigurationsschnipsel für Webserver generieren",
       "features": ["Nginx / Apache / HAProxy", "HSTS-Unterstützung", "OCSP-Stapling", "TLS 1.2 & 1.3"]
+    },
+    "domainExpiry": {
+      "title": "Domain-Ablauf",
+      "description": "Ablauf der Domain-Registrierung direkt per RDAP prüfen",
+      "features": ["RDAP-Abfrage", "Registrar & Status", "Ablauf-Warnungen", "Kein Dritt-WHOIS"]
     },
     "mailTls": {
       "title": "Mailserver-TLS",
