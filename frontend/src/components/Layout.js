@@ -60,6 +60,7 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ColorModeContext } from '../contexts/ColorModeContext';
+import ToolSearch from './ToolSearch';
 
 const drawerWidth = 240;
 
@@ -117,6 +118,8 @@ const menuGroups = [
     ],
   },
 ];
+
+const searchItems = menuGroups.flatMap((g) => g.items);
 
 function Layout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -191,9 +194,11 @@ function Layout({ children }) {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, display: { xs: 'none', md: 'block' } }}>
             {t('app.name')}
           </Typography>
+          <Box sx={{ flexGrow: 1, display: { xs: 'block', md: 'none' } }} />
+          <ToolSearch items={searchItems} />
           <Tooltip title={theme.palette.mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
             <IconButton color="inherit" onClick={toggleColorMode} aria-label="toggle dark mode">
               {theme.palette.mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}

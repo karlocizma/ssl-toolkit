@@ -288,11 +288,11 @@ function EmailDeliverability() {
         Email Deliverability
       </Typography>
       <Typography variant="body1" color="text.secondary" paragraph>
-        Check whether mail from your domain is authenticated and trusted: an overall score, SPF lookup counting, DKIM selector discovery, DMARC report analysis and blocklist checks.
+        Check whether mail from your domain is authenticated and trusted: an overall score, SPF lookup counting and flattening (tab &quot;SPF flatten&quot;), DKIM selector discovery, DMARC report analysis (tab &quot;DMARC reports + advisor&quot; merges many reports and tells you whether it is safe to tighten the policy) and blocklist checks.
       </Typography>
       <Paper sx={{ p: 3 }}>
         <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" sx={{ mb: 2 }}>
-          <Tab label="Overview" /><Tab label="SPF" /><Tab label="SPF flatten" /><Tab label="DKIM" /><Tab label="DMARC report" /><Tab label="DMARC reports" /><Tab label="Blocklists" />
+          <Tab label="Overview" /><Tab label="SPF" /><Tab label="SPF flatten" /><Tab label="DKIM" /><Tab label="DMARC single report" /><Tab label="DMARC reports + advisor" /><Tab label="Blocklists" />
         </Tabs>
         {tab === 0 && <Overview />}
         {tab === 1 && <Spf />}
