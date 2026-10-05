@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [Phase 10] — in progress
+
+### Added
+- **Mail server TLS test** (`POST /api/check/mail-tls`, `ssl-toolkit mailtls`): STARTTLS and implicit-TLS checks for SMTP, IMAP and POP3, per MX host for a domain, with protocol/cipher grading and certificate validation
+
+---
+
 ## [Phase 9] — 2026-10-02
 
 ### Added

@@ -19,6 +19,13 @@ REQUEST_BODIES = {
     '/check/domain': {'required': ['hostname'], 'properties': {**_HOST, 'timeout': {'type': 'integer', 'default': 10}}},
     '/check/chain': {'required': ['hostname'], 'properties': {**_HOST, 'timeout': {'type': 'integer', 'default': 10}}},
     '/check/tls': {'required': ['hostname'], 'properties': {**_HOST, 'timeout': {'type': 'number', 'default': 5}}},
+    '/check/mail-tls': {'properties': {
+        'host': {**_STR, 'example': 'mail.example.com', 'description': 'Mail server (use this or domain)'},
+        'domain': {**_STR, 'example': 'example.com', 'description': 'Test every MX host of the domain on port 25'},
+        'port': {'type': 'integer', 'default': 25},
+        'protocol': {'type': 'string', 'enum': ['smtp', 'imap', 'pop3'], 'description': 'Defaults from the port'},
+        'mode': {'type': 'string', 'enum': ['starttls', 'implicit'], 'description': 'Defaults from the port'},
+        'deep': {'type': 'boolean', 'default': False, 'description': 'Enumerate every cipher (many connections)'}}},
     '/check/autodiscover': {'properties': {
         'domain': {**_STR, 'example': 'example.com'},
         'email': {**_STR, 'description': 'Optional mailbox to test with (defaults to test@<domain>)'}}},

@@ -51,10 +51,15 @@ def _context(version: ssl.TLSVersion) -> ssl.SSLContext:
     return ctx
 
 
-def _handshake(hostname: str, port: int, ctx: ssl.SSLContext, timeout: float) -> Optional[Dict]:
-    """Return negotiated details, or None if the handshake was refused."""
+def _handshake(hostname: str, port: int, ctx: ssl.SSLContext, timeout: float, opener=None) -> Optional[Dict]:
+    """Return negotiated details, or None if the handshake was refused.
+
+    opener(sock) runs a plaintext prelude (e.g. SMTP STARTTLS) before the TLS handshake.
+    """
     try:
         with safe_create_connection((hostname, port), timeout=timeout) as sock:
+            if opener:
+                opener(sock)
             with ctx.wrap_socket(sock, server_hostname=hostname) as ssock:
                 name, _, bits = ssock.cipher()
                 return {'cipher': name, 'bits': bits, 'version': ssock.version()}
@@ -64,7 +69,7 @@ def _handshake(hostname: str, port: int, ctx: ssl.SSLContext, timeout: float) ->
         return None
 
 
-def _supported_ciphers(hostname: str, port: int, version: ssl.TLSVersion, timeout: float) -> List[Dict]:
+def _supported_ciphers(hostname: str, port: int, version: ssl.TLSVersion, timeout: float, opener=None) -> List[Dict]:
     """Probe each cipher individually (TLS <= 1.2)."""
     names = [c['name'] for c in _context(version).get_ciphers() if c.get('protocol') != 'TLSv1.3']
 
@@ -74,7 +79,7 @@ def _supported_ciphers(hostname: str, port: int, version: ssl.TLSVersion, timeou
             ctx.set_ciphers(f'{name}:@SECLEVEL=0')
         except ssl.SSLError:
             return None
-        result = _handshake(hostname, port, ctx, timeout)
+        result = _handshake(hostname, port, ctx, timeout, opener)
         return result['cipher'] if result and result['cipher'] == name else None
 
     with ThreadPoolExecutor(max_workers=8) as pool:
@@ -126,13 +131,16 @@ def grade_results(protocols: Dict[str, Dict], certificate_trusted: Optional[bool
     return {'grade': cap, 'findings': findings}
 
 
-def scan_tls(hostname: str, port=443, timeout: float = 5.0) -> Dict:
+def scan_tls(hostname: str, port=443, timeout: float = 5.0, opener=None, cert_check=None,
+             enumerate_ciphers: bool = True) -> Dict:
+    """Scan protocols and ciphers. opener/cert_check let mail scanners handle STARTTLS;
+    enumerate_ciphers=False only records the negotiated cipher (far fewer connections)."""
     port = validate_port(port)
     timeout = max(1.0, min(float(timeout), 10.0))
     protocols = {}
     for label, version in PROTOCOLS:
         try:
-            neg = _handshake(hostname, port, _context(version), timeout)
+            neg = _handshake(hostname, port, _context(version), timeout, opener)
         except UnsafeTargetError:
             raise
         entry = {'supported': neg is not None}
@@ -140,15 +148,19 @@ def scan_tls(hostname: str, port=443, timeout: float = 5.0) -> Dict:
             entry['negotiated_cipher'] = neg['cipher']
             if version == ssl.TLSVersion.TLSv1_3:
                 entry['ciphers'] = [{'name': neg['cipher'], 'forward_secrecy': True}]
+            elif enumerate_ciphers:
+                entry['ciphers'] = _supported_ciphers(hostname, port, version, timeout, opener)
             else:
-                entry['ciphers'] = _supported_ciphers(hostname, port, version, timeout)
+                name = neg['cipher']
+                entry['ciphers'] = [{'name': name, 'forward_secrecy': name.startswith(FORWARD_SECRET_PREFIXES),
+                                     **({'weakness': classify_cipher(name)} if classify_cipher(name) else {})}]
         protocols[label] = entry
 
     if not any(p['supported'] for p in protocols.values()):
         return {'hostname': hostname, 'port': port, 'reachable': False,
                 'error': 'No TLS handshake succeeded (host unreachable or not a TLS service)'}
 
-    cert = check_ssl_certificate(hostname, port, int(timeout) + 5)
+    cert = cert_check() if cert_check else check_ssl_certificate(hostname, port, int(timeout) + 5)
     trusted = bool(cert.get('connection_secure')) and cert.get('valid_for_hostname', True)
     graded = grade_results(protocols, trusted)
     return {'hostname': hostname, 'port': port, 'reachable': True, 'protocols': protocols,
