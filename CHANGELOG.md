@@ -6,6 +6,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- A `.env` copied from the example with inline comments (`RBL_RESOLVERS=   # your own resolver`) broke features under tools that keep the comment as part of the value (for example the error "nameserver # your own DNS resolver ... is not a valid ..." in the blocklist check). `.env.example` now has comments on their own line, the application ignores `# comments` in its own settings (never in secrets), and invalid `RBL_RESOLVERS` entries are skipped with a warning
+
 ### Added
 - **Tool search** in the top bar (and Ctrl/Cmd+K): finds a tool by its name, description or typical terms (for example `flatten`, `advisor`, `starttls`, `rdap`), in English and German
 ### Changed

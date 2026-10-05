@@ -7,6 +7,7 @@ import base64
 import gzip
 import io
 import ipaddress
+import logging
 import os
 import re
 import zipfile
@@ -23,6 +24,8 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 
 from app.services.sysadmin_tools import _parse_tag_record, _resolve_txt_records, validate_dmarc_record
 from app.utils.net_safety import is_public_ip, safe_get
+
+logger = logging.getLogger(__name__)
 
 MAX_REPORT_BYTES = 5 * 1024 * 1024
 SPF_LOOKUP_LIMIT = 10
@@ -55,7 +58,17 @@ def valid_domain(domain: Optional[str]) -> str:
 def _resolver() -> dns.resolver.Resolver:
     r = dns.resolver.Resolver()
     r.timeout = r.lifetime = 4
-    custom = [x.strip() for x in os.environ.get('RBL_RESOLVERS', '').split(',') if x.strip()]
+    custom = []
+    for item in os.environ.get('RBL_RESOLVERS', '').split(','):
+        item = item.strip()
+        if not item:
+            continue
+        try:
+            ipaddress.ip_address(item)
+        except ValueError:
+            logger.warning('RBL_RESOLVERS entry %r is not an IP address and is ignored', item[:40])
+            continue
+        custom.append(item)
     if custom:
         r.nameservers = custom
     return r

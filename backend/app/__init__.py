@@ -4,6 +4,10 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import os
 
+from app.utils.env import sanitize_env
+
+sanitize_env()  # before anything reads its settings (see app/utils/env.py)
+
 def get_api_key_or_ip():
     """Get API key from header or fall back to IP address for rate limiting"""
     api_key = request.headers.get('X-API-Key')
