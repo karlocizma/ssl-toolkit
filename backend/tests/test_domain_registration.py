@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from app.services import alerts, domain_monitor
+from app.services import alerts, cert_monitor, domain_monitor
 from app.services import domain_registration as dr
 
 NOW = datetime(2026, 10, 5, tzinfo=timezone.utc)
@@ -118,6 +118,8 @@ def test_route_validation_and_error_mapping(client, monkeypatch):
 @pytest.fixture
 def monitor(tmp_path, monkeypatch):
     monkeypatch.setattr(domain_monitor, 'DOMAIN_DATA_FILE', str(tmp_path / 'domains.json'))
+    monkeypatch.setattr(cert_monitor, 'MONITOR_DATA_FILE', str(tmp_path / 'certs.json'))
+    monkeypatch.setattr(cert_monitor, 'MONITOR_LOCK_FILE', str(tmp_path / 'certs.json.lock'))
     monkeypatch.setattr(domain_monitor, '_fetch_single_certificate', lambda h, p, t: None)
     return domain_monitor
 
