@@ -27,6 +27,7 @@
     "privateCA": "Private CA",
     "domainExpiry": "Domain-Ablauf",
     "auditLog": "Audit-Protokoll",
+    "settings": "Einstellungen",
     "shares": "Geteilte Ergebnisse",
     "search": "Werkzeuge suchen (Strg+K)",
     "searchNone": "Kein Werkzeug gefunden",
@@ -154,6 +155,11 @@
       "title": "Audit-Protokoll",
       "description": "Wer was geändert hat und wem der Zugriff verweigert wurde: manipulationssicher und exportierbar",
       "features": ["Admin-Aktionen", "Abgewiesene Logins", "Hash-Kette", "CSV-/JSON-Export"]
+    },
+    "settings": {
+      "title": "Einstellungen",
+      "description": "Alarmkanäle, Schwellenwerte und weitere Optionen im Browser ändern, ohne .env zu bearbeiten",
+      "features": ["Alarmkanäle", "E-Mail (SMTP)", "Geheimnisse nur schreibbar", "Sofort wirksam"]
     },
     "mtaSts": {
       "title": "MTA-STS & TLS-RPT",

@@ -22,6 +22,7 @@ import dns.resolver
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
+from app.services import settings_store
 from app.services.sysadmin_tools import _parse_tag_record, _resolve_txt_records, validate_dmarc_record
 from app.utils.net_safety import is_public_ip, safe_get
 
@@ -59,7 +60,7 @@ def _resolver() -> dns.resolver.Resolver:
     r = dns.resolver.Resolver()
     r.timeout = r.lifetime = 4
     custom = []
-    for item in os.environ.get('RBL_RESOLVERS', '').split(','):
+    for item in (settings_store.get('RBL_RESOLVERS') or '').split(','):
         item = item.strip()
         if not item:
             continue
@@ -452,7 +453,7 @@ def check_blocklists(target: str) -> Dict:
         ips = ips[:6]
         with ThreadPoolExecutor(max_workers=6) as pool:
             domain_checks = list(pool.map(lambda z: _query_rbl(z, domain), DEFAULT_RBLS['domain']))
-    zones = [z.strip() for z in os.environ.get('RBL_LISTS', '').split(',') if z.strip()] or DEFAULT_RBLS['ip']
+    zones = [z.strip() for z in (settings_store.get('RBL_LISTS') or '').split(',') if z.strip()] or DEFAULT_RBLS['ip']
     jobs = [(ip_, z) for ip_ in ips for z in zones]
     with ThreadPoolExecutor(max_workers=12) as pool:
         raw = list(pool.map(lambda j: {**_query_rbl(j[1], _reverse_ip(j[0])), 'ip': j[0]}, jobs))

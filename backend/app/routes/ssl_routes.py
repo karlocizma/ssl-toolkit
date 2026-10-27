@@ -6,6 +6,7 @@ import base64
 import hmac
 from cryptography.hazmat.primitives import serialization
 from functools import wraps
+from app.services import settings_store
 
 from app.utils.ssl_utils import (
     get_certificate_info, get_csr_info, generate_private_key,
@@ -78,7 +79,7 @@ def require_monitor_access(f):
     """The monitor stores shared data, so it needs credentials unless MONITOR_PUBLIC=true."""
     @wraps(f)
     def decorated(*args, **kwargs):
-        if os.environ.get('MONITOR_PUBLIC', '').lower() not in ('1', 'true', 'yes'):
+        if (settings_store.get('MONITOR_PUBLIC') or '').lower() not in ('1', 'true', 'yes'):
             if not _has_monitor_access():
                 return jsonify({'error': 'Authentication required: send an API key or the admin token '
                                          'in the X-Access-Token header (or set MONITOR_PUBLIC=true)'}), 401
@@ -980,6 +981,27 @@ def audit_export():
     body = audit_log.export(fmt, **_audit_filters())
     mime = 'text/csv' if fmt == 'csv' else 'application/json'
     return current_app.response_class(body, mimetype=mime, headers={'Content-Disposition': f'attachment; filename=audit-log.{fmt}'})
+
+
+@ssl_bp.route('/admin/settings', methods=['GET'])
+@require_admin_token
+def settings_get():
+    """Editable settings with their effective values; secret values are never returned, only whether they are set"""
+    return jsonify({'success': True, 'settings': settings_store.view()})
+
+
+@ssl_bp.route('/admin/settings', methods=['PUT'])
+@require_admin_token
+def settings_update():
+    """Save changed settings ({"values": {NAME: value}}); {"reset": [NAME]} goes back to the .env value"""
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict) or not isinstance(body.get('values', {}), dict) or not isinstance(body.get('reset', []), list):
+        return jsonify({'error': 'Expected {"values": {...}, "reset": [...]}'}), 400
+    try:
+        changed = settings_store.save(body.get('values'), body.get('reset'))
+    except settings_store.SettingsError as e:
+        return jsonify({'error': 'Some settings are invalid', 'errors': e.errors}), 400
+    return jsonify({'success': True, 'changed': changed, 'settings': settings_store.view()})
 
 
 @ssl_bp.route('/admin/apikey/validate', methods=['POST'])

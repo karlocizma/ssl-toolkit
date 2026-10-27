@@ -11,6 +11,7 @@ from typing import List, Tuple
 from urllib.parse import urlsplit
 
 import requests
+from app.services import settings_store
 from requests.adapters import HTTPAdapter
 from urllib3.connection import HTTPConnection, HTTPSConnection
 from urllib3.connectionpool import HTTPConnectionPool, HTTPSConnectionPool
@@ -23,7 +24,7 @@ class UnsafeTargetError(ValueError):
 
 
 def _allow_private() -> bool:
-    return os.environ.get('ALLOW_PRIVATE_TARGETS', '').lower() in ('1', 'true', 'yes')
+    return (settings_store.get('ALLOW_PRIVATE_TARGETS') or '').lower() in ('1', 'true', 'yes')
 
 
 def validate_port(port) -> int:

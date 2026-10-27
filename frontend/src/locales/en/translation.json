@@ -27,6 +27,7 @@
     "privateCA": "Private CA",
     "domainExpiry": "Domain Expiry",
     "auditLog": "Audit Log",
+    "settings": "Settings",
     "shares": "Shared Results",
     "search": "Search tools (Ctrl+K)",
     "searchNone": "No tool matches",
@@ -154,6 +155,11 @@
       "title": "Audit Log",
       "description": "Who changed what, and who was refused: tamper-evident and exportable",
       "features": ["Admin actions", "Refused logins", "Hash-chained", "CSV / JSON export"]
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Change alert channels, thresholds and other options from the browser, no .env editing",
+      "features": ["Alert channels", "Email (SMTP)", "Write-only secrets", "Applies instantly"]
     },
     "mtaSts": {
       "title": "MTA-STS & TLS-RPT",

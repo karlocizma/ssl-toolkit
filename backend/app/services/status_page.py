@@ -12,7 +12,7 @@ import os
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
-from app.services import domain_monitor
+from app.services import domain_monitor, settings_store
 
 EXPIRING_DAYS = 30
 CRITICAL_DAYS = 7
@@ -23,11 +23,11 @@ _COLORS = {'ok': '#2e7d32', 'pending': '#757575', 'expiring': '#ed6c02', 'critic
 
 
 def enabled() -> bool:
-    return os.environ.get('STATUS_PAGE_ENABLED', 'true').lower() not in ('0', 'false', 'no')
+    return (settings_store.get('STATUS_PAGE_ENABLED') or 'true').lower() not in ('0', 'false', 'no')
 
 
 def title() -> str:
-    return (os.environ.get('STATUS_PAGE_TITLE') or 'Certificate status')[:100]
+    return (settings_store.get('STATUS_PAGE_TITLE') or 'Certificate status')[:100]
 
 
 def _days(iso: Optional[str], now: datetime) -> Optional[int]:

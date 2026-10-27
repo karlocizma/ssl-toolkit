@@ -1,6 +1,6 @@
 """Expiry alerting and the background scheduler.
 
-Configuration (environment):
+Configuration (environment, or saved from the Settings page, which wins; see settings_store):
   ALERT_THRESHOLDS              days before expiry to alert at (default "30,14,7,1")
   ALERT_CHECK_INTERVAL_HOURS    scheduler period (default 12; 0 disables the scheduler)
   ALERT_WEBHOOK_URL             Slack or any generic JSON webhook (receives {"text", "events"})
@@ -22,7 +22,7 @@ from typing import Dict, List, Optional
 
 import requests
 
-from app.services import cert_monitor, domain_monitor
+from app.services import cert_monitor, domain_monitor, settings_store
 
 logger = logging.getLogger(__name__)
 _SCHEDULER_LOCK = os.environ.get('SCHEDULER_LOCK_FILE', '/app/data/scheduler.lock')
@@ -30,7 +30,7 @@ _scheduler_lock_fh = None  # held for the life of the process by the elected wor
 
 
 def get_thresholds() -> List[int]:
-    raw = os.environ.get('ALERT_THRESHOLDS', '30,14,7,1')
+    raw = settings_store.get('ALERT_THRESHOLDS') or '30,14,7,1'
     values = {int(t) for t in raw.split(',') if t.strip().isdigit()}
     return sorted(values, reverse=True) or [30, 14, 7, 1]
 
@@ -40,10 +40,10 @@ def get_config() -> Dict:
     return {
         'thresholds': get_thresholds(),
         'interval_hours': _interval_hours(),
-        'email_configured': bool(os.environ.get('SMTP_HOST') and os.environ.get('ALERT_EMAIL_TO')),
-        'email_recipients': [r.strip() for r in os.environ.get('ALERT_EMAIL_TO', '').split(',') if r.strip()],
-        'webhook_configured': bool(os.environ.get('ALERT_WEBHOOK_URL')),
-        'teams_configured': bool(os.environ.get('ALERT_TEAMS_WEBHOOK_URL')),
+        'email_configured': bool(settings_store.get('SMTP_HOST') and settings_store.get('ALERT_EMAIL_TO')),
+        'email_recipients': [r.strip() for r in (settings_store.get('ALERT_EMAIL_TO') or '').split(',') if r.strip()],
+        'webhook_configured': bool(settings_store.get('ALERT_WEBHOOK_URL')),
+        'teams_configured': bool(settings_store.get('ALERT_TEAMS_WEBHOOK_URL')),
     }
 
 
@@ -137,20 +137,20 @@ def format_message(events: List[Dict]) -> str:
 
 
 def send_email(subject: str, body: str) -> Dict:
-    host, to = os.environ.get('SMTP_HOST'), os.environ.get('ALERT_EMAIL_TO')
+    host, to = settings_store.get('SMTP_HOST'), settings_store.get('ALERT_EMAIL_TO')
     if not host or not to:
         return {'channel': 'email', 'sent': False, 'reason': 'not configured'}
     msg = EmailMessage()
     msg['Subject'] = subject
-    msg['From'] = os.environ.get('ALERT_EMAIL_FROM', os.environ.get('SMTP_USER', 'ssl-toolkit@localhost'))
+    msg['From'] = settings_store.get('ALERT_EMAIL_FROM') or settings_store.get('SMTP_USER') or 'ssl-toolkit@localhost'
     msg['To'] = to
     msg.set_content(body)
     try:
-        with smtplib.SMTP(host, int(os.environ.get('SMTP_PORT', '587')), timeout=15) as smtp:
-            if os.environ.get('SMTP_STARTTLS', 'true').lower() != 'false':
+        with smtplib.SMTP(host, int(settings_store.get('SMTP_PORT') or 587), timeout=15) as smtp:
+            if (settings_store.get('SMTP_STARTTLS') or 'true').lower() != 'false':
                 smtp.starttls()
-            if os.environ.get('SMTP_USER'):
-                smtp.login(os.environ['SMTP_USER'], os.environ.get('SMTP_PASSWORD', ''))
+            if settings_store.get('SMTP_USER'):
+                smtp.login(settings_store.get('SMTP_USER'), settings_store.get('SMTP_PASSWORD', ''))
             smtp.send_message(msg)
         return {'channel': 'email', 'sent': True}
     except Exception as e:
@@ -159,7 +159,7 @@ def send_email(subject: str, body: str) -> Dict:
 
 
 def send_webhook(text: str, events: List[Dict]) -> Dict:
-    url = os.environ.get('ALERT_WEBHOOK_URL')
+    url = settings_store.get('ALERT_WEBHOOK_URL')
     if not url:
         return {'channel': 'webhook', 'sent': False, 'reason': 'not configured'}
     try:
@@ -189,7 +189,7 @@ def build_teams_card(events: List[Dict], title: str = 'SSL Toolkit alerts') -> D
                      'text': f'… and {len(events) - TEAMS_MAX_EVENTS} more'})
     content: Dict = {'$schema': 'http://adaptivecards.io/schemas/adaptive-card.json', 'type': 'AdaptiveCard',
                      'version': '1.4', 'body': body, 'msteams': {'width': 'Full'}}
-    app_url = os.environ.get('APP_URL', '').strip().rstrip('/')
+    app_url = (settings_store.get('APP_URL') or '').strip().rstrip('/')
     if app_url.startswith(('http://', 'https://')):
         content['actions'] = [{'type': 'Action.OpenUrl', 'title': 'Open Domain Monitor', 'url': app_url + '/domain-monitor'}]
     return {'type': 'message', 'attachments': [{'contentType': 'application/vnd.microsoft.card.adaptive',
@@ -197,7 +197,7 @@ def build_teams_card(events: List[Dict], title: str = 'SSL Toolkit alerts') -> D
 
 
 def send_teams(events: List[Dict], title: str = 'SSL Toolkit alerts') -> Dict:
-    url = os.environ.get('ALERT_TEAMS_WEBHOOK_URL')
+    url = settings_store.get('ALERT_TEAMS_WEBHOOK_URL')
     if not url:
         return {'channel': 'teams', 'sent': False, 'reason': 'not configured'}
     if not url.startswith('https://'):
@@ -231,7 +231,7 @@ def run_checks() -> Dict:
 
 def _interval_hours() -> float:
     try:
-        return float(os.environ.get('ALERT_CHECK_INTERVAL_HOURS', '12'))
+        return float(settings_store.get('ALERT_CHECK_INTERVAL_HOURS') or 12)
     except ValueError:
         return 12.0
 
@@ -254,12 +254,14 @@ def start_scheduler() -> bool:
     def loop():
         stop.wait(60)  # let the app finish booting
         while not stop.is_set():
-            try:
-                result = run_checks()
-                logger.info('Scheduled check done: %d event(s)', result['event_count'])
-            except Exception:
-                logger.exception('Scheduled check failed')
-            stop.wait(interval * 3600)
+            current = _interval_hours()  # re-read every cycle so a change in Settings applies without a restart
+            if current > 0:
+                try:
+                    result = run_checks()
+                    logger.info('Scheduled check done: %d event(s)', result['event_count'])
+                except Exception:
+                    logger.exception('Scheduled check failed')
+            stop.wait(current * 3600 if current > 0 else 300)
 
     threading.Thread(target=loop, name='ssl-toolkit-scheduler', daemon=True).start()
     return True

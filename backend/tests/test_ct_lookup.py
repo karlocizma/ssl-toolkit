@@ -165,7 +165,7 @@ def test_results_are_cached(monkeypatch):
     assert len(calls) == 1
     ct.fetch_entries('example.org')
     assert len(calls) == 2
-    monkeypatch.setattr(ct, 'CT_CACHE_SECONDS', 0)
+    monkeypatch.setenv('CT_CACHE_SECONDS', '0')
     ct._cache.clear()
     ct.fetch_entries('example.com')
     ct.fetch_entries('example.com')

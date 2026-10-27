@@ -14,10 +14,20 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional
 from urllib.parse import urljoin
 
+from app.services import settings_store
 from app.utils.net_safety import UnsafeTargetError, safe_get
 
 BOOTSTRAP_URL = os.environ.get('RDAP_BOOTSTRAP_URL', 'https://data.iana.org/rdap/dns.json')
-RDAP_CACHE_SECONDS = int(os.environ.get('RDAP_CACHE_SECONDS', '21600'))  # 6 hours; 0 disables
+
+
+def _cache_seconds() -> int:
+    """6 hours by default; 0 disables the cache; editable in Settings."""
+    try:
+        return max(0, int(settings_store.get('RDAP_CACHE_SECONDS') or 21600))
+    except ValueError:
+        return 21600
+
+
 _BOOTSTRAP_TTL = 86400
 _NAME_RE = re.compile(r'^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$')
 _lock = threading.Lock()
@@ -170,10 +180,10 @@ def lookup(domain: str) -> Dict:
             except ValueError:
                 raise RDAPError('The RDAP server returned an invalid response')
             result['queried'] = name
-            if RDAP_CACHE_SECONDS > 0:
+            if _cache_seconds() > 0:
                 if len(_cache) > 500:
                     _cache.clear()
-                _cache[name] = (time.time() + RDAP_CACHE_SECONDS, result)
+                _cache[name] = (time.time() + _cache_seconds(), result)
             return result
         if resp.status_code == 429:
             raise RDAPError('The RDAP server is rate-limiting this server (HTTP 429); try again in a few minutes')

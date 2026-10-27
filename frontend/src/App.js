@@ -28,6 +28,7 @@ import MailTLS from './components/MailTLS';
 import DomainExpiry from './components/DomainExpiry';
 import MailTransport from './components/MailTransport';
 import AuditLog from './components/AuditLog';
+import Settings from './components/Settings';
 import StatusPage from './components/StatusPage';
 import SharedReport from './components/SharedReport';
 import SharedResults from './components/SharedResults';
@@ -116,6 +117,7 @@ function App() {
                       <Route path="/mta-sts" element={<MailTransport />} />
                       <Route path="/shares" element={<SharedResults />} />
                       <Route path="/audit-log" element={<AuditLog />} />
+                      <Route path="/settings" element={<Settings />} />
                       <Route path="/security-headers" element={<SecurityHeaders />} />
                       <Route path="/domain-monitor" element={<DomainMonitor />} />
                     </Routes>

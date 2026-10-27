@@ -15,6 +15,7 @@ const ACTION_GROUPS = [
   { value: 'monitor.export', label: 'Exports' },
   { value: 'apikey', label: 'API keys' },
   { value: 'alerts', label: 'Alerts' },
+  { value: 'settings', label: 'Settings' },
 ];
 const resultColor = { success: 'success', failed: 'warning', denied: 'error' };
 const PAGE = 50;
