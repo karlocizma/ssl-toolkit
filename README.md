@@ -224,6 +224,10 @@ npm run build          # Production build
 
 ## Configuration
 
+### Settings page
+
+Most options below can also be changed in the browser under **Settings** (log in with the `ADMIN_TOKEN` from your `.env`): alert thresholds and check interval, the Slack/Teams webhooks, SMTP and recipients, monitor access, the status page, resolvers and caches, and audit log retention, with a "Send test alert" button. Saved values live in `settings.json` on the data volume, win over `.env` and apply immediately without a restart; "Back to .env" removes a saved value. Webhook URLs and the SMTP password are write-only and never shown again. `ADMIN_TOKEN`, `SECRET_KEY` and the other server-level variables stay in `.env`.
+
 ### Environment variables
 
 The `# comments` below only explain the values: do not copy them into your `.env` (some tools, such as Podman and Portainer, would treat them as part of the value). Start from `.env.example`, which keeps comments on their own lines.
@@ -597,6 +601,8 @@ Every state-changing action on the monitor, the API keys and the alert settings 
 | Endpoint (admin token) | Description |
 |------------------------|-------------|
 | `GET /api/admin/audit` | Newest first; filters `action` (prefix, e.g. `monitor.`), `actor`, `result`, `since`, `until`, `q`; `limit` (max 500) and `offset` |
+| `GET /api/admin/settings` | Editable settings with their effective value and source (`ui`, `env`, `default`); secrets only report `is_set` |
+| `PUT /api/admin/settings` | `{"values": {NAME: value}, "reset": [NAME]}`; validated as a whole (400 with per-field `errors`), audited by name only |
 | `GET /api/admin/audit/verify` | Checks the hash chain: reports the first removed or modified entry |
 | `GET /api/admin/audit/export?format=csv\|json` | Download the filtered log (CSV cells that start with `=`, `+`, `-` or `@` are neutralised for spreadsheets) |
 

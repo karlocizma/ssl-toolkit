@@ -11,13 +11,23 @@ from collections import Counter
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
+from app.services import settings_store
 from app.utils.net_safety import safe_get
 
 CT_API_URL = os.environ.get('CT_API_URL', 'https://crt.sh/')
 MAX_RAW_ENTRIES = 20000
 MAX_CERTS_RETURNED = 200
 CT_TIMEOUT = 40  # crt.sh is slow for large domains
-CT_CACHE_SECONDS = int(os.environ.get('CT_CACHE_SECONDS', '900'))  # 0 disables the cache
+
+
+def _cache_seconds() -> int:
+    """0 disables the cache; editable in Settings."""
+    try:
+        return max(0, int(settings_store.get('CT_CACHE_SECONDS') or 900))
+    except ValueError:
+        return 900
+
+
 _CACHE_MAX = 200
 _cache: Dict = {}  # (query) -> (expires_at, entries); repeat searches must not count against the CT service's rate limit
 _HOSTNAME_RE = re.compile(r'^(?=.{1,253}$)([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,63}$')
@@ -72,10 +82,10 @@ def fetch_entries(domain: str, include_subdomains: bool = True) -> List[Dict]:
                 if not isinstance(data, list):
                     raise CTLookupError('The CT service returned an unexpected response')
                 data = data[:MAX_RAW_ENTRIES]
-                if CT_CACHE_SECONDS > 0:
+                if _cache_seconds() > 0:
                     if len(_cache) >= _CACHE_MAX:
                         _cache.clear()
-                    _cache[query] = (time.time() + CT_CACHE_SECONDS, data)
+                    _cache[query] = (time.time() + _cache_seconds(), data)
                 return data
             if resp.status_code == 429:  # retrying immediately only prolongs the block
                 wait = _retry_after(resp)

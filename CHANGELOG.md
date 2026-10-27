@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [Unreleased]
+
+### Added
+- **Settings page** (`/settings`, `GET`/`PUT /api/admin/settings`): change alert channels (Slack/generic webhook, Teams, SMTP and recipients), thresholds and check interval, monitor access, status page, resolvers, caches and audit log retention from the browser, with a "Send test alert" button. The admin password is the existing `ADMIN_TOKEN`. Saved values are stored on the data volume (`settings.json`, mode 600), win over `.env`, apply immediately in every worker, and can be reset to the `.env` value. Webhook URLs and the SMTP password are write-only, changes are audited by name (never by value), and `ADMIN_TOKEN`/`SECRET_KEY` remain `.env`-only
+
+### Changed
+- The CT and RDAP cache lifetimes are read when used instead of at import, so they follow the Settings page
+
+---
+
 ## [1.1.1] — 2026-10-05
 
 ### Added

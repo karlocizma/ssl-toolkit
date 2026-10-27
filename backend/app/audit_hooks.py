@@ -43,6 +43,9 @@ RULES: Dict[Tuple[str, str], Tuple[str, Extractor, Extractor]] = {
     ('POST', '/admin/apikey/generate'): ('apikey.generate', lambda b, a, r: b.get('name'), _body_fields('rate_limit', 'description')),
     ('POST', '/admin/apikey/revoke'): ('apikey.revoke', _key_target, lambda b, a, r: {}),
     ('DELETE', '/admin/apikey/delete'): ('apikey.delete', _key_target, lambda b, a, r: {}),
+    # Names only: values can be secrets (SMTP password, webhook URLs)
+    ('PUT', '/admin/settings'): ('settings.update', lambda b, a, r: None,
+                                 lambda b, a, r: {'changed': r.get('changed') or sorted(set(b.get('values') or {}) | set(b.get('reset') or []))}),
     ('GET', '/admin/audit/export'): ('audit.export', lambda b, a, r: None, lambda b, a, r: {'format': request.args.get('format', 'json')}),
 }
 PROTECTED_PREFIXES = ('/monitor/', '/admin/', '/share')

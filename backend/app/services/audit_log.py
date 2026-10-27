@@ -23,6 +23,8 @@ import os
 from datetime import datetime, timezone
 from typing import Dict, Iterator, List, Optional
 
+from app.services import settings_store
+
 logger = logging.getLogger(__name__)
 GENESIS = '0' * 64
 MAX_FIELD = 200
@@ -34,14 +36,14 @@ def _path() -> str:
 
 def _max_bytes() -> int:
     try:
-        return max(10_000, int(os.environ.get('AUDIT_LOG_MAX_BYTES', str(5 * 1024 * 1024))))
+        return max(10_000, int(settings_store.get('AUDIT_LOG_MAX_BYTES') or 5 * 1024 * 1024))
     except ValueError:
         return 5 * 1024 * 1024
 
 
 def _keep() -> int:
     try:
-        return max(0, min(int(os.environ.get('AUDIT_LOG_KEEP', '5')), 50))
+        return max(0, min(int(settings_store.get('AUDIT_LOG_KEEP') or 5), 50))
     except ValueError:
         return 5
 

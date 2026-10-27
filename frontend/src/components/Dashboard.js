@@ -40,6 +40,7 @@ import {
   Event as EventIcon,
   Shield as ShieldIcon,
   History as HistoryIcon,
+  Settings as SettingsIcon,
   Share as ShareIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -221,6 +222,14 @@ export const getTools = (t) => [
     path: '/audit-log',
     color: 'error',
     featuresKeys: ['tools.auditLog.features.0', 'tools.auditLog.features.1', 'tools.auditLog.features.2', 'tools.auditLog.features.3']
+  },
+  {
+    titleKey: 'tools.settings.title',
+    descriptionKey: 'tools.settings.description',
+    icon: <SettingsIcon sx={{ fontSize: 40 }} />,
+    path: '/settings',
+    color: 'primary',
+    featuresKeys: ['tools.settings.features.0', 'tools.settings.features.1', 'tools.settings.features.2', 'tools.settings.features.3']
   },
   {
     titleKey: 'tools.mtaSts.title',

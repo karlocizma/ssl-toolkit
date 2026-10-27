@@ -171,6 +171,12 @@ export const auditAPI = {
   exportData: (format, params) => api.get('/admin/audit/export', { params: { ...params, format }, responseType: 'blob' })
 };
 
+// Settings editable from the UI (admin token required); secret values are never returned
+export const settingsAPI = {
+  get: () => api.get('/admin/settings'),
+  save: (values, reset = []) => api.put('/admin/settings', { values, reset })
+};
+
 // Sysadmin helpers
 export const sysAdminAPI = {
   generateDMARC: (data) => api.post('/dmarc/generate', data),

@@ -15,6 +15,7 @@ const KEYWORDS = {
   '/domain-expiry': 'rdap whois registration registrar expiry domain ablauf',
   '/domain-monitor': 'monitor alerts alert teams webhook email status page badge public export import überwachung',
   '/audit-log': 'audit log verify hash chain protokoll',
+  '/settings': 'settings admin password token alerts webhook teams smtp email status page thresholds einstellungen konfiguration',
   '/shares': 'share link shared export report snapshot teilen geteilt',
   '/ct-lookup': 'certificate transparency crt.sh subdomains',
   '/ssl-checker': 'certificate check ocsp crl expiry website https',

@@ -16,6 +16,7 @@ import dns.tsigkeyring
 import dns.update
 import requests
 
+from app.services import settings_store
 from app.utils.net_safety import UnsafeTargetError, resolve_public, validate_port
 
 CLOUDFLARE_API = 'https://api.cloudflare.com/client/v4'
@@ -161,7 +162,7 @@ def build_provider(cfg: Dict):
 
 
 def _resolvers() -> List[str]:
-    raw = os.environ.get('ACME_DNS_RESOLVERS', '1.1.1.1,8.8.8.8')
+    raw = settings_store.get('ACME_DNS_RESOLVERS') or '1.1.1.1,8.8.8.8'
     return [r.strip() for r in raw.split(',') if r.strip()]
 
 
