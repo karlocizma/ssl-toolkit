@@ -39,6 +39,7 @@ ssl-toolkit/
 │   │   │   ├── chain_builder.py   # Build a correct fullchain.pem (AIA fetch, trust store)
 │   │   │   ├── ct_lookup.py       # Certificate Transparency (crt.sh)
 │   │   │   ├── private_ca.py      # Stateless mini CA
+│   │   │   ├── caa_dane.py        # CAA and TLSA (DANE) checks and generators
 │   │   │   ├── acme_client.py     # RFC 8555 client (EAB, ARI)
 │   │   │   ├── acme_service.py    # ACME orchestration (manual and automatic)
 │   │   │   ├── acme_dns.py        # DNS providers: Cloudflare, RFC 2136, acme-dns
@@ -445,6 +446,10 @@ The admin endpoints manage API keys, not user data. The `ADMIN_TOKEN` bearer pat
 ### Why does every outbound connection go through `net_safety`?
 
 The tool connects to hosts chosen by the caller (TLS checks, OCSP/CRL/AIA downloads, redirects, DNS-derived targets). Without a guard that is a server-side request forgery primitive: anyone could probe the server's internal network or cloud metadata endpoint. `app/utils/net_safety.py` resolves each target, refuses non-public addresses (loopback, private, link-local, multicast), connects to the vetted IP rather than the name (no DNS rebinding), follows redirects only by hand so each hop is re-checked, and caps response sizes. `ALLOW_PRIVATE_TARGETS=true` is the explicit opt-in for scanning an internal PKI. The CLI enables it by default because it runs under the user's own account.
+
+### Why is ACME off by default?
+
+ACME needs outbound access to a CA and, for `/acme/issue`, DNS-provider credentials, and HTTP-01 needs inbound port 80. Private deployments often have neither, so the module is opt-in: set `ENABLE_ACME=true` in the environment. It is deliberately not a Settings-page option. The CAA & DANE tool covers the issuance-control side without any of that.
 
 ### Why are the CA, ACME and key tools stateless?
 
