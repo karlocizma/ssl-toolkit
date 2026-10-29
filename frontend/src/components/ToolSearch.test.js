@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import '../i18n';
@@ -25,7 +25,8 @@ test('finds a tool by a feature that is not in its title and opens it', async ()
   const option = screen.getByRole('option', { name: /Email Deliverability/ });
   expect(screen.queryByRole('option', { name: /SSL Checker/ })).not.toBeInTheDocument();
   await userEvent.click(option);
-  expect(screen.getByTestId('where')).toHaveTextContent('/email-deliverability');
+  // React Router 7 applies navigation in a transition, so the new location can land a tick after the click
+  await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent('/email-deliverability'));
 });
 
 test('finds the DMARC ramp advisor and matches several words in any order', async () => {
