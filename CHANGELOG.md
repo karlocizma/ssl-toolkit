@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Opt-in HTTPS for the bundled nginx**: `scripts/enable-https.sh [host-or-ip ...]` creates a self-signed certificate and `certs/https.conf` (from `nginx/https.conf.example`); nginx includes it only when it exists, so installs without certificates keep working. Plain HTTP redirects to HTTPS (`--no-redirect` to opt out; `/api/health` is exempt for the healthcheck). Replaces the commented-out HTTPS block
 - **CAA & DANE tool** (`/caa-dane`, `POST /api/caa/check`, `/api/caa/generate`, `/api/dane/generate`, `/api/dane/check`): show which CAs may issue for a domain (climbing to parent domains, RFC 8659) with findings, generate CAA records (optionally DNS-01 only), generate TLSA records from a certificate and compare a live host's certificate chain with its TLSA records. Outbound DNS and TLS only; nothing is stored
 - **Settings page** (`/settings`, `GET`/`PUT /api/admin/settings`): change alert channels (Slack/generic webhook, Teams, SMTP and recipients), thresholds and check interval, monitor access, status page, resolvers, caches and audit log retention from the browser, with a "Send test alert" button. The admin password is the existing `ADMIN_TOKEN`. Saved values are stored on the data volume (`settings.json`, mode 600), win over `.env`, apply immediately in every worker, and can be reset to the `.env` value. Webhook URLs and the SMTP password are write-only, changes are audited by name (never by value), and `ADMIN_TOKEN`/`SECRET_KEY` remain `.env`-only
 

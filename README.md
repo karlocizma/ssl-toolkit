@@ -132,7 +132,7 @@ Three Docker containers managed by Compose:
 
 | Path | Purpose |
 |------|---------|
-| `nginx/nginx.conf` | Proxy rules; HTTPS block is present but commented out |
+| `nginx/nginx.conf` | Proxy rules; includes `certs/https.conf` when present (HTTPS is opt-in, see `scripts/enable-https.sh`) |
 | `backend/app/__init__.py` | Flask app factory, rate limiter setup |
 | `backend/app/routes/ssl_routes.py` | All API route handlers (OpenAPI spec generated from them) |
 | `backend/app/utils/ssl_utils.py` | Core crypto: cert parsing, CSR/key/self-signed generation |
@@ -301,11 +301,14 @@ English (default) and German are bundled. Use the globe icon in the top bar to s
 
 ### HTTPS
 
-HTTPS is disabled by default. To enable it in production:
+HTTPS is off by default, so a fresh checkout starts without any certificates. To turn it on:
 
-1. Place your certificate and key in `nginx/certs/`
-2. Uncomment the HTTPS server block in `nginx/nginx.conf`
-3. Restart: `docker compose restart nginx`
+```bash
+scripts/enable-https.sh example.internal 192.168.1.10   # every name or IP people will use; default: localhost 127.0.0.1
+docker compose restart nginx
+```
+
+The script keeps existing files unless you pass `--force`. It creates a self-signed certificate in `certs/` (browsers show a warning until they trust it) and the nginx HTTPS config; HTTPS is served on `HTTPS_PORT` (default 443). To use your own certificate, put `cert.pem` and `key.pem` in `certs/` and copy `nginx/https.conf.example` to `certs/https.conf`. Plain HTTP is redirected to HTTPS on `HTTPS_PORT` (except `/api/health`, which the container healthcheck uses); pass `--no-redirect` to keep HTTP open, and rerun the script after changing `HTTPS_PORT`. HSTS is not sent by default (see the comment in `nginx/https.conf.example`).
 
 ---
 

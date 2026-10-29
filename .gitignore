@@ -11,6 +11,8 @@ certs/*.key
 certs/*.crt
 certs/*.pfx
 certs/*.p12
+certs/https.conf
+certs/http-redirect.conf
 
 # Python
 __pycache__/
