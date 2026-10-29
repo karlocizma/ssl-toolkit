@@ -108,3 +108,10 @@ def local_tls(tmp_path, sample_cert_pem, sample_key_pem):
     srv.close()
 
 
+
+
+@pytest.fixture(autouse=True)
+def _acme_flag_for_acme_tests(request, monkeypatch):
+    """ACME is off by default; the ACME test modules exercise it, so switch it on for them only."""
+    if request.module.__name__.rsplit('.', 1)[-1] in ('test_acme', 'test_acme_extras'):
+        monkeypatch.setenv('ENABLE_ACME', 'true')

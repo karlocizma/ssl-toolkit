@@ -7,6 +7,7 @@ import hmac
 from cryptography.hazmat.primitives import serialization
 from functools import wraps
 from app.services import settings_store
+from app.utils.features import acme_enabled
 
 from app.utils.ssl_utils import (
     get_certificate_info, get_csr_info, generate_private_key,
@@ -27,6 +28,20 @@ from app.services.sysadmin_tools import (
 )
 
 ssl_bp = Blueprint('ssl', __name__)
+
+ACME_DISABLED_MESSAGE = 'ACME is disabled on this server (set ENABLE_ACME=true to enable it)'
+
+
+@ssl_bp.before_request
+def _gate_acme():
+    if request.path.startswith('/api/acme/') and not acme_enabled():
+        return jsonify({'error': ACME_DISABLED_MESSAGE}), 404
+
+
+@ssl_bp.route('/features', methods=['GET'])
+def features():
+    """Which optional server features are enabled"""
+    return jsonify({'acme': acme_enabled()})
 
 
 def _internal_error(exc, message):
