@@ -1344,6 +1344,50 @@ def private_ca_issue():
         return _internal_error(e, 'Unexpected error')
 
 
+# CAA & DANE — outbound DNS lookups and one TLS connection at most; nothing is stored
+def _caa_dane_endpoint(fn_name, required, optional=()):
+    from app.services import caa_dane
+
+    data = request.get_json(silent=True) or {}
+    try:
+        if not isinstance(data, dict):
+            raise ValueError('The request body must be a JSON object')
+        _check_input_size(data, 'certificate')
+        args = [data.get(k) for k in required]
+        kwargs = {k: data[k] for k in optional if k in data}
+        return jsonify({'success': True, 'result': getattr(caa_dane, fn_name)(*args, **kwargs)})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return _internal_error(e, 'CAA/DANE request failed')
+
+
+@ssl_bp.route('/caa/check', methods=['POST'])
+def caa_check():
+    """Show the CAA policy that applies to a domain (climbing to parent domains) and flag problems"""
+    return _caa_dane_endpoint('check_caa', ['domain'])
+
+
+@ssl_bp.route('/caa/generate', methods=['POST'])
+def caa_generate():
+    """Generate CAA records from a list of allowed CAs"""
+    return _caa_dane_endpoint('generate_caa', ['domain', 'issuers'],
+                              ['wildcard_issuers', 'allow_wildcards', 'block_all', 'iodef', 'dns01_only'])
+
+
+@ssl_bp.route('/dane/generate', methods=['POST'])
+def dane_generate():
+    """Generate a TLSA record from a PEM certificate"""
+    return _caa_dane_endpoint('generate_tlsa', ['certificate', 'host'],
+                              ['port', 'protocol', 'usage', 'selector', 'matching_type'])
+
+
+@ssl_bp.route('/dane/check', methods=['POST'])
+def dane_check():
+    """Compare a host's TLSA records with the certificate chain it presents"""
+    return _caa_dane_endpoint('check_tlsa', ['host'], ['port', 'protocol'])
+
+
 # ACME (Let's Encrypt & compatible CAs) — stateless, nothing is stored server-side
 def _acme_endpoint(service_fn_name):
     from app.services import acme_service
