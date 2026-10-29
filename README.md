@@ -171,7 +171,7 @@ docker compose pull               # fetch the images instead of building them
 docker compose up -d --no-build
 ```
 
-Pin a release instead of `latest` with `SSL_TOOLKIT_VERSION=1.1.1` (in `.env` or the shell). Tags: `1.1.1`, `1.1` and `latest`.
+Pin a release instead of `latest` with `SSL_TOOLKIT_VERSION=1.2.0` (in `.env` or the shell). Tags: `1.2.0`, `1.2` and `latest`.
 
 ### Build from source
 

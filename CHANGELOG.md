@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-10-29
+
 ### Added
 - **Opt-in HTTPS for the bundled nginx**: `scripts/enable-https.sh [host-or-ip ...]` creates a self-signed certificate and `certs/https.conf` (from `nginx/https.conf.example`); nginx includes it only when it exists, so installs without certificates keep working. Plain HTTP redirects to HTTPS (`--no-redirect` to opt out; `/api/health` is exempt for the healthcheck). Replaces the commented-out HTTPS block
 - **CAA & DANE tool** (`/caa-dane`, `POST /api/caa/check`, `/api/caa/generate`, `/api/dane/generate`, `/api/dane/check`): show which CAs may issue for a domain (climbing to parent domains, RFC 8659) with findings, generate CAA records (optionally DNS-01 only), generate TLSA records from a certificate and compare a live host's certificate chain with its TLSA records. Outbound DNS and TLS only; nothing is stored
