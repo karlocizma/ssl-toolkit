@@ -42,9 +42,11 @@ import {
   History as HistoryIcon,
   Settings as SettingsIcon,
   Share as ShareIcon,
+  FactCheck as FactCheckIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useFeatures } from '../contexts/FeaturesContext';
 
 export const getTools = (t) => [
   {
@@ -280,6 +282,14 @@ export const getTools = (t) => [
     featuresKeys: ['tools.acme.features.0', 'tools.acme.features.1', 'tools.acme.features.2', 'tools.acme.features.3']
   },
   {
+    titleKey: 'tools.caaDane.title',
+    descriptionKey: 'tools.caaDane.description',
+    icon: <FactCheckIcon sx={{ fontSize: 40 }} />,
+    path: '/caa-dane',
+    color: 'primary',
+    featuresKeys: ['tools.caaDane.features.0', 'tools.caaDane.features.1', 'tools.caaDane.features.2', 'tools.caaDane.features.3']
+  },
+  {
     titleKey: 'tools.autodiscover.title',
     descriptionKey: 'tools.autodiscover.description',
     icon: <AlternateEmailIcon sx={{ fontSize: 40 }} />,
@@ -316,7 +326,8 @@ export const getTools = (t) => [
 function Dashboard() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const tools = getTools(t);
+  const features = useFeatures();
+  const tools = getTools(t).filter((tool) => tool.path !== '/acme' || features.acme);
 
   return (
     <Box>

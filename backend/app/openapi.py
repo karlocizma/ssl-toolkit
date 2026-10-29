@@ -33,6 +33,22 @@ REQUEST_BODIES = {
         'domain': {**_STR, 'example': 'example.com'},
         'keep': {'type': 'array', 'items': _STR, 'description': 'Include domains to leave as include: (not flattened)'},
         'max_record_length': {'type': 'integer', 'default': 450, 'description': 'Longest TXT record to publish before splitting into _spfN helper records'}}},
+    '/caa/check': {'required': ['domain'], 'properties': {'domain': {**_STR, 'example': 'example.com'}}},
+    '/caa/generate': {'required': ['domain', 'issuers'], 'properties': {
+        'domain': {**_STR, 'example': 'example.com'},
+        'issuers': {'type': 'array', 'items': _STR, 'example': ['letsencrypt.org'], 'description': 'CA domains allowed to issue; empty only together with block_all'},
+        'wildcard_issuers': {'type': 'array', 'items': _STR, 'description': 'Separate CAs for wildcards (default: same as issuers)'},
+        'allow_wildcards': {'type': 'boolean', 'default': True}, 'block_all': {'type': 'boolean', 'default': False},
+        'iodef': {**_STR, 'example': 'mailto:security@example.com'},
+        'dns01_only': {'type': 'boolean', 'default': False, 'description': 'Add validationmethods=dns-01'}}},
+    '/dane/generate': {'required': ['certificate', 'host'], 'properties': {
+        'certificate': {**_STR, 'description': 'PEM certificate (the first one is used)'}, 'host': {**_STR, 'example': 'example.com'},
+        'port': {'type': 'integer', 'default': 443}, 'protocol': {'type': 'string', 'enum': ['tcp', 'udp', 'sctp'], 'default': 'tcp'},
+        'usage': {'type': 'integer', 'minimum': 0, 'maximum': 3, 'default': 3}, 'selector': {'type': 'integer', 'minimum': 0, 'maximum': 1, 'default': 1},
+        'matching_type': {'type': 'integer', 'minimum': 0, 'maximum': 2, 'default': 1}}},
+    '/dane/check': {'required': ['host'], 'properties': {
+        'host': {**_STR, 'example': 'example.com'}, 'port': {'type': 'integer', 'default': 443},
+        'protocol': {'type': 'string', 'enum': ['tcp', 'udp', 'sctp'], 'default': 'tcp'}}},
     '/email/mta-sts': {'required': ['domain'], 'properties': {
         'domain': {**_STR, 'example': 'example.com'},
         'verify_mx': {'type': 'boolean', 'default': False, 'description': 'Also test STARTTLS and certificates of the MX hosts'}}},
@@ -122,7 +138,7 @@ TAGS = [
     ('certificate', 'Certificates'), ('csr', 'CSR'), ('key', 'Keys'), ('convert', 'Conversion'),
     ('check', 'Checks'), ('monitor', 'Monitoring'), ('batch', 'Batch'), ('admin', 'Admin'),
     ('dmarc', 'Email security'), ('spf', 'Email security'), ('dkim', 'Email security'),
-    ('email', 'Email security'), ('dns', 'DNS'), ('upload', 'Uploads'), ('ssl-config', 'Config'), ('ca', 'Private CA'), ('acme', 'ACME'), ('ct', 'Certificate Transparency'),
+    ('email', 'Email security'), ('dns', 'DNS'), ('upload', 'Uploads'), ('ssl-config', 'Config'), ('ca', 'Private CA'), ('acme', 'ACME'), ('ct', 'Certificate Transparency'), ('caa', 'CAA & DANE'), ('dane', 'CAA & DANE'),
 ]
 
 

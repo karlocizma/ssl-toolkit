@@ -31,6 +31,7 @@
     "shares": "Shared Results",
     "search": "Search tools (Ctrl+K)",
     "searchNone": "No tool matches",
+    "caaDane": "CAA & DANE",
     "mtaSts": "MTA-STS & TLS-RPT",
     "mailTls": "Mail Server TLS",
     "tlsScanner": "TLS Scanner",
@@ -160,6 +161,11 @@
       "title": "Settings",
       "description": "Change alert channels, thresholds and other options from the browser, no .env editing",
       "features": ["Alert channels", "Email (SMTP)", "Write-only secrets", "Applies instantly"]
+    },
+    "caaDane": {
+      "title": "CAA & DANE",
+      "description": "Control which CAs may issue for your domains and pin certificates in DNS",
+      "features": ["CAA policy check", "CAA record generator", "TLSA generator", "Live TLSA check"]
     },
     "mtaSts": {
       "title": "MTA-STS & TLS-RPT",

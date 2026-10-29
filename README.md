@@ -75,7 +75,8 @@ Sample data from a local demo environment (fictional `acme-corp.example` hosts, 
 | Domain Expiry | When a domain registration expires, registrar, status and name servers, straight from the registry over RDAP; monitored hosts are checked automatically and use the same expiry alerts |
 | Mail Server TLS | STARTTLS / implicit-TLS test of SMTP, IMAP and POP3 servers, or of every MX host of a domain: protocols, ciphers, certificate, A–F grade |
 | Private CA | Create an internal root CA and issue server / client (mTLS) certificates, sign CSRs, export PKCS#12. Nothing is stored |
-| ACME / Let's Encrypt | Issue certificates (manual dns-01/http-01 or automatic via Cloudflare, RFC 2136, acme-dns), wildcards, external account binding, renewal-window check. Nothing is stored |
+| CAA & DANE | Check which CAs may issue for a domain (CAA, with parent lookup and findings), generate CAA records (optionally DNS-01 only), generate TLSA records and verify a live host against its TLSA records. Outbound DNS and TLS only, nothing is stored |
+| ACME / Let's Encrypt | **Off by default, set `ENABLE_ACME=true`.** Issue certificates (manual dns-01/http-01 or automatic via Cloudflare, RFC 2136, acme-dns), wildcards, external account binding, renewal-window check. Nothing is stored |
 | Domain Monitor | Scheduled re-checks of live domains with expiry history, renewal/issuer-change detection, email and webhook alerts, CSV/JSON export and import, Prometheus metrics |
 
 ### Email Security Tools
@@ -255,6 +256,7 @@ RBL_RESOLVERS=                              # your own DNS resolver for blocklis
 RBL_LISTS=                                  # comma-separated DNSBL zones to replace the defaults
 ACME_CA_BUNDLE=                             # trust a private ACME CA (e.g. Pebble, step-ca)
 ACME_DNS_RESOLVERS=1.1.1.1,8.8.8.8          # resolvers used to confirm dns-01 TXT propagation
+ENABLE_ACME=false                           # ACME is off unless true (environment only, not in the Settings page)
 
 # Expiry alerts for monitored certificates and domains (all optional)
 ALERT_THRESHOLDS=30,14,7,1                  # days before expiry
@@ -265,7 +267,7 @@ APP_URL=https://tools.example.com           # adds an "Open Domain Monitor" butt
 SMTP_HOST=smtp.example.com                  # plus SMTP_PORT, SMTP_USER, SMTP_PASSWORD, ALERT_EMAIL_FROM, ALERT_EMAIL_TO
 ```
 
-**ACME / Let's Encrypt:** `POST /api/acme/order` + `/api/acme/complete` (manual dns-01 or http-01) and `POST /api/acme/issue` (automatic dns-01 via Cloudflare or RFC 2136/TSIG). Certificates, domain keys and provider credentials are never stored: the account key (generated if you don't send one) and the domain key are returned to you, and an order is identified by its URL. The default CA is Let's Encrypt **staging**; pass `"directory": "letsencrypt"` for production. Set `ACME_CA_BUNDLE` to trust a private ACME CA, and `ACME_DNS_RESOLVERS` (default `1.1.1.1,8.8.8.8`) to change the resolvers used to confirm TXT propagation.
+**ACME / Let's Encrypt** (off by default: set `ENABLE_ACME=true`; otherwise these endpoints return 404): `POST /api/acme/order` + `/api/acme/complete` (manual dns-01 or http-01) and `POST /api/acme/issue` (automatic dns-01 via Cloudflare or RFC 2136/TSIG). Certificates, domain keys and provider credentials are never stored: the account key (generated if you don't send one) and the domain key are returned to you, and an order is identified by its URL. The default CA is Let's Encrypt **staging**; pass `"directory": "letsencrypt"` for production. Set `ACME_CA_BUNDLE` to trust a private ACME CA, and `ACME_DNS_RESOLVERS` (default `1.1.1.1,8.8.8.8`) to change the resolvers used to confirm TXT propagation.
 
 **Autodiscover check:** `POST /api/check/autodiscover` runs the lookups mail clients use to configure themselves and reports every step (status, redirects, settings found): the Outlook/Exchange sequence (`https://<domain>/…`, `https://autodiscover.<domain>/…`, the HTTP redirect, `_autodiscover._tcp` SRV), Thunderbird autoconfig, and RFC 6186 SRV records. No credentials are sent; a 401 from Exchange is reported as healthy.
 
@@ -622,7 +624,16 @@ The log is a JSON Lines file (`AUDIT_LOG_FILE`, default `/app/data/audit.log` on
 
 All three need the monitor access token (`Authorization: Bearer <ADMIN_TOKEN>` works for Prometheus). A ready-made Grafana dashboard and Prometheus scrape/alert configuration are in [`docs/monitoring/`](docs/monitoring/).
 
-### ACME
+### CAA & DANE
+
+| Endpoint | Description |
+|---|---|
+| `POST /api/caa/check` | `{domain}`: the CAA policy that applies (parent domains are searched), who may issue normal and wildcard certificates, and findings |
+| `POST /api/caa/generate` | `{domain?, issuers[], wildcard_issuers?, allow_wildcards?, block_all?, iodef?, dns01_only?}`: CAA records in zone-file form |
+| `POST /api/dane/generate` | `{certificate, host, port?, protocol?, usage?, selector?, matching_type?}`: a TLSA record (default `3 1 1`) |
+| `POST /api/dane/check` | `{host, port?, protocol?}`: compare the published TLSA records with the certificate chain the host presents |
+
+### ACME (requires `ENABLE_ACME=true`)
 
 | Endpoint | Description |
 |----------|-------------|

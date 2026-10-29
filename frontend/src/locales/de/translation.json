@@ -31,6 +31,7 @@
     "shares": "Geteilte Ergebnisse",
     "search": "Werkzeuge suchen (Strg+K)",
     "searchNone": "Kein Werkzeug gefunden",
+    "caaDane": "CAA & DANE",
     "mtaSts": "MTA-STS & TLS-RPT",
     "mailTls": "Mailserver-TLS",
     "tlsScanner": "TLS-Scanner",
@@ -160,6 +161,11 @@
       "title": "Einstellungen",
       "description": "Alarmkanäle, Schwellenwerte und weitere Optionen im Browser ändern, ohne .env zu bearbeiten",
       "features": ["Alarmkanäle", "E-Mail (SMTP)", "Geheimnisse nur schreibbar", "Sofort wirksam"]
+    },
+    "caaDane": {
+      "title": "CAA & DANE",
+      "description": "Festlegen, welche CAs für Ihre Domains ausstellen dürfen, und Zertifikate per DNS festschreiben",
+      "features": ["CAA-Richtlinie prüfen", "CAA-Eintrag-Generator", "TLSA-Generator", "TLSA-Live-Prüfung"]
     },
     "mtaSts": {
       "title": "MTA-STS & TLS-RPT",

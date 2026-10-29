@@ -1,6 +1,8 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import Layout from './Layout';
+import { FeaturesContext } from '../contexts/FeaturesContext';
 
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -9,14 +11,13 @@ jest.mock('react-i18next', () => ({
   }),
 }));
 
-
-import Layout from './Layout';
-
-const renderLayout = (children = <div data-testid="child">content</div>) =>
+const renderLayout = (children = <div data-testid="child">content</div>, features = { acme: false }) =>
   render(
-    <MemoryRouter>
-      <Layout>{children}</Layout>
-    </MemoryRouter>
+    <FeaturesContext.Provider value={features}>
+      <MemoryRouter>
+        <Layout>{children}</Layout>
+      </MemoryRouter>
+    </FeaturesContext.Provider>
   );
 
 describe('Layout', () => {
@@ -62,5 +63,20 @@ describe('Layout', () => {
     navKeys.forEach((key) => {
       expect(screen.getAllByText(key).length).toBeGreaterThan(0);
     });
+  });
+
+  it('hides ACME from the sidebar when the server has it disabled', () => {
+    renderLayout(undefined, { acme: false });
+    expect(screen.queryByText('nav.acme')).not.toBeInTheDocument();
+  });
+
+  it('shows ACME in the sidebar when the server enables it', () => {
+    renderLayout(undefined, { acme: true });
+    expect(screen.getAllByText('nav.acme').length).toBeGreaterThan(0);
+  });
+
+  it('lists the CAA & DANE tool in the sidebar', () => {
+    renderLayout();
+    expect(screen.getAllByText('nav.caaDane').length).toBeGreaterThan(0);
   });
 });
