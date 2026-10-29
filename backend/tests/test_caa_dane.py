@@ -338,3 +338,24 @@ def test_route_unexpected_failure_is_a_generic_500(client, monkeypatch):
     monkeypatch.setattr(caa_dane, 'check_caa', boom)
     resp = client.post('/api/caa/check', json={'domain': 'example.com'})
     assert resp.status_code == 500 and 'secret internals' not in resp.get_data(as_text=True)
+
+
+@pytest.mark.parametrize('payload', [
+    {'domain': 5}, {'domain': ['example.com']}, {'domain': {'a': 1}}])
+def test_route_check_rejects_non_string_domain_with_400(client, payload):
+    assert client.post('/api/caa/check', json=payload).status_code == 400
+
+
+@pytest.mark.parametrize('payload', [
+    {'domain': 'example.com', 'issuers': 5}, {'domain': 'example.com', 'issuers': 'letsencrypt.org'},
+    {'domain': 'example.com', 'issuers': [5]}, {'domain': 5, 'issuers': ['letsencrypt.org']},
+    {'domain': 'example.com', 'issuers': ['letsencrypt.org'], 'wildcard_issuers': 5},
+    {'domain': 'example.com', 'issuers': ['letsencrypt.org'], 'iodef': 5}])
+def test_route_generate_rejects_wrong_types_with_400(client, payload):
+    assert client.post('/api/caa/generate', json=payload).status_code == 400
+
+
+@pytest.mark.parametrize('payload', [{'host': 5}, {'host': 'example.com', 'port': [1]}, {'host': 'example.com', 'protocol': 5}])
+def test_route_dane_check_rejects_wrong_types_with_400(client, monkeypatch, payload):
+    fake_tlsa(monkeypatch, [])
+    assert client.post('/api/dane/check', json=payload).status_code == 400

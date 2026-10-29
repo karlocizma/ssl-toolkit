@@ -44,6 +44,21 @@ _HOST_RE = re.compile(r'^(?=.{1,253}$)[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0
 _IODEF_RE = re.compile(r'^(mailto:[^@\s;"]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}|https://[^\s;"]+)$')
 
 
+def _domain(value) -> str:
+    """valid_domain, but JSON of the wrong type is a plain validation error."""
+    if value is not None and not isinstance(value, str):
+        raise ValueError('A valid domain name is required')
+    return valid_domain(value)
+
+
+def _string_list(value, label: str) -> List[str]:
+    if value is None:
+        return []
+    if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
+        raise ValueError(f'{label} must be a list of CA domain names')
+    return value
+
+
 def _finding(severity: str, message: str) -> Dict:
     return {'severity': severity, 'message': message}
 
@@ -91,7 +106,7 @@ def _issuers(records: List[Dict], tag: str) -> Tuple[List[Dict], bool, bool]:
 
 def check_caa(domain: str) -> Dict:
     """Find the CAA policy that applies to a domain (climbing to parents, RFC 8659) and explain it."""
-    domain = valid_domain(domain)
+    domain = _domain(domain)
     labels = domain.split('.')
     names = ['.'.join(labels[i:]) for i in range(len(labels) - 1)]  # never the bare TLD
     findings: List[Dict] = []
@@ -160,13 +175,14 @@ def generate_caa(domain: Optional[str], issuers: List[str], wildcard_issuers: Op
                  allow_wildcards: bool = True, block_all: bool = False, iodef: Optional[str] = None,
                  dns01_only: bool = False) -> Dict:
     """Build CAA records in zone-file form. Blocking all issuance has to be asked for explicitly."""
-    owner = f'{valid_domain(domain)}.' if domain else '@'
-    issuers = issuers or []
+    owner = f'{_domain(domain)}.' if domain else '@'
+    issuers = _string_list(issuers, 'issuers')
+    wildcard_issuers = _string_list(wildcard_issuers, 'wildcard_issuers')
     if block_all and issuers:
         raise ValueError('Choose either a list of CAs or "block all issuance", not both')
     if not block_all and not issuers:
         raise ValueError('Add at least one CA, or choose "block all issuance" explicitly')
-    if iodef and not _IODEF_RE.match(iodef.strip()):
+    if iodef and not (isinstance(iodef, str) and _IODEF_RE.match(iodef.strip())):
         raise ValueError('iodef must be a mailto: address or an https:// URL')
 
     suffix = '; validationmethods=dns-01' if dns01_only else ''
@@ -203,9 +219,9 @@ _HASHES = {1: hashlib.sha256, 2: hashlib.sha512}
 
 
 def _tlsa_name(host: str, port, protocol: str) -> Tuple[str, str, int, str]:
-    host = valid_domain(host)
+    host = _domain(host)
     port = validate_port(port)
-    protocol = (protocol or '').strip().lower()
+    protocol = protocol.strip().lower() if isinstance(protocol, str) else ''
     if protocol not in PROTOCOLS:
         raise ValueError('protocol must be tcp, udp or sctp')
     return f'_{port}._{protocol}.{host}', host, port, protocol
