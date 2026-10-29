@@ -114,14 +114,15 @@ const menuGroups = [
       { textKey: 'nav.domainExpiry', icon: <EventIcon />, path: '/domain-expiry' },
       { textKey: 'nav.shares', icon: <ShareIcon />, path: '/shares' },
       { textKey: 'nav.auditLog', icon: <HistoryIcon />, path: '/audit-log' },
-      { textKey: 'nav.settings', icon: <SettingsIcon />, path: '/settings' },
       { textKey: 'nav.sslConfigGenerator', icon: <CodeIcon />, path: '/ssl-config-generator' },
       { textKey: 'nav.jwtDecoder', icon: <TokenIcon />, path: '/jwt-decoder' },
     ],
   },
 ];
 
-const searchItems = menuGroups.flatMap((g) => g.items);
+const settingsItem = { textKey: 'nav.settings', icon: <SettingsIcon />, path: '/settings' };
+
+const searchItems = [...menuGroups.flatMap((g) => g.items), settingsItem];
 
 function Layout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -225,6 +226,18 @@ function Layout({ children }) {
               Deutsch
             </MenuItem>
           </Menu>
+          <Tooltip title={t(settingsItem.textKey)}>
+            <IconButton
+              color="inherit"
+              onClick={() => navigate(settingsItem.path)}
+              aria-label={t(settingsItem.textKey)}
+              sx={{
+                bgcolor: location.pathname === settingsItem.path ? 'rgba(255,255,255,0.2)' : undefined,
+              }}
+            >
+              {settingsItem.icon}
+            </IconButton>
+          </Tooltip>
         </Toolbar>
       </AppBar>
       <Box
