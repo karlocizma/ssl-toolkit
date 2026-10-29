@@ -11,6 +11,9 @@ All notable changes to this project will be documented in this file.
 - **CAA & DANE tool** (`/caa-dane`, `POST /api/caa/check`, `/api/caa/generate`, `/api/dane/generate`, `/api/dane/check`): show which CAs may issue for a domain (climbing to parent domains, RFC 8659) with findings, generate CAA records (optionally DNS-01 only), generate TLSA records from a certificate and compare a live host's certificate chain with its TLSA records. Outbound DNS and TLS only; nothing is stored
 - **Settings page** (`/settings`, `GET`/`PUT /api/admin/settings`): change alert channels (Slack/generic webhook, Teams, SMTP and recipients), thresholds and check interval, monitor access, status page, resolvers, caches and audit log retention from the browser, with a "Send test alert" button. The admin password is the existing `ADMIN_TOKEN`. Saved values are stored on the data volume (`settings.json`, mode 600), win over `.env`, apply immediately in every worker, and can be reset to the `.env` value. Webhook URLs and the SMTP password are write-only, changes are audited by name (never by value), and `ADMIN_TOKEN`/`SECRET_KEY` remain `.env`-only
 
+### Security
+- Upgraded the backend runtime dependencies that had known vulnerabilities and were pinned to old majors, which Dependabot does not bump on its own: gunicorn 21.2 → 26.2 (request smuggling), cryptography 41.0.7 → 50.0.2, pyOpenSSL 23.3 → 26.4, Flask 2.3 → 3.1.3 and Werkzeug 2.3 → 3.1.9; the test tools pytest and pytest-cov are updated too
+
 ### Changed
 - **ACME (Let's Encrypt) is now off by default.** Set `ENABLE_ACME=true` in `.env` to use it again. While off, `/api/acme/*` answers 404 and the page, navigation entry, search hit and dashboard tile are hidden. `GET /api/features` tells the UI which optional features are on. The flag is environment-only and cannot be changed from the Settings page
 - The CT and RDAP cache lifetimes are read when used instead of at import, so they follow the Settings page
