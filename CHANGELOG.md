@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.1] — 2026-10-29
+
 ### Security
 - Frontend: upgraded `react-router-dom` 6 → 7.18 (open-redirect advisory, ships in the bundle) and cleared the high and critical advisories in the build toolchain (`npm audit fix` plus `overrides` for nested packages such as serialize-javascript, nth-check, svgo, postcss and underscore). What is left is low or moderate and only affects the Create React App development tools (`webpack-dev-server`, Jest) or has no patched release. Not in the shipped image
 
