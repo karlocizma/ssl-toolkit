@@ -45,6 +45,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useFeatures } from '../contexts/FeaturesContext';
 
 export const getTools = (t) => [
   {
@@ -316,7 +317,8 @@ export const getTools = (t) => [
 function Dashboard() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const tools = getTools(t);
+  const features = useFeatures();
+  const tools = getTools(t).filter((tool) => tool.path !== '/acme' || features.acme);
 
   return (
     <Box>

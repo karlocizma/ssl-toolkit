@@ -62,6 +62,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ColorModeContext } from '../contexts/ColorModeContext';
 import ToolSearch from './ToolSearch';
+import { useFeatures } from '../contexts/FeaturesContext';
 
 const drawerWidth = 240;
 
@@ -122,7 +123,7 @@ const menuGroups = [
 
 const settingsItem = { textKey: 'nav.settings', icon: <SettingsIcon />, path: '/settings' };
 
-const searchItems = [...menuGroups.flatMap((g) => g.items), settingsItem];
+const isAvailable = (item, features) => item.path !== '/acme' || features.acme;
 
 function Layout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -132,6 +133,9 @@ function Layout({ children }) {
   const theme = useTheme();
   const { t, i18n } = useTranslation();
   const { toggleColorMode } = useContext(ColorModeContext);
+  const features = useFeatures();
+  const groups = menuGroups.map((g) => ({ ...g, items: g.items.filter((item) => isAvailable(item, features)) }));
+  const searchItems = [...groups.flatMap((g) => g.items), settingsItem];
 
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
   const handleLangMenuOpen = (event) => setLangAnchorEl(event.currentTarget);
@@ -148,7 +152,7 @@ function Layout({ children }) {
           {t('app.shortName')}
         </Typography>
       </Toolbar>
-      {menuGroups.map((group, groupIndex) => (
+      {groups.map((group, groupIndex) => (
         <React.Fragment key={groupIndex}>
           {groupIndex > 0 && <Divider />}
           <List

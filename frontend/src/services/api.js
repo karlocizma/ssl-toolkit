@@ -83,6 +83,10 @@ export const conversionAPI = {
 };
 
 // SSL checking
+export const featuresAPI = {
+  get: () => api.get('/features'),
+};
+
 export const sslCheckAPI = {
   checkDomain: (data) => api.post('/check/domain', data),
   checkChain: (data) => api.post('/check/chain', data),

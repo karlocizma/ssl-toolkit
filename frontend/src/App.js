@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ColorModeContext } from './contexts/ColorModeContext';
+import { FeaturesProvider, useFeatures } from './contexts/FeaturesContext';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import CertificateDecoder from './components/CertificateDecoder';
@@ -42,6 +43,63 @@ import CTLookup from './components/CTLookup';
 import ChainBuilder from './components/ChainBuilder';
 import './App.css';
 
+function AppRouter() {
+  const features = useFeatures();
+
+  return (
+        <Router>
+          <Routes>
+            {/* The public status page has no navigation and needs no login */}
+            <Route path="/status" element={<StatusPage />} />
+            <Route path="/shared/:token" element={<SharedReport />} />
+            <Route
+              path="*"
+              element={(
+                  <Layout>
+                    <Routes>
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/certificate-decoder" element={<CertificateDecoder />} />
+                      <Route path="/csr-generator" element={<CSRGenerator />} />
+                      <Route path="/csr-decoder" element={<CSRDecoder />} />
+                      <Route path="/ssl-checker" element={<SSLChecker />} />
+                      <Route path="/certificate-converter" element={<CertificateConverter />} />
+                      <Route path="/key-generator" element={<KeyGenerator />} />
+                      <Route path="/key-validator" element={<KeyValidator />} />
+                      <Route path="/key-certificate-match" element={<KeyCertificateMatch />} />
+                      <Route path="/certificate-chain-checker" element={<CertificateChainChecker />} />
+                      <Route path="/dmarc-tool" element={<DMARCManager />} />
+                      <Route path="/spf-tool" element={<SPFManager />} />
+                      <Route path="/email-header-analyzer" element={<EmailHeaderAnalyzer />} />
+                      <Route path="/password-toolkit" element={<PasswordToolkit />} />
+                      <Route path="/dns-diagnostics" element={<DNSDiagnostics />} />
+                      <Route path="/dkim-manager" element={<DKIMManager />} />
+                      <Route path="/self-signed-generator" element={<SelfSignedGenerator />} />
+                      <Route path="/ssl-config-generator" element={<SSLConfigGenerator />} />
+                      <Route path="/jwt-decoder" element={<JWTDecoder />} />
+                      {features.acme && <Route path="/acme" element={<ACMEIssuer />} />}
+                      <Route path="/private-ca" element={<PrivateCA />} />
+                      <Route path="/autodiscover" element={<AutodiscoverChecker />} />
+                      <Route path="/email-deliverability" element={<EmailDeliverability />} />
+                      <Route path="/ct-lookup" element={<CTLookup />} />
+                      <Route path="/chain-builder" element={<ChainBuilder />} />
+                      <Route path="/tls-scanner" element={<TLSScanner />} />
+                      <Route path="/mail-tls" element={<MailTLS />} />
+                      <Route path="/domain-expiry" element={<DomainExpiry />} />
+                      <Route path="/mta-sts" element={<MailTransport />} />
+                      <Route path="/shares" element={<SharedResults />} />
+                      <Route path="/audit-log" element={<AuditLog />} />
+                      <Route path="/settings" element={<Settings />} />
+                      <Route path="/security-headers" element={<SecurityHeaders />} />
+                      <Route path="/domain-monitor" element={<DomainMonitor />} />
+                    </Routes>
+                  </Layout>
+              )}
+            />
+          </Routes>
+        </Router>
+  );
+}
+
 function App() {
   const [mode, setMode] = useState(
     () => localStorage.getItem('colorMode') || 'light'
@@ -76,56 +134,9 @@ function App() {
     <ColorModeContext.Provider value={colorMode}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <Router>
-          <Routes>
-            {/* The public status page has no navigation and needs no login */}
-            <Route path="/status" element={<StatusPage />} />
-            <Route path="/shared/:token" element={<SharedReport />} />
-            <Route
-              path="*"
-              element={(
-                  <Layout>
-                    <Routes>
-                      <Route path="/" element={<Dashboard />} />
-                      <Route path="/certificate-decoder" element={<CertificateDecoder />} />
-                      <Route path="/csr-generator" element={<CSRGenerator />} />
-                      <Route path="/csr-decoder" element={<CSRDecoder />} />
-                      <Route path="/ssl-checker" element={<SSLChecker />} />
-                      <Route path="/certificate-converter" element={<CertificateConverter />} />
-                      <Route path="/key-generator" element={<KeyGenerator />} />
-                      <Route path="/key-validator" element={<KeyValidator />} />
-                      <Route path="/key-certificate-match" element={<KeyCertificateMatch />} />
-                      <Route path="/certificate-chain-checker" element={<CertificateChainChecker />} />
-                      <Route path="/dmarc-tool" element={<DMARCManager />} />
-                      <Route path="/spf-tool" element={<SPFManager />} />
-                      <Route path="/email-header-analyzer" element={<EmailHeaderAnalyzer />} />
-                      <Route path="/password-toolkit" element={<PasswordToolkit />} />
-                      <Route path="/dns-diagnostics" element={<DNSDiagnostics />} />
-                      <Route path="/dkim-manager" element={<DKIMManager />} />
-                      <Route path="/self-signed-generator" element={<SelfSignedGenerator />} />
-                      <Route path="/ssl-config-generator" element={<SSLConfigGenerator />} />
-                      <Route path="/jwt-decoder" element={<JWTDecoder />} />
-                      <Route path="/acme" element={<ACMEIssuer />} />
-                      <Route path="/private-ca" element={<PrivateCA />} />
-                      <Route path="/autodiscover" element={<AutodiscoverChecker />} />
-                      <Route path="/email-deliverability" element={<EmailDeliverability />} />
-                      <Route path="/ct-lookup" element={<CTLookup />} />
-                      <Route path="/chain-builder" element={<ChainBuilder />} />
-                      <Route path="/tls-scanner" element={<TLSScanner />} />
-                      <Route path="/mail-tls" element={<MailTLS />} />
-                      <Route path="/domain-expiry" element={<DomainExpiry />} />
-                      <Route path="/mta-sts" element={<MailTransport />} />
-                      <Route path="/shares" element={<SharedResults />} />
-                      <Route path="/audit-log" element={<AuditLog />} />
-                      <Route path="/settings" element={<Settings />} />
-                      <Route path="/security-headers" element={<SecurityHeaders />} />
-                      <Route path="/domain-monitor" element={<DomainMonitor />} />
-                    </Routes>
-                  </Layout>
-              )}
-            />
-          </Routes>
-        </Router>
+        <FeaturesProvider>
+          <AppRouter />
+        </FeaturesProvider>
       </ThemeProvider>
     </ColorModeContext.Provider>
   );
