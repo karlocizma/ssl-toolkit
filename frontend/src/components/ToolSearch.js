@@ -22,6 +22,7 @@ const KEYWORDS = {
   '/tls-scanner': 'tls protocols ciphers grade scan',
   '/security-headers': 'hsts csp http headers',
   '/acme': "let's encrypt letsencrypt zerossl issue certificate dns-01 http-01 eab",
+  '/caa-dane': 'caa dane tlsa dns certification authority authorization issuance issue restrict pin dnssec',
   '/private-ca': 'internal ca root intermediate issue sign',
   '/chain-builder': 'fullchain intermediate bundle order',
   '/jwt-decoder': 'jwt token json web token',

@@ -1,6 +1,8 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import Layout from './Layout';
+import { FeaturesContext } from '../contexts/FeaturesContext';
 
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -8,10 +10,6 @@ jest.mock('react-i18next', () => ({
     i18n: { language: 'en', changeLanguage: jest.fn() },
   }),
 }));
-
-
-import Layout from './Layout';
-import { FeaturesContext } from '../contexts/FeaturesContext';
 
 const renderLayout = (children = <div data-testid="child">content</div>, features = { acme: false }) =>
   render(
@@ -75,5 +73,10 @@ describe('Layout', () => {
   it('shows ACME in the sidebar when the server enables it', () => {
     renderLayout(undefined, { acme: true });
     expect(screen.getAllByText('nav.acme').length).toBeGreaterThan(0);
+  });
+
+  it('lists the CAA & DANE tool in the sidebar', () => {
+    renderLayout();
+    expect(screen.getAllByText('nav.caaDane').length).toBeGreaterThan(0);
   });
 });

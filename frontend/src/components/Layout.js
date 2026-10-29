@@ -57,6 +57,7 @@ import {
   VpnLock as VpnLockIcon,
   Code as CodeIcon,
   Token as TokenIcon,
+  FactCheck as FactCheckIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -86,6 +87,7 @@ const menuGroups = [
       { textKey: 'nav.certificateChainChecker', icon: <AccountTreeIcon />, path: '/certificate-chain-checker' },
       { textKey: 'nav.acme', icon: <WorkspacePremiumIcon />, path: '/acme' },
       { textKey: 'nav.privateCA', icon: <AccountBalanceIcon />, path: '/private-ca' },
+      { textKey: 'nav.caaDane', icon: <FactCheckIcon />, path: '/caa-dane' },
       { textKey: 'nav.selfSignedGenerator', icon: <BadgeIcon />, path: '/self-signed-generator' },
     ],
   },

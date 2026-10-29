@@ -41,6 +41,7 @@ import AutodiscoverChecker from './components/AutodiscoverChecker';
 import EmailDeliverability from './components/EmailDeliverability';
 import CTLookup from './components/CTLookup';
 import ChainBuilder from './components/ChainBuilder';
+import CaaDane from './components/CaaDane';
 import './App.css';
 
 function AppRouter() {
@@ -85,6 +86,7 @@ function AppRouter() {
                       <Route path="/tls-scanner" element={<TLSScanner />} />
                       <Route path="/mail-tls" element={<MailTLS />} />
                       <Route path="/domain-expiry" element={<DomainExpiry />} />
+                      <Route path="/caa-dane" element={<CaaDane />} />
                       <Route path="/mta-sts" element={<MailTransport />} />
                       <Route path="/shares" element={<SharedResults />} />
                       <Route path="/audit-log" element={<AuditLog />} />

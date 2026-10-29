@@ -87,6 +87,13 @@ export const featuresAPI = {
   get: () => api.get('/features'),
 };
 
+export const caaDaneAPI = {
+  caaCheck: (data) => api.post('/caa/check', data, { timeout: 60000 }),
+  caaGenerate: (data) => api.post('/caa/generate', data),
+  daneGenerate: (data) => api.post('/dane/generate', data),
+  daneCheck: (data) => api.post('/dane/check', data, { timeout: 60000 }),
+};
+
 export const sslCheckAPI = {
   checkDomain: (data) => api.post('/check/domain', data),
   checkChain: (data) => api.post('/check/chain', data),
