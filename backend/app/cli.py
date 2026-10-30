@@ -180,7 +180,7 @@ COMMANDS: Dict[str, Tuple[Callable, str]] = {
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog='ssl-toolkit', description=__doc__.split('\n\n')[0],
+    parser = argparse.ArgumentParser(prog='secnet-toolkit', description=__doc__.split('\n\n')[0],
                                      formatter_class=argparse.RawDescriptionHelpFormatter,
                                      epilog='Exit codes: 0 pass, 1 threshold not met, 2 usage error / check could not run.')
     sub = parser.add_subparsers(dest='command', required=True)

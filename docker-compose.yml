@@ -12,7 +12,7 @@ services:
       retries: 3
 
   backend:
-    image: ghcr.io/karlocizma/secnet-toolkit-backend:${SSL_TOOLKIT_VERSION:-latest}
+    image: ghcr.io/karlocizma/secnet-toolkit-backend:${SECNET_TOOLKIT_VERSION:-latest}
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -50,7 +50,7 @@ services:
       - ALERT_EMAIL_FROM=${ALERT_EMAIL_FROM:-}
       - ALERT_EMAIL_TO=${ALERT_EMAIL_TO:-}
     volumes:
-      - cert-monitor-data:/app/data
+      - secnet-toolkit-data:/app/data
     networks:
       - secnet-toolkit-network
     depends_on:
@@ -63,7 +63,7 @@ services:
       start_period: 40s
 
   frontend:
-    image: ghcr.io/karlocizma/secnet-toolkit-frontend:${SSL_TOOLKIT_VERSION:-latest}
+    image: ghcr.io/karlocizma/secnet-toolkit-frontend:${SECNET_TOOLKIT_VERSION:-latest}
     build:
       context: ./frontend
       dockerfile: Dockerfile
@@ -107,8 +107,6 @@ networks:
     driver: bridge
 
 volumes:
-  ssl-data:
-    driver: local
-  cert-monitor-data:
+  secnet-toolkit-data:
     driver: local
 

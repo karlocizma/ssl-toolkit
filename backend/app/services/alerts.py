@@ -142,7 +142,7 @@ def send_email(subject: str, body: str) -> Dict:
         return {'channel': 'email', 'sent': False, 'reason': 'not configured'}
     msg = EmailMessage()
     msg['Subject'] = subject
-    msg['From'] = settings_store.get('ALERT_EMAIL_FROM') or settings_store.get('SMTP_USER') or 'ssl-toolkit@localhost'
+    msg['From'] = settings_store.get('ALERT_EMAIL_FROM') or settings_store.get('SMTP_USER') or 'secnet-toolkit@localhost'
     msg['To'] = to
     msg.set_content(body)
     try:
@@ -263,5 +263,5 @@ def start_scheduler() -> bool:
                     logger.exception('Scheduled check failed')
             stop.wait(current * 3600 if current > 0 else 300)
 
-    threading.Thread(target=loop, name='ssl-toolkit-scheduler', daemon=True).start()
+    threading.Thread(target=loop, name='secnet-toolkit-scheduler', daemon=True).start()
     return True

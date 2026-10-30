@@ -21,7 +21,7 @@ def create_app():
     # Configuration
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
-    app.config['UPLOAD_FOLDER'] = '/tmp/ssl-toolkit'
+    app.config['UPLOAD_FOLDER'] = '/tmp/secnet-toolkit'
     
     # The bundled frontend is same-origin behind nginx, so CORS is off unless origins are listed
     # explicitly (e.g. CORS_ORIGINS=https://tools.example.com for a separately hosted frontend).

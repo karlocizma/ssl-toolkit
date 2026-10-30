@@ -70,7 +70,7 @@ def fetch_entries(domain: str, include_subdomains: bool = True) -> List[Dict]:
     for attempt in range(2):  # crt.sh regularly answers 502/504 under load
         try:
             resp = safe_get(CT_API_URL, params={'q': query, 'output': 'json'}, timeout=CT_TIMEOUT,
-                            headers={'User-Agent': 'ssl-toolkit-ct/1.0'})
+                            headers={'User-Agent': 'secnet-toolkit-ct/1.0'})
         except Exception as e:
             last_error = f'{type(e).__name__}: {str(e)[:120]}'
         else:

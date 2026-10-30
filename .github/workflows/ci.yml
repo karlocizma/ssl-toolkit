@@ -123,13 +123,13 @@ jobs:
         with:
           context: ./${{ matrix.image }}
           load: true
-          tags: ssl-toolkit-${{ matrix.image }}:ci
+          tags: secnet-toolkit-${{ matrix.image }}:ci
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
       - name: Smoke test (backend)
         if: matrix.image == 'backend'
         run: |
-          docker run -d --name app -p 5000:5000 ssl-toolkit-backend:ci
+          docker run -d --name app -p 5000:5000 secnet-toolkit-backend:ci
           for i in $(seq 1 30); do curl -fsS http://localhost:5000/api/health && break; sleep 1; done
           curl -fsS http://localhost:5000/api/health | grep -q healthy
           curl -fsS http://localhost:5000/api/openapi.json | grep -q '"openapi"'
@@ -141,7 +141,7 @@ jobs:
           docker network create ci-net
           docker run -d --name backend --network ci-net busybox httpd -f -p 5000 -h /tmp
           sleep 1 && docker ps --filter name=backend --format '{{.Names}} {{.Status}}'
-          docker run -d --name web --network ci-net -p 8080:80 ssl-toolkit-frontend:ci
+          docker run -d --name web --network ci-net -p 8080:80 secnet-toolkit-frontend:ci
           for i in $(seq 1 30); do curl -fsS http://localhost:8080/ > /dev/null && break; sleep 1; done
           curl -fsS http://localhost:8080/ | grep -q '<div id="root">'
           # an unknown API path must reach the stand-in backend (404 from busybox), not fail in nginx (502)

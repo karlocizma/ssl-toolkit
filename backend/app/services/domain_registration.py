@@ -58,7 +58,7 @@ def _bootstrap_map() -> Dict[str, str]:
     with _lock:
         if _bootstrap['map'] and time.time() - _bootstrap['at'] < _BOOTSTRAP_TTL:
             return _bootstrap['map']
-    resp = safe_get(BOOTSTRAP_URL, timeout=15, headers={'User-Agent': 'ssl-toolkit-rdap/1.0'})
+    resp = safe_get(BOOTSTRAP_URL, timeout=15, headers={'User-Agent': 'secnet-toolkit-rdap/1.0'})
     if resp.status_code != 200:
         raise RDAPError(f'Could not load the RDAP bootstrap list (HTTP {resp.status_code})')
     try:
@@ -80,7 +80,7 @@ def _get_json(url: str):
     """GET with up to two validated redirect hops (RDAP servers often redirect to the registrar)."""
     for _ in range(3):
         resp = safe_get(url, timeout=15, headers={'Accept': 'application/rdap+json, application/json',
-                                                  'User-Agent': 'ssl-toolkit-rdap/1.0'})
+                                                  'User-Agent': 'secnet-toolkit-rdap/1.0'})
         if resp.status_code in (301, 302, 303, 307, 308) and resp.headers.get('Location'):
             url = urljoin(url, resp.headers['Location'])
             continue

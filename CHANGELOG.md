@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - `docker-compose.yml`: removed the unused Traefik labels and network; containers and the network are now named `secnet-toolkit-*` (data volumes keep their names). Put your own reverse proxy in front of `secnet-toolkit-nginx`
+- Everything else renamed to match: data volume `secnet-toolkit-data` (**existing installs: copy the data out of the old `cert-monitor-data` volume before upgrading**), `SECNET_TOOLKIT_VERSION` (was `SSL_TOOLKIT_VERSION`), CLI `bin/secnet-toolkit` (was `bin/ssl-toolkit`), upload folder, outgoing User-Agent strings and the default alert sender. Prometheus metric names (`ssl_toolkit_*`) and the browser token storage key are unchanged so dashboards and logins keep working
 - **Repository renamed** `ssl-toolkit` → `secnet-toolkit` (GitHub redirects the old URL). Container images are now published as `ghcr.io/karlocizma/secnet-toolkit-backend` and `-frontend`; the old `ssl-toolkit-*` packages stay available but receive no further releases. Update the `image:` lines in your compose file (or pull the new `docker-compose.yml`). Container, network and CLI names are unchanged
 
 ### Security
