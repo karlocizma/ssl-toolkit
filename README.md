@@ -187,6 +187,7 @@ Open **http://localhost** in your browser (or `http://localhost:8080` if you cha
 
 - **Ports:** nginx listens on `HTTP_PORT` (default 80) and `HTTPS_PORT` (default 443). Rootless Docker or Podman cannot bind ports below 1024: set `HTTP_PORT=8080` and `HTTPS_PORT=8443` in `.env`, then open `http://localhost:8080`.
 - **HTTPS (optional):** run `scripts/enable-https.sh` once, then restart nginx. HTTP then redirects to HTTPS; see [HTTPS](#https) below. Without it the app is served over plain HTTP only.
+- **Behind a reverse proxy (Nginx Proxy Manager, Caddy, Traefik, ...):** leave `scripts/enable-https.sh` unused and let the proxy terminate TLS. Point the proxy host at the `secnet-toolkit-nginx` container on port 80 (attach the proxy to this compose network, or forward to the host and `HTTP_PORT`). Set `CORS_ORIGINS` and `APP_URL` to the public https URL. Note that the backend sees the proxy's address as the client IP (rate limits and the audit log), because nginx here does not read `X-Forwarded-For`.
 - **Podman:** short image names such as `nginx:alpine` need `unqualified-search-registries = ["docker.io"]` in `~/.config/containers/registries.conf`.
 - **Let's Encrypt (ACME):** off by default; set `ENABLE_ACME=true` to turn it on.
 - **Settings:** anyone can use the tools; changing settings needs `ADMIN_TOKEN`.

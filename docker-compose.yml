@@ -1,10 +1,10 @@
 services:
   redis:
     image: redis:7-alpine
-    container_name: ssl-toolkit-redis
+    container_name: secnet-toolkit-redis
     restart: unless-stopped
     networks:
-      - ssl-toolkit-network
+      - secnet-toolkit-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
@@ -16,7 +16,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: ssl-toolkit-backend
+    container_name: secnet-toolkit-backend
     restart: unless-stopped
     environment:
       - SECRET_KEY=${SECRET_KEY:-development-secret-key}
@@ -52,7 +52,7 @@ services:
     volumes:
       - cert-monitor-data:/app/data
     networks:
-      - ssl-toolkit-network
+      - secnet-toolkit-network
     depends_on:
       - redis
     healthcheck:
@@ -67,10 +67,10 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: ssl-toolkit-frontend
+    container_name: secnet-toolkit-frontend
     restart: unless-stopped
     networks:
-      - ssl-toolkit-network
+      - secnet-toolkit-network
     depends_on:
       - backend
     healthcheck:
@@ -82,7 +82,7 @@ services:
 
   nginx:
     image: nginx:alpine
-    container_name: ssl-toolkit-nginx
+    container_name: secnet-toolkit-nginx
     restart: unless-stopped
     ports:
       - "${HTTP_PORT:-80}:80"
@@ -91,23 +91,10 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
       - ./certs:/etc/nginx/ssl
     networks:
-      - ssl-toolkit-network
-      - traefik
+      - secnet-toolkit-network
     depends_on:
       - backend
       - frontend
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik"
-      - "traefik.http.routers.ssl-toolkit.rule=Host(`ssl-toolkit.yourdomain.com`)"
-      - "traefik.http.routers.ssl-toolkit.entrypoints=websecure"
-      - "traefik.http.routers.ssl-toolkit.tls.certresolver=letsencrypt"
-      - "traefik.http.services.ssl-toolkit.loadbalancer.server.port=80"
-      # Optional: Redirect HTTP to HTTPS
-      - "traefik.http.routers.ssl-toolkit-http.rule=Host(`ssl-toolkit.yourdomain.com`)"
-      - "traefik.http.routers.ssl-toolkit-http.entrypoints=web"
-      - "traefik.http.routers.ssl-toolkit-http.middlewares=ssl-toolkit-redirect"
-      - "traefik.http.middlewares.ssl-toolkit-redirect.redirectscheme.scheme=https"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80/api/health"]
       interval: 30s
@@ -116,9 +103,7 @@ services:
       start_period: 40s
 
 networks:
-  ssl-toolkit-network:
-    driver: bridge
-  traefik:
+  secnet-toolkit-network:
     driver: bridge
 
 volumes:
