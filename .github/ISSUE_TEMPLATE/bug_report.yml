@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting! Please check the [troubleshooting guide](https://github.com/karlocizma/ssl-toolkit/blob/main/docs/TROUBLESHOOTING.md) first.
+        Thanks for reporting! Please check the [troubleshooting guide](https://github.com/karlocizma/secnet-toolkit/blob/main/docs/TROUBLESHOOTING.md) first.
         **Do not include private keys, API keys or tokens.** For security problems use a private advisory instead.
   - type: textarea
     id: what-happened

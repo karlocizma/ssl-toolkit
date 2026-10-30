@@ -5,7 +5,7 @@
 **A self-hosted toolkit for SSL/TLS certificates, email security and network diagnostics.**<br>
 Decode, check, scan, issue and monitor certificates, and fix mail-authentication problems, from a web UI, a REST API or the command line.
 
-[![CI](https://github.com/karlocizma/ssl-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/karlocizma/ssl-toolkit/actions/workflows/ci.yml)
+[![CI](https://github.com/karlocizma/secnet-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/karlocizma/secnet-toolkit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.11-3776AB?logo=python&logoColor=white)
 ![React](https://img.shields.io/badge/react-18-61DAFB?logo=react&logoColor=black)
@@ -160,12 +160,12 @@ Multi-arch (amd64/arm64) images are published to GitHub Container Registry on ev
 
 | Image | Contents |
 |-------|----------|
-| `ghcr.io/karlocizma/ssl-toolkit-backend` | Flask API (Gunicorn) |
-| `ghcr.io/karlocizma/ssl-toolkit-frontend` | React app served by nginx |
+| `ghcr.io/karlocizma/secnet-toolkit-backend` | Flask API (Gunicorn) |
+| `ghcr.io/karlocizma/secnet-toolkit-frontend` | React app served by nginx |
 
 ```bash
-git clone https://github.com/karlocizma/ssl-toolkit.git
-cd ssl-toolkit
+git clone https://github.com/karlocizma/secnet-toolkit.git
+cd secnet-toolkit
 cp .env.example .env              # set SECRET_KEY and ADMIN_TOKEN
 docker compose pull               # fetch the images instead of building them
 docker compose up -d --no-build
@@ -176,8 +176,8 @@ Pin a release instead of `latest` with `SSL_TOOLKIT_VERSION=1.2.1` (in `.env` or
 ### Build from source
 
 ```bash
-git clone https://github.com/karlocizma/ssl-toolkit.git
-cd ssl-toolkit
+git clone https://github.com/karlocizma/secnet-toolkit.git
+cd secnet-toolkit
 docker compose up --build
 ```
 
