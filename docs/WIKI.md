@@ -24,7 +24,7 @@ This document is the technical reference for contributors and operators. For use
 ## 1. Project structure
 
 ```
-ssl-toolkit/
+secnet-toolkit/
 ├── backend/
 │   ├── app/
 │   │   ├── __init__.py            # Flask app factory, rate limiter, CORS, scheduler start

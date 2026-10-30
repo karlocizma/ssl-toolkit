@@ -4,7 +4,7 @@
 
 **Please do not open a public issue.** Use GitHub's private reporting instead:
 
-1. Go to the [Security tab](https://github.com/karlocizma/ssl-toolkit/security) of this repository.
+1. Go to the [Security tab](https://github.com/karlocizma/secnet-toolkit/security) of this repository.
 2. Choose **Report a vulnerability** and describe the problem, how to reproduce it and the impact.
 
 You can expect an acknowledgement within a few days and a fix or mitigation plan as soon as the issue is understood. Please give us reasonable time to release a fix before disclosing publicly; we will credit you in the release notes unless you prefer otherwise.

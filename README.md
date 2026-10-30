@@ -5,7 +5,7 @@
 **A self-hosted toolkit for SSL/TLS certificates, email security and network diagnostics.**<br>
 Decode, check, scan, issue and monitor certificates, and fix mail-authentication problems, from a web UI, a REST API or the command line.
 
-[![CI](https://github.com/karlocizma/ssl-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/karlocizma/ssl-toolkit/actions/workflows/ci.yml)
+[![CI](https://github.com/karlocizma/secnet-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/karlocizma/secnet-toolkit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.11-3776AB?logo=python&logoColor=white)
 ![React](https://img.shields.io/badge/react-18-61DAFB?logo=react&logoColor=black)
@@ -160,13 +160,13 @@ Multi-arch (amd64/arm64) images are published to GitHub Container Registry on ev
 
 | Image | Contents |
 |-------|----------|
-| `ghcr.io/karlocizma/ssl-toolkit-backend` | Flask API (Gunicorn) |
-| `ghcr.io/karlocizma/ssl-toolkit-frontend` | React app served by nginx |
+| `ghcr.io/karlocizma/secnet-toolkit-backend` | Flask API (Gunicorn) |
+| `ghcr.io/karlocizma/secnet-toolkit-frontend` | React app served by nginx |
 
 ```bash
-git clone https://github.com/karlocizma/ssl-toolkit.git
-cd ssl-toolkit
-cp .env.example .env              # set SECRET_KEY and ADMIN_TOKEN
+git clone https://github.com/karlocizma/secnet-toolkit.git
+cd secnet-toolkit
+cp .env.example .env              # set SECRET_KEY and ADMIN_TOKEN (e.g. openssl rand -hex 32)
 docker compose pull               # fetch the images instead of building them
 docker compose up -d --no-build
 ```
@@ -176,12 +176,20 @@ Pin a release instead of `latest` with `SSL_TOOLKIT_VERSION=1.2.1` (in `.env` or
 ### Build from source
 
 ```bash
-git clone https://github.com/karlocizma/ssl-toolkit.git
-cd ssl-toolkit
+git clone https://github.com/karlocizma/secnet-toolkit.git
+cd secnet-toolkit
 docker compose up --build
 ```
 
-Open **http://localhost** in your browser.
+Open **http://localhost** in your browser (or `http://localhost:8080` if you changed `HTTP_PORT`, see below).
+
+### Ports, HTTPS and optional features
+
+- **Ports:** nginx listens on `HTTP_PORT` (default 80) and `HTTPS_PORT` (default 443). Rootless Docker or Podman cannot bind ports below 1024: set `HTTP_PORT=8080` and `HTTPS_PORT=8443` in `.env`, then open `http://localhost:8080`.
+- **HTTPS (optional):** run `scripts/enable-https.sh` once, then restart nginx. HTTP then redirects to HTTPS; see [HTTPS](#https) below. Without it the app is served over plain HTTP only.
+- **Podman:** short image names such as `nginx:alpine` need `unqualified-search-registries = ["docker.io"]` in `~/.config/containers/registries.conf`.
+- **Let's Encrypt (ACME):** off by default; set `ENABLE_ACME=true` to turn it on.
+- **Settings:** anyone can use the tools; changing settings needs `ADMIN_TOKEN`.
 
 > If you see a default nginx page instead of the app, run `./scripts/rebuild-frontend.sh`.  
 > This is a known Docker build-cache issue — see [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).

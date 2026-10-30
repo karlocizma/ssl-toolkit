@@ -5,7 +5,7 @@ Thanks for helping out! This guide gets you from a fresh clone to a merged pull 
 ## Quick start
 
 ```bash
-git clone https://github.com/karlocizma/ssl-toolkit.git && cd ssl-toolkit
+git clone https://github.com/karlocizma/secnet-toolkit.git && cd secnet-toolkit
 
 # Backend (Python 3.11+)
 cd backend && python -m venv .venv && source .venv/bin/activate
