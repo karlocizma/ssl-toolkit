@@ -6,6 +6,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- `scripts/trust-proxy.sh <ip-or-cidr> ...` (opt-in): the bundled nginx takes the client address from `X-Forwarded-For` when the request comes from a listed reverse proxy (Nginx Proxy Manager, Caddy, Traefik, ...), so rate limits and the audit log see real visitors. Writes `certs/realip.conf`; refuses `0.0.0.0/0`
+
 ## [1.2.1] — 2026-10-29
 
 ### Changed
