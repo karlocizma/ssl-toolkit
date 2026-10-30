@@ -27,7 +27,7 @@ STEP_TIMEOUT = 8
 MAX_REDIRECTS = 5
 _HOSTNAME_RE = re.compile(r'^(?=.{1,253}$)([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$')
 _EMAIL_RE = re.compile(r'^[A-Za-z0-9._%+-]{1,64}@([A-Za-z0-9.-]+)$')
-USER_AGENT = 'ssl-toolkit-autodiscover/1.0'
+USER_AGENT = 'secnet-toolkit-autodiscover/1.0'
 
 POX_BODY = (
     '<?xml version="1.0" encoding="utf-8"?>'

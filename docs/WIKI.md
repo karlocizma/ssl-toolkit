@@ -81,7 +81,7 @@ secnet-toolkit/
 │   └── nginx.conf
 │
 ├── scripts/                       # run.sh, rebuild-frontend.sh, smoke-test-api.sh
-├── bin/ssl-toolkit                # CLI launcher
+├── bin/secnet-toolkit                # CLI launcher
 ├── docs/
 │   ├── WIKI.md                    # This file
 │   ├── ROADMAP.md
@@ -351,7 +351,7 @@ Per-route overrides use the `rate_limit` helper decorator defined in `ssl_routes
 
 ## 7. API key management
 
-API keys are stored as JSON in `/tmp/ssl-toolkit/api_keys.json` inside the backend container.
+API keys are stored as JSON in `/app/data/api_keys.json` (the data volume) inside the backend container.
 
 Each entry:
 ```json
@@ -479,7 +479,7 @@ JWT decoding is just base64url-decode + JSON parse. It requires no secret and pr
 | Scheduler election lock | `/app/data/scheduler.lock` | file lock |
 | Rate limiter state | Redis (`RATE_LIMIT_STORAGE_URI`), in-memory fallback | |
 
-`docker-compose.yml` mounts the `cert-monitor-data` named volume at `/app/data`, so this data survives container replacement. Writes are atomic (temporary file + rename) and guarded by `fcntl` file locks, which makes them safe across the Gunicorn workers of one host.
+`docker-compose.yml` mounts the `secnet-toolkit-data` named volume at `/app/data`, so this data survives container replacement. Writes are atomic (temporary file + rename) and guarded by `fcntl` file locks, which makes them safe across the Gunicorn workers of one host.
 
 **Scaling beyond one host.** The JSON files are single-node storage. For several backend replicas, put `/app/data` on a shared volume (file locks need a POSIX-compliant filesystem) or replace the read/write helpers in `cert_monitor.py`, `domain_monitor.py` and `api_key_manager.py` with a database; no route changes are needed. Exactly one process per data directory runs the alert scheduler (elected with a file lock).
 

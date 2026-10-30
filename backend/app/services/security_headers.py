@@ -11,7 +11,7 @@ MAX_REDIRECTS = 4
 def fetch_headers(url: str):
     """Follow redirects manually so every hop is validated against the SSRF rules."""
     for _ in range(MAX_REDIRECTS + 1):
-        resp = safe_get(url, timeout=10, read_body=False, headers={'User-Agent': 'ssl-toolkit/1.0'})
+        resp = safe_get(url, timeout=10, read_body=False, headers={'User-Agent': 'secnet-toolkit/1.0'})
         if resp.is_redirect and resp.headers.get('Location'):
             url = urljoin(url, resp.headers['Location'])
             continue

@@ -1,6 +1,6 @@
 {
   "title": "SSL Toolkit certificates",
-  "uid": "ssl-toolkit-certs",
+  "uid": "secnet-toolkit-certs",
   "schemaVersion": 39,
   "version": 1,
   "refresh": "5m",
@@ -9,7 +9,7 @@
     "to": "now"
   },
   "tags": [
-    "ssl-toolkit"
+    "secnet-toolkit"
   ],
   "templating": {
     "list": [

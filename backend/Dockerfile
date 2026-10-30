@@ -20,7 +20,7 @@ USER appuser
 COPY --chown=appuser:appuser . .
 
 # Create upload and persistent data directories
-RUN mkdir -p /tmp/ssl-toolkit /app/data
+RUN mkdir -p /tmp/secnet-toolkit /app/data
 
 # Expose port
 EXPOSE 5000

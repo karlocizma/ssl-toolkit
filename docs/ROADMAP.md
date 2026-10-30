@@ -105,7 +105,7 @@ Auto-generate interactive API documentation from Flask route definitions.
 
 ### 8.3 SDKs and CLI
 - Python SDK (thin wrapper around the API)
-- Shell CLI (`ssl-toolkit check domain example.com`)
+- Shell CLI (`secnet-toolkit check domain example.com`)
 - GitHub Action for CI certificate validation
 
 ---

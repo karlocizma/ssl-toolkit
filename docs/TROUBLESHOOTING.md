@@ -238,8 +238,8 @@ docker compose ps
 Inspect health check logs:
 
 ```bash
-docker inspect ssl-toolkit-backend | grep -A 10 Health
-docker inspect ssl-toolkit-frontend | grep -A 10 Health
+docker inspect secnet-toolkit-backend | grep -A 10 Health
+docker inspect secnet-toolkit-frontend | grep -A 10 Health
 ```
 
 ### Backend health check failing
@@ -276,7 +276,7 @@ Verify all containers are on the same network:
 
 ```bash
 docker network ls
-docker network inspect ssl-toolkit_ssl-toolkit-network
+docker network inspect <project>_secnet-toolkit-network
 ```
 
 All three containers should be listed under "Containers".

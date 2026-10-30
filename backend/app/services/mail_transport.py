@@ -81,7 +81,7 @@ def check_mta_sts(domain: str, verify_mx: bool = False) -> Dict:
 
     url = f'https://mta-sts.{domain}/.well-known/mta-sts.txt'
     try:
-        resp = safe_get(url, timeout=8, headers={'User-Agent': 'ssl-toolkit-mta-sts/1.0'})
+        resp = safe_get(url, timeout=8, headers={'User-Agent': 'secnet-toolkit-mta-sts/1.0'})
     except requests.exceptions.SSLError:
         findings.append(_finding('error', 'The certificate of mta-sts.%s is not valid; senders will not fetch the policy' % domain))
         return _finish(result)

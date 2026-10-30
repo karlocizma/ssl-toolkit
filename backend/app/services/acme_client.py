@@ -24,7 +24,7 @@ DIRECTORIES = {
     'letsencrypt': 'https://acme-v02.api.letsencrypt.org/directory',
     'letsencrypt-staging': 'https://acme-staging-v02.api.letsencrypt.org/directory',
 }
-USER_AGENT = 'ssl-toolkit-acme/1.0'
+USER_AGENT = 'secnet-toolkit-acme/1.0'
 
 
 class AcmeError(Exception):

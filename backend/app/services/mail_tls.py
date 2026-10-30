@@ -25,7 +25,7 @@ PORTS = {
     143: ('imap', 'starttls'), 993: ('imap', 'implicit'),
     110: ('pop3', 'starttls'), 995: ('pop3', 'implicit'),
 }
-EHLO_NAME = 'ssl-toolkit.invalid'
+EHLO_NAME = 'secnet-toolkit.invalid'
 MAX_LINE = 4096
 
 

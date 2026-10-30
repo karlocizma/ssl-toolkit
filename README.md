@@ -171,7 +171,7 @@ docker compose pull               # fetch the images instead of building them
 docker compose up -d --no-build
 ```
 
-Pin a release instead of `latest` with `SSL_TOOLKIT_VERSION=1.2.1` (in `.env` or the shell). Tags: `1.2.1`, `1.2` and `latest`.
+Pin a release instead of `latest` with `SECNET_TOOLKIT_VERSION=1.2.1` (in `.env` or the shell). Tags: `1.2.1`, `1.2` and `latest`.
 
 ### Build from source
 
@@ -187,6 +187,7 @@ Open **http://localhost** in your browser (or `http://localhost:8080` if you cha
 
 - **Ports:** nginx listens on `HTTP_PORT` (default 80) and `HTTPS_PORT` (default 443). Rootless Docker or Podman cannot bind ports below 1024: set `HTTP_PORT=8080` and `HTTPS_PORT=8443` in `.env`, then open `http://localhost:8080`.
 - **HTTPS (optional):** run `scripts/enable-https.sh` once, then restart nginx. HTTP then redirects to HTTPS; see [HTTPS](#https) below. Without it the app is served over plain HTTP only.
+- **Behind a reverse proxy (Nginx Proxy Manager, Caddy, Traefik, ...):** leave `scripts/enable-https.sh` unused and let the proxy terminate TLS. Point the proxy host at the `secnet-toolkit-nginx` container on port 80 (attach the proxy to this compose network, or forward to the host and `HTTP_PORT`). Set `CORS_ORIGINS` and `APP_URL` to the public https URL. Note that the backend sees the proxy's address as the client IP (rate limits and the audit log), because nginx here does not read `X-Forwarded-For`.
 - **Podman:** short image names such as `nginx:alpine` need `unqualified-search-registries = ["docker.io"]` in `~/.config/containers/registries.conf`.
 - **Let's Encrypt (ACME):** off by default; set `ENABLE_ACME=true` to turn it on.
 - **Settings:** anyone can use the tools; changing settings needs `ADMIN_TOKEN`.
@@ -292,7 +293,7 @@ Interactive API docs (Swagger UI) are served at `/api/docs`; the raw spec is at 
 
 **Microsoft Teams alerts:** in Teams open the target channel → **⋯ → Workflows** → template **Post to a channel when a webhook request is received**, finish the wizard and copy the URL into `ALERT_TEAMS_WEBHOOK_URL` (legacy Incoming Webhook URLs work too while Microsoft still supports them). Alerts arrive as an Adaptive Card, colour-coded (expired, expiring, certificate changed, recovered), with an "Open Domain Monitor" button when `APP_URL` is set. Send a test card from the Domain Monitor page ("Send test alert", admin token) or with `POST /api/monitor/alerts/test`.
 
-**Persistence:** monitored certificates, monitored domains and API keys (stored only as SHA-256 hashes) live on the `cert-monitor-data` volume. Test alert channels with `POST /api/monitor/alerts/test` (admin token required).
+**Persistence:** monitored certificates, monitored domains and API keys (stored only as SHA-256 hashes) live on the `secnet-toolkit-data` volume. Test alert channels with `POST /api/monitor/alerts/test` (admin token required).
 
 ### Rate limiting defaults
 
@@ -658,25 +659,25 @@ All three need the monitor access token (`Authorization: Bearer <ADMIN_TOKEN>` w
 The checks also run from a terminal or CI pipeline, with exit code `0` = pass, `1` = threshold not met, `2` = usage error or the check could not run:
 
 ```bash
-bin/ssl-toolkit check example.com --fail-under 14        # certificate expiry and hostname match
-bin/ssl-toolkit tls example.com --min-grade B            # TLS protocol/cipher grade
-bin/ssl-toolkit expiry example.com --fail-under 30         # domain registration (RDAP)
-bin/ssl-toolkit mtasts example.com --require-enforce       # MTA-STS policy and TLS-RPT record
-bin/ssl-toolkit mailtls example.com --min-grade B          # all MX hosts, STARTTLS + TLS grade
-bin/ssl-toolkit mailtls mail.example.com:993 --protocol imap --mode implicit
-bin/ssl-toolkit headers https://example.com --min-score 70
-bin/ssl-toolkit email example.com --min-score 70         # SPF/DKIM/DMARC/MTA-STS
-bin/ssl-toolkit chain example.com                        # chain completeness
-bin/ssl-toolkit ct example.com --expected-issuer "Let's Encrypt"
-bin/ssl-toolkit autodiscover example.com
-bin/ssl-toolkit check a.example.com b.example.com --json # several targets, machine-readable
+bin/secnet-toolkit check example.com --fail-under 14        # certificate expiry and hostname match
+bin/secnet-toolkit tls example.com --min-grade B            # TLS protocol/cipher grade
+bin/secnet-toolkit expiry example.com --fail-under 30         # domain registration (RDAP)
+bin/secnet-toolkit mtasts example.com --require-enforce       # MTA-STS policy and TLS-RPT record
+bin/secnet-toolkit mailtls example.com --min-grade B          # all MX hosts, STARTTLS + TLS grade
+bin/secnet-toolkit mailtls mail.example.com:993 --protocol imap --mode implicit
+bin/secnet-toolkit headers https://example.com --min-score 70
+bin/secnet-toolkit email example.com --min-score 70         # SPF/DKIM/DMARC/MTA-STS
+bin/secnet-toolkit chain example.com                        # chain completeness
+bin/secnet-toolkit ct example.com --expected-issuer "Let's Encrypt"
+bin/secnet-toolkit autodiscover example.com
+bin/secnet-toolkit check a.example.com b.example.com --json # several targets, machine-readable
 # or inside the stack:  docker compose exec backend python -m app.cli check example.com
 ```
 
 Example GitHub Actions step:
 
 ```yaml
-- run: pip install -r backend/requirements.txt && bin/ssl-toolkit check example.com --fail-under 21
+- run: pip install -r backend/requirements.txt && bin/secnet-toolkit check example.com --fail-under 21
 ```
 
 The CLI allows private/internal hosts by default (it runs under your account); set `ALLOW_PRIVATE_TARGETS=false` to apply the web API's restriction.

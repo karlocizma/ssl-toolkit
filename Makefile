@@ -38,7 +38,7 @@ rebuild: ## Force-rebuild the frontend image (fixes the "default nginx page" cac
 	./scripts/rebuild-frontend.sh
 
 cli: ## Example: make cli ARGS="check example.com"
-	./bin/ssl-toolkit $(ARGS)
+	./bin/secnet-toolkit $(ARGS)
 
 clean: ## Remove build output and caches
 	rm -rf frontend/build backend/.pytest_cache backend/.coverage
